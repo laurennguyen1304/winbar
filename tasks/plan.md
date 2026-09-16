@@ -39,7 +39,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 
 ### Giai đoạn 2 — Alert và always
 - [x] Task 6: Hàng đợi alert + trạng thái alert trên pill
-- [ ] Task 7: Mode always (pill lớn hai widget)
+- [x] Task 7: Mode always (pill lớn hai widget)
 
 ### Checkpoint 2 — Đủ 4 trạng thái, so với mockup
 

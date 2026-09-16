@@ -1,4 +1,13 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { Icon } from "./Icon";
 import { onWindowBlur, requestNotchLayout } from "./native";
 import type { OpenMode } from "./notch-machine";
@@ -16,6 +25,7 @@ import {
   type Size,
 } from "./notch-sizes";
 import { Panel } from "./Panel";
+import { pickMidPills, pickPill } from "./pill-content";
 import { registry } from "./registry";
 import { useShellRuntime } from "./shell-context";
 import { useNotchMachine } from "./use-notch-machine";
@@ -26,6 +36,8 @@ import styles from "./Notch.module.css";
 interface NotchProps {
   /** Enabled widgets in Settings order (defaults to every registered widget until Settings exist). */
   widgets?: WidgetDefinition[];
+  /** Widget shown first on the pill (Settings › Pill ưu tiên). */
+  priorityWidget?: string;
   mode?: OpenMode;
   pillSize?: Size;
   alwaysSize?: Size;
@@ -58,6 +70,7 @@ const fromControl = (e: MouseEvent | KeyboardEvent) =>
 
 export function Notch({
   widgets = registry.all(),
+  priorityWidget,
   mode = "hover",
   pillSize = PILL_SIZES.m,
   alwaysSize = ALWAYS_SIZES.m,
@@ -69,8 +82,8 @@ export function Notch({
   const { visual, dispatch } = useNotchMachine(mode, alert !== undefined);
   const expanded = visual === "expanded";
   const [tab, setTab] = useState<TabId>("core");
-  // Until Settings (Task 8) the pill shows the first widget that provides pill content.
-  const priority = widgets.find((w) => w.Pill);
+  const priority = pickPill(widgets, priorityWidget);
+  const midPills = pickMidPills(widgets, priorityWidget);
 
   // Let widgets open/collapse the panel through ShellApi.
   useEffect(() => {
@@ -170,6 +183,20 @@ export function Notch({
         <flash.Content />
       </span>
     );
+  } else if (visual === "always" && midPills.length > 0) {
+    pillContent = midPills.map((w, i) => {
+      const Mid = w.MidPill as NonNullable<typeof w.MidPill>;
+      return (
+        <Fragment key={w.id}>
+          {i > 0 && <span className={styles.divider} aria-hidden data-testid="mid-divider" />}
+          <span className={styles.midBlock} data-testid={`mid-${w.id}`}>
+            <WidgetBoundary title={w.title} fallback={<span>{w.title}</span>}>
+              <Mid />
+            </WidgetBoundary>
+          </span>
+        </Fragment>
+      );
+    });
   } else if (priority?.Pill) {
     pillContent = (
       <WidgetBoundary title={priority.title} fallback={defaultPill}>
@@ -179,6 +206,14 @@ export function Notch({
   } else {
     pillContent = defaultPill;
   }
+
+  const pillClass = [
+    styles.pill,
+    visual === "always" ? styles.large : "",
+    alert ? styles.alert : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className={styles.stage}>
@@ -201,7 +236,7 @@ export function Notch({
           </div>
         ) : (
           <div
-            className={visual === "alert" ? `${styles.pill} ${styles.alert}` : styles.pill}
+            className={pillClass}
             role="button"
             tabIndex={0}
             aria-label={alert ? "Thông báo trên pill" : "Mở notch"}

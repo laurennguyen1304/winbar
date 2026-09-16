@@ -152,12 +152,15 @@ Thêm `flashPill` cho pill tạm thời (M7). Widget demo có nút "đẩy alert
 có alert thì hiện alert ở cỡ pill lớn. Bấm để mở panel, ⌃ để về pill lớn.
 
 **Tiêu chí chấp nhận:**
-- [ ] Máy trạng thái có test cho `always` ↔ `expanded` và `always` + alert
-- [ ] Hiện đúng hai widget theo thứ tự ưu tiên; chỉ một widget có `MidPill` thì chiếm cả pill
+- [x] Máy trạng thái có test cho `always` ↔ `expanded` và `always` + alert
+- [x] Hiện đúng hai widget theo thứ tự ưu tiên; chỉ một widget có `MidPill` thì chiếm cả pill
 
-**Kiểm tra:**
-- [ ] `npm test` qua
-- [ ] Thủ công: so với mockup `?mode=always` và `?mode=always&phase=permission`
+**Kiểm tra:** (2026-09-16)
+- [x] `npm test` 77 passed (chọn nội dung pill 7, always 4, …) · `npm run lint` sạch
+- [x] Thủ công: `VITE_NOTCH_MODE=always` → cửa sổ 775×80 vật lý = 620×64 logic; "Demo widget" | "Cooking" (GIF) có vạch ngăn; không lấy focus
+- [ ] Thủ công (bạn, Checkpoint 2): so với mockup `?mode=always&phase=permission` sau khi đẩy cảnh báo từ card demo
+
+**Ghi chú:** chạy thử mode khác khi chưa có Cài đặt: PowerShell `$env:VITE_NOTCH_MODE='always'; npm run tauri dev` (hoặc `click`).
 
 **Phụ thuộc:** Task 6
 **File dự kiến:** `src/shell/notch-machine.ts`, `src/shell/MidPill.tsx`, `src/shell/notch-machine.test.ts`

@@ -208,4 +208,68 @@ describe("Notch", () => {
       expect(notch()).toHaveAttribute("data-state", "pill");
     });
   });
+
+  describe("always mode", () => {
+    let shell: Shell;
+    beforeEach(() => {
+      shell = createShell();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    const renderAlways = (widgets = demoWidgets, priorityWidget?: string) =>
+      render(
+        <ShellProvider shell={shell}>
+          <Notch widgets={widgets} mode="always" priorityWidget={priorityWidget} />
+        </ShellProvider>,
+      );
+
+    it("shows two widgets side by side, priority first, with a divider", () => {
+      renderAlways(demoWidgets, "demo-claude");
+      const blocks = screen.getAllByTestId(/^mid-demo/);
+      expect(blocks.map((b) => b.dataset.testid)).toEqual(["mid-demo-claude", "mid-demo-card"]);
+      expect(screen.getAllByTestId("mid-divider")).toHaveLength(1);
+      expect(notch()).toHaveStyle({ width: "620px", height: "64px" });
+    });
+
+    it("lets a single widget fill the large pill", () => {
+      renderAlways(demoWidgets.filter((w) => w.id !== "demo-claude"));
+      expect(screen.getAllByTestId(/^mid-demo/).map((b) => b.dataset.testid)).toEqual(["mid-demo-card"]);
+      expect(screen.queryByTestId("mid-divider")).not.toBeInTheDocument();
+    });
+
+    it("shows an alert inside the large pill and keeps its size", () => {
+      renderAlways();
+      act(() =>
+        shell.api.alerts.push({
+          id: "a",
+          source: "demo-claude",
+          priority: 5,
+          Content: () => (
+            <>
+              <span>wait for you</span>
+              <button type="button">Cho phép</button>
+            </>
+          ),
+        }),
+      );
+      expect(notch()).toHaveAttribute("data-state", "always");
+      expect(notch()).toHaveStyle({ width: "620px", height: "64px" });
+      expect(screen.queryAllByTestId(/^mid-demo/)).toHaveLength(0);
+      fireEvent.click(screen.getByRole("button", { name: "Cho phép" }));
+      expect(notch()).toHaveAttribute("data-state", "always");
+      fireEvent.click(screen.getByText("wait for you"));
+      expect(notch()).toHaveAttribute("data-state", "expanded");
+      expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
+    });
+
+    it("opens on click and collapses back to the large pill", () => {
+      renderAlways();
+      fireEvent.click(screen.getByTestId("mid-demo-card"));
+      expect(notch()).toHaveAttribute("data-state", "expanded");
+      fireEvent.click(screen.getByRole("button", { name: "Thu gọn" }));
+      expect(notch()).toHaveAttribute("data-state", "always");
+      expect(notch()).toHaveStyle({ width: "620px", height: "64px" });
+    });
+  });
 });

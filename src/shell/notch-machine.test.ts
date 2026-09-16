@@ -70,6 +70,19 @@ describe("notch machine — always mode", () => {
   });
 });
 
+describe("notch machine — always mode with an alert", () => {
+  it("keeps the large pill (the alert is drawn inside it) and opens on click", () => {
+    expect(visualState(initialNotchState, "always", true)).toBe("always");
+    const { state } = run("always", [{ type: "pointerEnter" }, { type: "hoverElapsed" }], initialNotchState, true);
+    expect(state.expanded).toBe(false);
+    const opened = run("always", [{ type: "clickPill" }], initialNotchState, true).state;
+    expect(visualState(opened, "always", true)).toBe("expanded");
+    expect(visualState(notchReducer(opened, { type: "close", reason: "collapseButton" }, "always", true).state, "always", true)).toBe(
+      "always",
+    );
+  });
+});
+
 describe("notch machine — mode change", () => {
   it("collapses and cancels any pending hover when the mode changes", () => {
     const hovering = run("hover", [{ type: "pointerEnter" }]).state;

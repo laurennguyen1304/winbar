@@ -28,6 +28,31 @@ function DemoPill() {
   );
 }
 
+const twoLines = (title: string, sub: string) => (
+  <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+    <b style={{ fontSize: 13, whiteSpace: "nowrap" }}>{title}</b>
+    <span style={{ fontSize: 12, color: "var(--text-faint)", fontFamily: "var(--mono)", whiteSpace: "nowrap" }}>{sub}</span>
+  </span>
+);
+
+function DemoMidPill() {
+  return (
+    <>
+      <Icon name="sparks" size={28} />
+      {twoLines("Demo widget", "pill lớn · nửa trái")}
+    </>
+  );
+}
+
+function DemoClaudeMidPill() {
+  return (
+    <>
+      <img src={claudeWorking} alt="" width={38} height={38} />
+      {twoLines("Cooking", "3m 12s · 5h 62%")}
+    </>
+  );
+}
+
 function DemoTall() {
   return (
     <Card grow>
@@ -127,9 +152,9 @@ function DemoBroken(): never {
 }
 
 export const demoWidgets: WidgetDefinition[] = [
-  { id: "demo-card", tab: "core", title: "Demo card", description: "Card thường", Card: DemoCard, Pill: DemoPill },
+  { id: "demo-card", tab: "core", title: "Demo card", description: "Card thường", Card: DemoCard, Pill: DemoPill, MidPill: DemoMidPill },
   { id: "demo-alerts", tab: "core", title: "Demo cảnh báo", description: "Đẩy cảnh báo và flash pill", Card: DemoAlerts },
   { id: "demo-broken", tab: "core", title: "Demo lỗi", description: "Luôn lỗi khi render", Card: DemoBroken },
   { id: "demo-tall", tab: "core", title: "Demo tall", description: "Chiếm một cột", Card: DemoTall, layout: { tall: true } },
-  { id: "demo-claude", tab: "claude", title: "Demo Claude", description: "Widget ở tab Claude", Card: DemoClaude },
+  { id: "demo-claude", tab: "claude", title: "Demo Claude", description: "Widget ở tab Claude", Card: DemoClaude, MidPill: DemoClaudeMidPill },
 ];
