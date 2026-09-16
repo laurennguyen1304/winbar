@@ -44,7 +44,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 ### Checkpoint 2 — Đủ 4 trạng thái, so với mockup
 
 ### Giai đoạn 3 — Cài đặt
-- [ ] Task 8: Mô hình cài đặt (Rust) + áp dụng trực tiếp lên notch
+- [x] Task 8: Mô hình cài đặt (Rust) + áp dụng trực tiếp lên notch
 - [ ] Task 9: Cửa sổ Cài đặt (Pill, Widget, Cỡ chữ)
 
 ### Checkpoint 3 — Cài đặt đổi là notch đổi, khởi động lại vẫn nhớ

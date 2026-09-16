@@ -1,10 +1,19 @@
-import type { OpenMode } from "./shell/notch-machine";
+import { useEffect } from "react";
 import { Notch } from "./shell/Notch";
-
-// Until Settings (Task 8): try other modes in dev with VITE_NOTCH_MODE=click|always.
-const devMode = import.meta.env.VITE_NOTCH_MODE as OpenMode | undefined;
-const mode: OpenMode = devMode === "click" || devMode === "always" ? devMode : "hover";
+import { registry } from "./shell/registry";
+import { notchPropsFrom } from "./shell/settings";
+import { useSettings } from "./shell/use-settings";
 
 export default function App() {
-  return <Notch mode={mode} />;
+  const widgets = registry.all();
+  const { settings, update } = useSettings(widgets);
+
+  // Dev helper until the Settings window exists (Task 9): __winbar.update({...}) in the devtools console.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const w = window as unknown as { __winbar?: unknown };
+    w.__winbar = { settings, update };
+  }, [settings, update]);
+
+  return <Notch {...notchPropsFrom(settings, widgets)} />;
 }

@@ -43,6 +43,8 @@ interface NotchProps {
   alwaysSize?: Size;
   panelWidth?: number;
   topGap?: number;
+  /** Settings › Cỡ chữ, 0.85–1.3: scales text and icons inside the notch, not the notch size. */
+  fontScale?: number;
 }
 
 const prefersReducedMotion = () =>
@@ -76,6 +78,7 @@ export function Notch({
   alwaysSize = ALWAYS_SIZES.m,
   panelWidth = PANEL_WIDTHS.m,
   topGap = DEFAULT_TOP_GAP,
+  fontScale = 1,
 }: NotchProps) {
   const { shell, snapshot } = useShellRuntime();
   const { alert, flash } = snapshot;
@@ -109,13 +112,14 @@ export function Notch({
   useLayoutEffect(() => {
     const el = contentRef.current;
     if (!expanded || !el) return;
-    const measure = () => setContentHeight(el.offsetHeight);
+    // Visual height, so the font zoom is included.
+    const measure = () => setContentHeight(el.getBoundingClientRect().height);
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [expanded]);
+  }, [expanded, fontScale]);
 
   const collapsed =
     visual === "always" || (expanded && mode === "always")
@@ -226,7 +230,7 @@ export function Notch({
         onMouseLeave={() => dispatch({ type: "pointerLeave" })}
       >
         {expanded ? (
-          <div className={styles.panel} ref={contentRef} style={{ width: panelWidth }}>
+          <div className={styles.panel} ref={contentRef} style={{ width: panelWidth / fontScale, zoom: fontScale }}>
             <Panel
               widgets={widgets}
               tab={tab}
@@ -237,6 +241,7 @@ export function Notch({
         ) : (
           <div
             className={pillClass}
+            style={{ zoom: fontScale }}
             role="button"
             tabIndex={0}
             aria-label={alert ? "Thông báo trên pill" : "Mở notch"}

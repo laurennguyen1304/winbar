@@ -1,6 +1,8 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Size } from "./notch-sizes";
+import type { Settings } from "./settings";
 
 /** Asks Rust to size the native notch window to `size` and place it `topGap` px below the top of the primary monitor. */
 export async function requestNotchLayout(size: Size, topGap: number): Promise<void> {
@@ -19,6 +21,32 @@ export function onWindowBlur(onBlur: () => void): () => void {
     })
     .then((fn) => (disposed ? fn() : (unlisten = fn)))
     .catch((err: unknown) => console.error("onFocusChanged failed", err));
+  return () => {
+    disposed = true;
+    unlisten?.();
+  };
+}
+
+// ---------------------------------------------------------------- settings (src-tauri/src/settings.rs)
+
+export async function loadSettings(): Promise<Settings | undefined> {
+  if (!isTauri()) return undefined;
+  return invoke<Settings>("get_settings");
+}
+
+/** Rust validates and stores the settings, broadcasts `settings-changed`, and returns what was stored. */
+export async function saveSettings(settings: Settings): Promise<Settings | undefined> {
+  if (!isTauri()) return undefined;
+  return invoke<Settings>("update_settings", { settings });
+}
+
+export function onSettingsChanged(handler: (settings: Settings) => void): () => void {
+  if (!isTauri()) return () => {};
+  let unlisten: (() => void) | undefined;
+  let disposed = false;
+  listen<Settings>("settings-changed", (e) => handler(e.payload))
+    .then((fn) => (disposed ? fn() : (unlisten = fn)))
+    .catch((err: unknown) => console.error("listen settings-changed failed", err));
   return () => {
     disposed = true;
     unlisten?.();

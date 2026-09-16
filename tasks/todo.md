@@ -183,13 +183,19 @@ phát sự kiện `settings-changed`. Notch nghe sự kiện và áp dụng ngay
 Đọc cài đặt "Animation effects" của Windows để bật/tắt chuyển động.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test Rust: file thiếu, file hỏng, giá trị ngoài khoảng, widget thừa/thiếu
-- [ ] Sửa `settings.json` bằng lệnh `update_settings` thì notch đổi ngay không cần khởi động lại
-- [ ] Tắt app, mở lại vẫn giữ cài đặt
+- [x] Test Rust: file thiếu, file hỏng (+ sao lưu `.bak`), file có BOM, giá trị ngoài khoảng, biên khoảng, thiếu trường, widget trùng/sai id, ghi-đọc lại
+- [~] Sửa `settings.json` bằng lệnh `update_settings` thì notch đổi ngay không cần khởi động lại — logic sự kiện có test (hook); chưa gọi lệnh thật trên app (sẽ thấy ở Task 9 khi có cửa sổ Cài đặt)
+- [x] Tắt app, mở lại vẫn giữ cài đặt
 
 **Kiểm tra:**
-- [ ] `cargo test` qua
-- [ ] Thủ công: gọi `update_settings` từ devtools, xem notch đổi
+- [x] `cargo test` 13 passed · clippy `-D warnings` sạch · `npm test` 87 passed · `npm run lint` sạch
+- [x] Thủ công (2026-09-16): không có file → pill mặc định + app ghi file kèm danh sách widget; sửa file (always, pill lớn, cách mép 24, cỡ chữ 120) → khởi động lại ra 700×76 logic, cách mép 24; file hỏng → mặc định, không crash, có `settings.json.bak`
+- [ ] Thủ công (bạn, dev): mở devtools của notch, gọi `__winbar.update({...__winbar.settings, fontScale: 120})`
+
+**Ghi chú / lệch spec:**
+- Không dùng plugin `store`: Rust tự đọc/ghi JSON (ghi nguyên tử tmp + rename) để kiểm tra từng trường; ít phụ thuộc hơn.
+- Gộp danh sách widget làm ở frontend (`mergeWidgets`), vì chỉ frontend biết widget nào đã đăng ký; kết quả được ghi lại qua `update_settings`.
+- Lỗi tìm được khi chạy thật: file lưu bằng Notepad/PowerShell có BOM bị coi là hỏng → đã sửa; file hỏng từng bị ghi đè mất → giờ sao lưu `.bak` trước.
 
 **Phụ thuộc:** Checkpoint 2
 **File dự kiến:** `src-tauri/src/settings.rs`, `src-tauri/src/main.rs`, `src/shell/settings-store.ts`, `src/shell/Notch.tsx`

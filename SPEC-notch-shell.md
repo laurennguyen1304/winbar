@@ -48,10 +48,10 @@ giao diện command bar, tìm file/app. Nhiều màn hình mức nâng cao (xem 
 |---|---|
 | Khung app | Tauri 2.x (bản stable mới nhất lúc scaffold, ghim version trong `Cargo.lock` / `package-lock.json`) |
 | Native | Rust stable; crate `window-vibrancy` (hiệu ứng acrylic/mica), `windows` (Win32 khi cần) |
-| Plugin Tauri | `global-shortcut`, `autostart`, `store` (lưu cài đặt), `single-instance` |
+| Plugin Tauri | `global-shortcut`, `autostart`, `single-instance` (cài đặt: Rust tự đọc/ghi JSON, không dùng plugin `store`) |
 | Giao diện | React + TypeScript (strict) + Vite |
 | UI kit | **Cửa sổ Cài đặt:** shadcn/ui (Tailwind CSS v4 + Radix) — ScrollArea, Switch, Slider, ToggleGroup; theme chỉnh theo token kính mờ. **Notch:** CSS modules + token, không dùng Tailwind/Radix để giữ nhẹ |
-| State UI | React state + một store nhỏ (Zustand) cho cài đặt và alert |
+| State UI | React state + `useSyncExternalStore` cho alert; cài đặt qua sự kiện `settings-changed` (không dùng Zustand) |
 | Test | Vitest + Testing Library (UI/logic), `cargo test` (Rust), checklist thủ công cho hành vi cửa sổ |
 | Font | Onest + JetBrains Mono, **đóng gói kèm app** (không tải từ Google Fonts lúc chạy) |
 | Icon | **Iconoir** (MIT): gói `iconoir-react` cho UI, SVG từ gói `iconoir` để tạo icon khay `.ico`; icon đi qua một component `Icon` duy nhất |
@@ -174,7 +174,7 @@ Quy tắc:
 
 ## 7. Cài đặt
 
-Lưu ở `%APPDATA%\winbar\settings.json` qua plugin `store`. Áp dụng ngay, không cần khởi động lại.
+Lưu ở `%APPDATA%\winbar\settings.json` (Rust tự đọc/ghi JSON, ghi nguyên tử; đọc được file có BOM; file hỏng được sao lưu `settings.json.bak`). Áp dụng ngay, không cần khởi động lại.
 
 ```json
 {
