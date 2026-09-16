@@ -117,8 +117,8 @@ v1 chỉ dùng chuyển động đơn giản bằng CSS (đổi kích thước, 
 - Cửa sổ native **luôn khớp đúng kích thước khối notch** (không dùng một cửa sổ trong suốt to che màn hình),
   nên vùng ngoài notch không bao giờ chặn chuột.
 - Vị trí: giữa cạnh trên của màn hình chính, cách mép `topGap` px; tính theo DPI của màn hình đó.
-- Hiệu ứng kính mờ: acrylic của Windows áp lên cửa sổ, bo góc theo trạng thái. Nếu không làm được bo góc lớn với acrylic
-  (xem Rủi ro R1) thì dùng nền mờ đặc `rgba(20,24,32,0.92)` làm phương án dự phòng.
+- Nền (đã chốt sau spike, `docs/spikes/acrylic.md`): **CSS đặc** `rgba(20,24,32,0.90)`, viền `rgba(255,255,255,0.14)`, bo góc bằng CSS
+  trên cửa sổ trong suốt. Không dùng acrylic/mica ở v1 (Windows chỉ vẽ khi cửa sổ có focus; không bo góc lớn được).
 - Không lấy focus khi hover; chỉ lấy focus khi người dùng bấm vào ô nhập trong panel.
 
 ## 6. Hợp đồng widget
@@ -272,10 +272,11 @@ Viết test trước cho máy trạng thái, alert queue và validate cài đặ
 
 | # | Rủi ro | Cách xử lý |
 |---|---|---|
-| R1 | Acrylic của Windows áp cho cả khung cửa sổ; bo góc lớn (20–32px) có thể bị viền vuông hoặc răng cưa | **Làm spike đầu tiên** (≤ 1 buổi): thử `window-vibrancy` + bo góc bằng region/DWM. Không đạt thì dùng nền mờ đặc dự phòng và báo lại để bạn chọn |
+| R1 | ~~Acrylic + bo góc lớn~~ | **Đã xử lý (spike Task 2):** acrylic/mica không dùng được khi cửa sổ không focus; chọn nền CSS đặc |
 | R2 | Đổi kích thước cửa sổ native theo animation 420ms có thể giật | Đặt cửa sổ ở kích thước đích ngay khi bắt đầu mở (lớn hơn), animate khối bên trong bằng CSS; thu gọn thì đợi animation xong mới thu cửa sổ |
 | R3 | `Ctrl+Space` trùng yasb Quick Launch và bộ gõ tiếng Việt/IME | Báo trùng rõ ràng (tiêu chí 8); bạn tắt phím tắt bên yasb khi dùng song song |
-| R4 | WebView2 tốn RAM hơn mục tiêu | Đo sớm sau spike; nếu vượt thì báo lại trước khi làm tiếp |
+| R4 | WebView2 tốn RAM hơn mục tiêu | Spike: bản release ~135 MB (còn dư ~15 MB). Đo lại sau mỗi giai đoạn |
+| R6 | Pill cách mép 8px đè lên thanh yasb ở mép trên | Khi chạy song song với yasb: tăng `topGap` (~40px) hoặc tắt thanh yasb |
 | R5 | Nhiều màn hình, đổi màn hình chính khi đang chạy | v1: chỉ màn hình chính, tự định vị lại khi cấu hình màn hình đổi |
 
 ## 13. Giới hạn khi làm

@@ -32,19 +32,19 @@ và bo góc 20px/28px (thử region/DWM). Chụp ảnh trên hình nền sáng v
 Ghi kết quả và đề xuất vào `docs/spikes/acrylic.md`. Code spike để trong `spikes/` hoặc xóa sau khi ghi kết quả.
 
 **Tiêu chí chấp nhận:**
-- [ ] `docs/spikes/acrylic.md` có ảnh chụp, số RAM, và kết luận: acrylic bo góc đạt/không đạt
-- [ ] Nêu rõ cách vẽ nền đề xuất cho các task sau (acrylic hoặc nền mờ đặc)
+- [x] `docs/spikes/acrylic.md` có ảnh chụp, số RAM, và kết luận: acrylic bo góc **không đạt**
+- [x] Nêu rõ cách vẽ nền đề xuất cho các task sau: nền CSS đặc (`css-dense`)
 
 **Kiểm tra:**
-- [ ] Thủ công: xem ảnh chụp ở hai hình nền; đo RAM bằng Task Manager 1 phút
+- [x] Thủ công: ảnh chụp 6 cách × 2 kích thước trên desktop thật (không đổi hình nền của bạn); RAM release 135 MB, CPU 0.02% sau 60s
 
 **Phụ thuộc:** Task 1
 **File dự kiến:** `src-tauri/src/window.rs` (thử nghiệm), `docs/spikes/acrylic.md`
 **Quy mô:** S
 
 ## Checkpoint 0
-- [ ] Bạn xem `docs/spikes/acrylic.md` và chọn cách vẽ nền
-- [ ] Nếu RAM > 150 MB: thống nhất hướng xử lý trước khi làm tiếp
+- [x] Bạn xem `docs/spikes/acrylic.md` và chọn cách vẽ nền → **css-dense** (2026-09-16)
+- [x] RAM release 135 MB < 150 MB, không cần xử lý thêm
 
 ---
 

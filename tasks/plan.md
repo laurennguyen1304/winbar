@@ -26,9 +26,9 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 
 ### Giai đoạn 0 — Nền móng và spike
 - [x] Task 1: Scaffold Tauri 2 + React/TS + công cụ test/lint
-- [ ] Task 2: Spike kính mờ, bo góc và RAM
+- [x] Task 2: Spike kính mờ, bo góc và RAM
 
-### Checkpoint 0 — Bạn xem kết quả spike và chọn cách vẽ nền
+### Checkpoint 0 — Bạn xem kết quả spike và chọn cách vẽ nền ✓ (css-dense)
 
 ### Giai đoạn 1 — Notch lõi
 - [ ] Task 3: Pill tĩnh đúng vị trí, kích thước, DPI
