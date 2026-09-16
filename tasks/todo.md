@@ -53,7 +53,7 @@ Ghi kết quả và đề xuất vào `docs/spikes/acrylic.md`. Code spike để
 ### Task 3: Pill tĩnh đúng vị trí, kích thước, DPI
 
 **Mô tả:** Cửa sổ notch thật: giữa cạnh trên màn hình chính, cách mép `topGap` (8px), pill 340×40 với nền theo Checkpoint 0.
-Thêm design tokens (gồm token chuyển động M1–M12) và font đóng gói kèm (Onest, JetBrains Mono).
+Thêm design tokens (gồm token chuyển động v1) và font đóng gói kèm (Onest, JetBrains Mono).
 Thêm `iconoir-react` và component `Icon` bọc duy nhất. Tính vị trí theo DPI; định vị lại khi đổi màn hình/DPI.
 Không lấy focus, không hiện trên taskbar.
 
@@ -92,7 +92,7 @@ thu lại sau khi animate xong. Panel cao theo nội dung, tối đa 80% màn h�
 ### Task 5: Hợp đồng widget, registry, tab Core/Claude, bố cục, widget demo
 
 **Mô tả:** Thêm `widget-contract.ts` đúng mục 6 của spec, `registerWidget`, thanh tab Core/Claude (ẩn tab Claude khi
-không có widget Claude bật), thuật toán bố cục (widget `tall` một cột, còn lại xếp chồng theo thứ tự), error boundary, card hiện lần lượt (M3).
+không có widget Claude bật), thuật toán bố cục (widget `tall` một cột, còn lại xếp chồng theo thứ tự), error boundary.
 Widget `demo` (chỉ dev): một card thường, một card `tall`, một widget ở tab Claude, và một widget cố tình lỗi.
 
 **Tiêu chí chấp nhận:**
@@ -121,7 +121,7 @@ Widget `demo` (chỉ dev): một card thường, một card `tall`, một widget
 
 **Mô tả:** `ShellApi.alerts.push/dismiss` với hàng đợi theo `priority` (bằng nhau thì cái đến trước; cùng `id` thì thay thế).
 Có alert: pill chuyển `alert` (rộng pill + 150, cao + 4), hover không tự mở, nút trong alert bấm được, bấm vùng chữ thì
-mở panel ở tab của widget phát alert. Widget bị tắt thì alert của nó bị gỡ. Chuyển động M5 (nảy + rung, nhắc lại sau 60s).
+mở panel ở tab của widget phát alert. Widget bị tắt thì alert của nó bị gỡ. Chuyển động chỉ dùng M1 (không nảy/rung ở v1).
 Thêm `flashPill` cho pill tạm thời (M7). Widget demo có nút "đẩy alert" và "flash pill".
 
 **Tiêu chí chấp nhận:**
@@ -168,12 +168,11 @@ có alert thì hiện alert ở cỡ pill lớn. Bấm để mở panel, ⌃ đ�
 
 **Mô tả:** `settings.rs`: đọc/ghi `%APPDATA%\winbar\settings.json` đúng schema mục 7 của spec, validate từng trường (ngoài khoảng →
 mặc định + log), gộp danh sách widget (bỏ widget không còn, thêm widget mới ở cuối). Lệnh Tauri `get_settings`/`update_settings`,
-phát sự kiện `settings-changed`. Notch nghe sự kiện và áp dụng ngay: kích thước, `topGap`, mode, widget ưu tiên, bật/tắt, thứ tự, cỡ chữ,
-chế độ chuyển động (`system` đọc cài đặt Animation effects của Windows).
+phát sự kiện `settings-changed`. Notch nghe sự kiện và áp dụng ngay: kích thước, `topGap`, mode, widget ưu tiên, bật/tắt, thứ tự, cỡ chữ.
+Đọc cài đặt "Animation effects" của Windows để bật/tắt chuyển động.
 
 **Tiêu chí chấp nhận:**
 - [ ] Test Rust: file thiếu, file hỏng, giá trị ngoài khoảng, widget thừa/thiếu
-- [ ] Chọn "Giảm" chuyển động thì không còn nảy/rung/hiện lần lượt
 - [ ] Sửa `settings.json` bằng lệnh `update_settings` thì notch đổi ngay không cần khởi động lại
 - [ ] Tắt app, mở lại vẫn giữ cài đặt
 
@@ -188,7 +187,7 @@ chế độ chuyển động (`system` đọc cài đặt Animation effects củ
 ### Task 9: Cửa sổ Cài đặt (Pill, Widget, Cỡ chữ)
 
 **Mô tả:** Cửa sổ riêng giống màn "Cài đặt" trong mockup, dựng bằng shadcn/ui (Tailwind v4 + Radix; `ScrollArea`, `Switch`, `Slider`, `ToggleGroup`): xem trước pill thường + pill always; mục Pill (kích thước, pill always,
-độ rộng panel, cách mép trên, cách mở, widget ưu tiên); Widget (bật/tắt, lên/xuống theo tab); Cỡ chữ và chuyển động (85–130%; Theo Windows/Giảm/Đầy đủ); nút "Thoát winbar".
+độ rộng panel, cách mép trên, cách mở, widget ưu tiên); Widget (bật/tắt, lên/xuống theo tab); Cỡ chữ (85–130%); nút "Thoát winbar".
 Mở từ nút ⚙ trong panel; mở lần nữa thì đưa cửa sổ đang mở lên trước.
 
 **Tiêu chí chấp nhận:**
