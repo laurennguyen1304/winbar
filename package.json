@@ -14,7 +14,10 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/onest": "^5.3.1",
     "@tauri-apps/api": "^2",
+    "iconoir-react": "^7.12.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

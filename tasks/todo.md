@@ -58,13 +58,16 @@ Thêm `iconoir-react` và component `Icon` bọc duy nhất. Tính vị trí the
 Không lấy focus, không hiện trên taskbar.
 
 **Tiêu chí chấp nhận:**
-- [ ] Pill đúng 340×40 (px logic), cách mép 8px, căn giữa, ở DPI 100/125/150%
-- [ ] Click ở ngoài pill đi xuyên xuống app bên dưới
-- [ ] Hàm tính vị trí có test Rust cho 3 mức DPI
+- [x] Pill đúng 340×40 (px logic), cách mép 8px, căn giữa — đo thật ở 125% (425×50 vật lý tại x=747, y=10 trên màn 1920×1200); 100%/150% qua test Rust
+- [x] Click ở ngoài pill đi xuyên xuống app bên dưới (cửa sổ native chỉ bằng khối pill)
+- [x] Hàm tính vị trí có test Rust cho 3 mức DPI (+ màn hình có gốc âm)
 
-**Kiểm tra:**
-- [ ] `cargo test` qua (test vị trí)
-- [ ] Thủ công: đổi Scale trong Windows Settings, pill vẫn đúng chỗ
+**Kiểm tra:** (2026-09-16)
+- [x] `cargo test` 4 passed · `cargo clippy -D warnings` sạch · `npm test` 6 passed · `npm run lint` sạch
+- [x] Thủ công: `npm run tauri dev` — cửa sổ luôn nằm trên, không lấy focus, font Onest + icon Iconoir hiển thị đúng
+- [ ] Thủ công (bạn): đổi Scale trong Windows Settings sang 100%/150%, pill tự định vị lại trong ~2 giây (mình không đổi cài đặt màn hình của bạn)
+
+**Ghi chú:** 4 góc trong suốt ngoài phần bo tròn vẫn thuộc cửa sổ (vài px), click vào đó chưa xuyên xuống. Xử lý nếu thấy vướng.
 
 **Phụ thuộc:** Checkpoint 0
 **File dự kiến:** `src-tauri/src/window.rs`, `src/design/tokens.css`, `src/shell/notch-sizes.ts`, `src/shell/Notch.tsx`, `src/shell/Icon.tsx`

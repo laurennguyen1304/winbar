@@ -1,0 +1,32 @@
+.notch {
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--notch-bg);
+  border: var(--notch-border);
+  box-shadow: var(--notch-highlight);
+  color: var(--text);
+  transition: border-radius var(--motion-resize);
+}
+
+.pill {
+  height: 100%;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.faint {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+}

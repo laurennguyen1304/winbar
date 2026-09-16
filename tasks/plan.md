@@ -31,7 +31,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 ### Checkpoint 0 — Bạn xem kết quả spike và chọn cách vẽ nền ✓ (css-dense)
 
 ### Giai đoạn 1 — Notch lõi
-- [ ] Task 3: Pill tĩnh đúng vị trí, kích thước, DPI
+- [x] Task 3: Pill tĩnh đúng vị trí, kích thước, DPI
 - [ ] Task 4: Máy trạng thái notch + mode hover/click + chuyển động mở/thu
 - [ ] Task 5: Hợp đồng widget, registry, tab Core/Claude, bố cục, widget demo
 

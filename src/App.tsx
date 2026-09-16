@@ -1,4 +1,5 @@
-// Placeholder root. The notch shell replaces this from Task 3 on.
+import { Notch } from "./shell/Notch";
+
 export default function App() {
-  return <main>winbar</main>;
+  return <Notch />;
 }
