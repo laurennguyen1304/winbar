@@ -3,6 +3,7 @@ import { useState } from "react";
 import claudeWorking from "../../assets/claude/claude-fu-transparent.gif";
 import { Icon } from "../../shell/Icon";
 import { Card, CardLabel } from "../../shell/ui";
+import { useShell } from "../../shell/shell-context";
 import type { WidgetDefinition } from "../../shell/widget-contract";
 
 function DemoCard() {
@@ -50,12 +51,84 @@ function DemoClaude() {
   );
 }
 
+/** Alert content with its own action buttons; both answers dismiss the alert. */
+function makeApprovalAlert(dismiss: () => void, onAnswer: (answer: string) => void) {
+  return function DemoApproval() {
+    const answer = (value: string) => {
+      onAnswer(value);
+      dismiss();
+    };
+    return (
+      <>
+        <img src={claudeWorking} alt="" width={22} height={22} />
+        <b style={{ whiteSpace: "nowrap" }}>wait for you</b>
+        <span style={{ color: "var(--text-faint)", fontFamily: "var(--mono)", fontSize: 12, whiteSpace: "nowrap" }}>Bash · git push</span>
+        <span style={{ flexGrow: 1 }} />
+        <button type="button" onClick={() => answer("deny")}>
+          Từ chối
+        </button>
+        <button type="button" onClick={() => answer("allow")}>
+          Cho phép
+        </button>
+      </>
+    );
+  };
+}
+
+function Copied() {
+  return (
+    <>
+      <span style={{ color: "var(--ok)" }}>✓</span>
+      <span>Đã copy</span>
+    </>
+  );
+}
+
+// Module-level so the answer survives the card unmounting when the panel collapses.
+let lastAnswer = "—";
+
+function DemoAlerts() {
+  const shell = useShell();
+  const push = (id: string, source: string, priority: number) => {
+    shell.alerts.push({
+      id,
+      source,
+      priority,
+      Content: makeApprovalAlert(() => shell.alerts.dismiss(id), (a) => (lastAnswer = `${id}: ${a}`)),
+    });
+    shell.collapse();
+  };
+  return (
+    <Card>
+      <CardLabel aside={`trả lời gần nhất: ${lastAnswer}`}>Cảnh báo</CardLabel>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button type="button" onClick={() => push("demo-approval", "demo-claude", 5)}>
+          Đẩy cảnh báo Claude (ưu tiên 5)
+        </button>
+        <button type="button" onClick={() => push("demo-low", "demo-alerts", 1)}>
+          Đẩy cảnh báo thường (ưu tiên 1)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            shell.collapse();
+            shell.flashPill(Copied);
+          }}
+        >
+          Flash "Đã copy"
+        </button>
+      </div>
+    </Card>
+  );
+}
+
 function DemoBroken(): never {
   throw new Error("demo widget failure");
 }
 
 export const demoWidgets: WidgetDefinition[] = [
   { id: "demo-card", tab: "core", title: "Demo card", description: "Card thường", Card: DemoCard, Pill: DemoPill },
+  { id: "demo-alerts", tab: "core", title: "Demo cảnh báo", description: "Đẩy cảnh báo và flash pill", Card: DemoAlerts },
   { id: "demo-broken", tab: "core", title: "Demo lỗi", description: "Luôn lỗi khi render", Card: DemoBroken },
   { id: "demo-tall", tab: "core", title: "Demo tall", description: "Chiếm một cột", Card: DemoTall, layout: { tall: true } },
   { id: "demo-claude", tab: "claude", title: "Demo Claude", description: "Widget ở tab Claude", Card: DemoClaude },

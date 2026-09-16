@@ -131,14 +131,16 @@ mở panel ở tab của widget phát alert. Widget bị tắt thì alert của 
 Thêm `flashPill` cho pill tạm thời (M7). Widget demo có nút "đẩy alert" và "flash pill".
 
 **Tiêu chí chấp nhận:**
-- [ ] Test hàng đợi: ưu tiên, thay thế cùng id, gỡ, gỡ theo widget
-- [ ] Hover lên pill alert không mở panel; bấm nút gọi đúng callback rồi pill trở lại
-- [ ] Bấm vùng chữ mở panel ở đúng tab
-- [ ] `flashPill` hiện nội dung tạm 1.2s rồi trở lại; alert đang hiện thì không bị flash đè
+- [x] Test hàng đợi: ưu tiên, thay thế cùng id (giữ chỗ), gỡ, gỡ theo widget
+- [x] Hover lên pill alert không mở panel; bấm nút gọi đúng callback rồi pill trở lại
+- [x] Bấm vùng chữ mở panel ở đúng tab
+- [x] `flashPill` hiện nội dung tạm 1.2s rồi trở lại; alert đang hiện thì không bị flash đè
 
-**Kiểm tra:**
-- [ ] `npm test` qua
-- [ ] Thủ công: đẩy 2 alert khác ưu tiên từ widget demo
+**Kiểm tra:** (2026-09-16)
+- [x] `npm test` 65 passed (hàng đợi 7, shell 7, máy trạng thái 16, Notch 17, …) · `npm run lint` sạch
+- [ ] Thủ công (bạn, Checkpoint 2): card "Demo cảnh báo" → đẩy 2 alert khác ưu tiên, trả lời trên pill, flash "Đã copy"
+
+**Ghi chú:** thêm `Background` vào hợp đồng widget (đã ghi vào spec §6). Pill giờ là `div role="button"` để nội dung widget có nút riêng mà không lồng `<button>`.
 
 **Phụ thuộc:** Task 5
 **File dự kiến:** `src/shell/alert-queue.ts`, `src/shell/alert-queue.test.ts`, `src/shell/Pill.tsx`, `src/shell/notch-machine.ts`, `src/widgets/demo/*`

@@ -10,14 +10,18 @@ import {
 } from "./notch-machine";
 
 /** Runs the pure notch machine and owns its side effects (the hover timer). */
-export function useNotchMachine(mode: OpenMode) {
+export function useNotchMachine(mode: OpenMode, hasAlert = false) {
   const [state, setState] = useState<NotchState>(initialNotchState);
   const stateRef = useRef(state);
   const modeRef = useRef(mode);
+  const alertRef = useRef(hasAlert);
+  useEffect(() => {
+    alertRef.current = hasAlert;
+  }, [hasAlert]);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const dispatch = useCallback(function send(event: NotchEvent) {
-    const { state: next, effects } = notchReducer(stateRef.current, event, modeRef.current);
+    const { state: next, effects } = notchReducer(stateRef.current, event, modeRef.current, alertRef.current);
     for (const effect of effects) {
       clearTimeout(hoverTimer.current);
       if (effect === "startHoverTimer") {
@@ -38,5 +42,5 @@ export function useNotchMachine(mode: OpenMode) {
 
   useEffect(() => () => clearTimeout(hoverTimer.current), []);
 
-  return { state, visual: visualState(state, mode), dispatch };
+  return { state, visual: visualState(state, mode, hasAlert), dispatch };
 }

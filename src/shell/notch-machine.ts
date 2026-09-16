@@ -3,7 +3,7 @@
 
 export type OpenMode = "hover" | "click" | "always";
 
-export type VisualState = "pill" | "always" | "expanded";
+export type VisualState = "pill" | "alert" | "always" | "expanded";
 
 export interface NotchState {
   expanded: boolean;
@@ -34,13 +34,16 @@ export const initialNotchState: NotchState = { expanded: false, hovering: false 
 
 const stay = (state: NotchState): Transition => ({ state, effects: [] });
 
-export function notchReducer(state: NotchState, event: NotchEvent, mode: OpenMode): Transition {
+/**
+ * @param hasAlert an alert occupies the pill: hover must not open the panel, so its buttons stay clickable (SPEC §5.2).
+ */
+export function notchReducer(state: NotchState, event: NotchEvent, mode: OpenMode, hasAlert = false): Transition {
   switch (event.type) {
     case "pointerEnter":
       if (mode !== "hover" || state.hovering) return stay(state);
       return {
         state: { ...state, hovering: true },
-        effects: state.expanded ? [] : ["startHoverTimer"],
+        effects: state.expanded || hasAlert ? [] : ["startHoverTimer"],
       };
 
     case "pointerLeave":
@@ -51,7 +54,7 @@ export function notchReducer(state: NotchState, event: NotchEvent, mode: OpenMod
       };
 
     case "hoverElapsed":
-      if (mode !== "hover" || !state.hovering || state.expanded) return stay(state);
+      if (mode !== "hover" || !state.hovering || state.expanded || hasAlert) return stay(state);
       return { state: { ...state, expanded: true }, effects: [] };
 
     case "clickPill":
@@ -70,7 +73,8 @@ export function notchReducer(state: NotchState, event: NotchEvent, mode: OpenMod
   }
 }
 
-export function visualState(state: NotchState, mode: OpenMode): VisualState {
+export function visualState(state: NotchState, mode: OpenMode, hasAlert = false): VisualState {
   if (state.expanded) return "expanded";
-  return mode === "always" ? "always" : "pill";
+  if (mode === "always") return "always";
+  return hasAlert ? "alert" : "pill";
 }

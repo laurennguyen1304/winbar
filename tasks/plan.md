@@ -38,7 +38,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 ### Checkpoint 1 — Mở/thu notch với card demo chạy đúng
 
 ### Giai đoạn 2 — Alert và always
-- [ ] Task 6: Hàng đợi alert + trạng thái alert trên pill
+- [x] Task 6: Hàng đợi alert + trạng thái alert trên pill
 - [ ] Task 7: Mode always (pill lớn hai widget)
 
 ### Checkpoint 2 — Đủ 4 trạng thái, so với mockup

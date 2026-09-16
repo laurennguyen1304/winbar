@@ -136,6 +136,7 @@ export interface WidgetDefinition {
   Card: React.ComponentType;              // nội dung trong panel mở rộng
   Pill?: React.ComponentType;             // nội dung pill 340×40 khi là widget ưu tiên
   MidPill?: React.ComponentType;          // nửa pill always 620×64
+  Background?: React.ComponentType;       // luôn mount khi widget bật, không hiện gì; chạy việc nền (vd. theo dõi và đẩy alert khi panel đóng)
   layout?: { tall?: boolean };            // tall: chiếm riêng một cột (vd. clipboard)
   searchProvider?: SearchProvider;        // command-bar dùng; shell chỉ thu thập
 }
@@ -164,7 +165,9 @@ export interface SearchResult { id: string; title: string; subtitle?: string; ic
 
 Quy tắc:
 - Widget đăng ký qua `registerWidget(def)` trong `src/widgets/index.ts`; shell không import widget cụ thể nào khác.
-- Widget bị tắt trong Cài đặt: không render, không nhận `ShellApi`, alert của nó bị gỡ, provider bị bỏ khỏi danh sách.
+- Widget bị tắt trong Cài đặt: không render (kể cả `Background`), alert của nó bị gỡ, provider bị bỏ khỏi danh sách.
+- Widget dùng `ShellApi` qua hook `useShell()`. Nội dung pill/alert có nút riêng: bấm nút không mở panel; bấm vùng còn lại mới mở.
+- *(Bổ sung khi làm Task 6, 2026-09-16)* thêm `Background` vì alert phải phát được cả khi card không được mount.
 - Widget lỗi khi render: shell bắt lỗi (error boundary), hiện card "Widget lỗi" và vẫn chạy các widget khác.
 - Bố cục tab: widget `tall` chiếm một cột; các widget còn lại xếp chồng ở cột kia theo thứ tự trong Cài đặt;
   không có widget `tall` thì lưới 2 cột theo thứ tự.

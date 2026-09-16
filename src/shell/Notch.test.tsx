@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Notch } from "./Notch";
 import { demoWidgets } from "../widgets/demo";
 import { PILL_SIZES, RESIZE_MS } from "./notch-sizes";
+import { FLASH_MS, createShell, type Shell } from "./shell";
+import { ShellProvider } from "./shell-context";
+import type { PillAlert } from "./widget-contract";
 
 const { requestNotchLayout, blurHandlers } = vi.hoisted(() => ({
   requestNotchLayout: vi.fn(() => Promise.resolve()),
@@ -103,5 +106,106 @@ describe("Notch", () => {
   it("shows the first widget that provides pill content", () => {
     render(<Notch widgets={demoWidgets} />);
     expect(screen.getByText("Demo widget")).toBeInTheDocument();
+  });
+
+  describe("alerts and flash on the pill", () => {
+    let shell: Shell;
+    const answers: string[] = [];
+    const Approval = () => (
+      <>
+        <span>wait for you</span>
+        <button type="button" onClick={() => answers.push("allow")}>
+          Cho phép
+        </button>
+      </>
+    );
+    const approval: PillAlert = { id: "approval", source: "demo-claude", priority: 5, Content: Approval };
+    const Copied = () => <span>Đã copy</span>;
+    const renderWithShell = (mode: "hover" | "click" = "hover") =>
+      render(
+        <ShellProvider shell={shell}>
+          <Notch widgets={demoWidgets} mode={mode} />
+        </ShellProvider>,
+      );
+
+    beforeEach(() => {
+      shell = createShell();
+      answers.length = 0;
+      vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    it("widens the pill to the alert size and shows the alert", () => {
+      renderWithShell();
+      act(() => shell.api.alerts.push(approval));
+      expect(notch()).toHaveAttribute("data-state", "alert");
+      expect(notch()).toHaveStyle({ width: "490px", height: "44px", borderRadius: "22px" });
+      expect(screen.getByText("wait for you")).toBeInTheDocument();
+      tick(0);
+      expect(lastLayout()).toEqual([{ width: 490, height: 44 }, 8]);
+    });
+
+    it("does not open on hover while an alert is shown", () => {
+      renderWithShell();
+      act(() => shell.api.alerts.push(approval));
+      fireEvent.mouseEnter(notch());
+      tick(1000);
+      expect(notch()).toHaveAttribute("data-state", "alert");
+    });
+
+    it("runs the alert's own button without opening the panel", () => {
+      renderWithShell();
+      act(() => shell.api.alerts.push(approval));
+      fireEvent.click(screen.getByRole("button", { name: "Cho phép" }));
+      expect(answers).toEqual(["allow"]);
+      expect(notch()).toHaveAttribute("data-state", "alert");
+    });
+
+    it("opens the panel on the alert source's tab when the text is clicked", () => {
+      renderWithShell();
+      act(() => shell.api.alerts.push(approval));
+      fireEvent.click(screen.getByText("wait for you"));
+      expect(notch()).toHaveAttribute("data-state", "expanded");
+      expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
+    });
+
+    it("returns to the normal pill when the alert is dismissed", () => {
+      renderWithShell();
+      act(() => shell.api.alerts.push(approval));
+      act(() => shell.api.alerts.dismiss("approval"));
+      expect(notch()).toHaveAttribute("data-state", "pill");
+      expect(screen.getByText("Demo widget")).toBeInTheDocument();
+    });
+
+    it("drops a widget's alerts when that widget is disabled", () => {
+      const { rerender } = renderWithShell();
+      act(() => shell.api.alerts.push(approval));
+      expect(notch()).toHaveAttribute("data-state", "alert");
+      rerender(
+        <ShellProvider shell={shell}>
+          <Notch widgets={demoWidgets.filter((w) => w.id !== "demo-claude")} />
+        </ShellProvider>,
+      );
+      expect(shell.getSnapshot().alert).toBeUndefined();
+      expect(notch()).toHaveAttribute("data-state", "pill");
+    });
+
+    it("flashes pill content for 1.2s, then shows the widget pill again", () => {
+      renderWithShell();
+      act(() => shell.api.flashPill(Copied));
+      expect(screen.getByText("Đã copy")).toBeInTheDocument();
+      tick(FLASH_MS);
+      expect(screen.queryByText("Đã copy")).not.toBeInTheDocument();
+      expect(screen.getByText("Demo widget")).toBeInTheDocument();
+    });
+
+    it("lets widgets open the panel on a tab and collapse it", () => {
+      renderWithShell("click");
+      act(() => shell.api.openPanel("claude"));
+      expect(notch()).toHaveAttribute("data-state", "expanded");
+      expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
+      act(() => shell.api.collapse());
+      expect(notch()).toHaveAttribute("data-state", "pill");
+    });
   });
 });

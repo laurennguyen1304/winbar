@@ -16,6 +16,11 @@ export interface WidgetDefinition {
   Pill?: ComponentType;
   /** Half of the 620×64 always-mode pill. */
   MidPill?: ComponentType;
+  /**
+   * Always mounted while the widget is enabled, renders nothing visible. Use it for work that must run while the
+   * panel is closed, e.g. watching a source and pushing pill alerts.
+   */
+  Background?: ComponentType;
   /** `tall`: takes a whole column (e.g. clipboard). */
   layout?: { tall?: boolean };
   /** Collected by the shell for the command bar. */

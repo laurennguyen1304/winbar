@@ -54,6 +54,28 @@
   }
 }
 
+.pill.alert {
+  padding: 0 8px 0 16px;
+}
+
+.flash {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  animation: flash-in var(--motion-quick-fade) both;
+}
+
+@keyframes flash-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .grow {
   flex-grow: 1;
 }

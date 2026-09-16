@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { initialNotchState, notchReducer, visualState, type NotchEvent, type NotchState, type OpenMode } from "./notch-machine";
 
-function run(mode: OpenMode, events: NotchEvent[], from: NotchState = initialNotchState) {
+function run(mode: OpenMode, events: NotchEvent[], from: NotchState = initialNotchState, hasAlert = false) {
   let state = from;
   const effects: string[] = [];
   for (const event of events) {
-    const out = notchReducer(state, event, mode);
+    const out = notchReducer(state, event, mode, hasAlert);
     state = out.state;
     effects.push(...out.effects);
   }
@@ -79,10 +79,29 @@ describe("notch machine — mode change", () => {
   });
 });
 
+describe("notch machine — alert on the pill", () => {
+  it("does not start the hover timer while an alert is shown", () => {
+    const { state, effects } = run("hover", [{ type: "pointerEnter" }, { type: "hoverElapsed" }], initialNotchState, true);
+    expect(effects).toEqual([]);
+    expect(state.expanded).toBe(false);
+  });
+
+  it("does not open if an alert arrives while the hover delay is running", () => {
+    const hovering = run("hover", [{ type: "pointerEnter" }]).state;
+    expect(notchReducer(hovering, { type: "hoverElapsed" }, "hover", true).state.expanded).toBe(false);
+  });
+
+  it("still opens on click", () => {
+    expect(run("hover", [{ type: "pointerEnter" }, { type: "clickPill" }], initialNotchState, true).state.expanded).toBe(true);
+  });
+});
+
 describe("visualState", () => {
-  it("maps state and mode to what is drawn", () => {
+  it("maps state, mode and alerts to what is drawn", () => {
     expect(visualState({ ...initialNotchState }, "hover")).toBe("pill");
+    expect(visualState({ ...initialNotchState }, "hover", true)).toBe("alert");
+    expect(visualState({ ...initialNotchState }, "click", true)).toBe("alert");
     expect(visualState({ ...initialNotchState }, "always")).toBe("always");
-    expect(visualState({ ...initialNotchState, expanded: true }, "click")).toBe("expanded");
+    expect(visualState({ ...initialNotchState, expanded: true }, "click", true)).toBe("expanded");
   });
 });
