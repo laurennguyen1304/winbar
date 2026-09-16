@@ -33,7 +33,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 ### Giai đoạn 1 — Notch lõi
 - [x] Task 3: Pill tĩnh đúng vị trí, kích thước, DPI
 - [x] Task 4: Máy trạng thái notch + mode hover/click + chuyển động mở/thu
-- [ ] Task 5: Hợp đồng widget, registry, tab Core/Claude, bố cục, widget demo
+- [x] Task 5: Hợp đồng widget, registry, tab Core/Claude, bố cục, widget demo
 
 ### Checkpoint 1 — Mở/thu notch với card demo chạy đúng
 

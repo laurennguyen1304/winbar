@@ -54,45 +54,6 @@
   }
 }
 
-.panelHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 2px 0 8px;
-  min-height: 32px;
-}
-
-.title {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.iconButton {
-  all: unset;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  color: var(--text-sub);
-  cursor: pointer;
-}
-
-.iconButton:hover {
-  background: var(--hover-bg);
-}
-
-.placeholder {
-  border-radius: var(--radius-card);
-  background: var(--card-bg);
-  border: var(--card-border);
-  padding: 28px 16px;
-  font-size: 13px;
-  color: var(--text-faint);
-  text-align: center;
-}
-
 .grow {
   flex-grow: 1;
 }

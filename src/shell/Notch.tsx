@@ -1,5 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import { Panel } from "./Panel";
+import { registry } from "./registry";
+import type { TabId, WidgetDefinition } from "./widget-contract";
+import { WidgetBoundary } from "./WidgetBoundary";
 import { onWindowBlur, requestNotchLayout } from "./native";
 import type { OpenMode } from "./notch-machine";
 import {
@@ -18,6 +22,8 @@ import { useNotchMachine } from "./use-notch-machine";
 import styles from "./Notch.module.css";
 
 interface NotchProps {
+  /** Enabled widgets in Settings order (defaults to every registered widget until Settings exist). */
+  widgets?: WidgetDefinition[];
   mode?: OpenMode;
   pillSize?: Size;
   alwaysSize?: Size;
@@ -28,7 +34,17 @@ interface NotchProps {
 const prefersReducedMotion = () =>
   typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+const defaultPill = (
+  <>
+    <Icon name="sparks" size={18} />
+    <span>winbar</span>
+    <span className={styles.grow} />
+    <span className={styles.faint}>Ctrl+Space</span>
+  </>
+);
+
 export function Notch({
+  widgets = registry.all(),
   mode = "hover",
   pillSize = PILL_SIZES.m,
   alwaysSize = ALWAYS_SIZES.m,
@@ -37,6 +53,9 @@ export function Notch({
 }: NotchProps) {
   const { visual, dispatch } = useNotchMachine(mode);
   const expanded = visual === "expanded";
+  const [tab, setTab] = useState<TabId>("core");
+  // Until Settings (Task 8) the pill shows the first widget that provides pill content.
+  const priority = widgets.find((w) => w.Pill);
 
   // Panel height follows its content.
   const contentRef = useRef<HTMLDivElement>(null);
@@ -97,26 +116,22 @@ export function Notch({
       >
         {expanded ? (
           <div className={styles.panel} ref={contentRef} style={{ width: panelWidth }}>
-            <div className={styles.panelHeader}>
-              <span className={styles.title}>winbar</span>
-              <span className={styles.grow} />
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label="Thu gọn"
-                onClick={() => dispatch({ type: "close", reason: "collapseButton" })}
-              >
-                <Icon name="collapse" size={16} />
-              </button>
-            </div>
-            <div className={styles.placeholder}>Widget sẽ hiện ở đây (Task 5).</div>
+            <Panel
+              widgets={widgets}
+              tab={tab}
+              onTabChange={setTab}
+              onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
+            />
           </div>
         ) : (
           <button type="button" className={styles.pill} onClick={() => dispatch({ type: "clickPill" })}>
-            <Icon name="sparks" size={18} />
-            <span>winbar</span>
-            <span className={styles.grow} />
-            <span className={styles.faint}>Ctrl+Space</span>
+            {priority?.Pill ? (
+              <WidgetBoundary title={priority.title} fallback={defaultPill}>
+                <priority.Pill />
+              </WidgetBoundary>
+            ) : (
+              defaultPill
+            )}
           </button>
         )}
       </div>

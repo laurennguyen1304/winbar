@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Notch } from "./Notch";
+import { demoWidgets } from "../widgets/demo";
 import { PILL_SIZES, RESIZE_MS } from "./notch-sizes";
 
 const { requestNotchLayout, blurHandlers } = vi.hoisted(() => ({
@@ -74,6 +75,7 @@ describe("Notch", () => {
   it("click mode: closes with the collapse button and when the window loses focus", () => {
     render(<Notch mode="click" />);
     fireEvent.click(screen.getByRole("button"));
+    expect(screen.getByRole("tab", { name: "Core" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thu gọn" }));
     expect(notch()).toHaveAttribute("data-state", "pill");
 
@@ -96,5 +98,10 @@ describe("Notch", () => {
     render(<Notch pillSize={PILL_SIZES.l} topGap={40} />);
     tick(0);
     expect(lastLayout()).toEqual([{ width: 400, height: 46 }, 40]);
+  });
+
+  it("shows the first widget that provides pill content", () => {
+    render(<Notch widgets={demoWidgets} />);
+    expect(screen.getByText("Demo widget")).toBeInTheDocument();
   });
 });

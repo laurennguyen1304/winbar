@@ -101,13 +101,14 @@ không có widget Claude bật), thuật toán bố cục (widget `tall` một c
 Widget `demo` (chỉ dev): một card thường, một card `tall`, một widget ở tab Claude, và một widget cố tình lỗi.
 
 **Tiêu chí chấp nhận:**
-- [ ] Thuật toán bố cục có test (có/không có `tall`, thứ tự, widget tắt)
-- [ ] Widget lỗi hiện card "Widget lỗi", các widget khác vẫn chạy
-- [ ] Panel mở ra hiện card demo đúng tab, đúng bố cục
+- [x] Thuật toán bố cục có test (có/không có `tall`, thứ tự, nhiều `tall`, rỗng) — widget tắt được lọc trước khi vào bố cục (Task 8)
+- [x] Widget lỗi hiện card "Widget lỗi", các widget khác vẫn chạy (kể cả widget có state)
+- [x] Panel mở ra hiện card demo đúng tab, đúng bố cục
 
-**Kiểm tra:**
-- [ ] `npm test` qua (bố cục + error boundary)
-- [ ] Thủ công: mở panel, chuyển tab
+**Kiểm tra:** (2026-09-16)
+- [x] `npm test` 40 passed (bố cục 6, registry 2, Panel 7, Notch 8, máy trạng thái 13, kích thước 4) · `npm run lint` sạch
+- [x] Thủ công: pill hiện "Demo widget"; hover mở panel 780×324 logic với tab Core (card thường + card lỗi | card cao) và tab Claude có biểu tượng
+- [ ] Thủ công (bạn): bấm chuyển tab Core/Claude ở Checkpoint 1
 
 **Phụ thuộc:** Task 4
 **File dự kiến:** `src/shell/widget-contract.ts`, `src/shell/registry.ts`, `src/shell/layout.ts`, `src/shell/Panel.tsx`, `src/widgets/demo/*`
