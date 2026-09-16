@@ -1,16 +1,30 @@
-.notch {
-  box-sizing: border-box;
+/* The native window can be larger than the notch while it morphs; the notch stays top-centre inside it. */
+.stage {
   width: 100vw;
   height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.notch {
+  box-sizing: border-box;
+  flex-shrink: 0;
   overflow: hidden;
   background: var(--notch-bg);
   border: var(--notch-border);
   box-shadow: var(--notch-highlight);
   color: var(--text);
-  transition: border-radius var(--motion-resize);
+  transition:
+    width var(--motion-resize),
+    height var(--motion-resize),
+    border-radius var(--motion-resize);
 }
 
 .pill {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
   height: 100%;
   padding: 0 16px;
   display: flex;
@@ -19,6 +33,64 @@
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.panel {
+  box-sizing: border-box;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: panel-in var(--motion-panel-fade) both;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 0 8px;
+  min-height: 32px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.iconButton {
+  all: unset;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--hover-bg);
+}
+
+.placeholder {
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+  border: var(--card-border);
+  padding: 28px 16px;
+  font-size: 13px;
+  color: var(--text-faint);
+  text-align: center;
 }
 
 .grow {

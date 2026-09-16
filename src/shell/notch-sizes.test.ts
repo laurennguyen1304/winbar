@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALWAYS_SIZES, PANEL_WIDTHS, PILL_SIZES, alertSize, pillRadius } from "./notch-sizes";
+import { ALWAYS_SIZES, PANEL_WIDTHS, PILL_SIZES, alertSize, panelHeight, pillRadius } from "./notch-sizes";
 
 describe("notch sizes", () => {
   it("matches the approved defaults", () => {
@@ -14,5 +14,12 @@ describe("notch sizes", () => {
 
   it("rounds pill ends fully", () => {
     expect(pillRadius(PILL_SIZES.l)).toBe(23);
+  });
+
+  it("sizes the panel to its content within limits", () => {
+    expect(panelHeight(300.2, 1080)).toBe(301);
+    expect(panelHeight(20, 1080)).toBe(120);
+    expect(panelHeight(2000, 1080)).toBe(864);
+    expect(panelHeight(500, 0)).toBe(120);
   });
 });

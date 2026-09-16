@@ -21,9 +21,16 @@ export const ALWAYS_SIZES: Record<AlwaysSize, Size> = {
 };
 
 export const PANEL_WIDTHS: Record<PanelWidth, number> = { s: 720, m: 780, l: 860 };
+export const PANEL_RADIUS = 28;
+export const PANEL_MIN_HEIGHT = 120;
+/** The expanded panel never exceeds this share of the screen height; extra content scrolls. */
+export const PANEL_MAX_SCREEN_SHARE = 0.8;
 
 export const DEFAULT_TOP_GAP = 8;
 export const TOP_GAP_RANGE = { min: 0, max: 24 } as const;
+
+/** Duration of the size morph (M1). Keep in sync with --motion-resize in design/tokens.css. */
+export const RESIZE_MS = 420;
 
 /** Alert pill: wider and slightly taller than the regular pill (SPEC §5.1). */
 export function alertSize(pill: Size): Size {
@@ -33,4 +40,10 @@ export function alertSize(pill: Size): Size {
 /** Fully rounded ends for a pill of this height. */
 export function pillRadius(size: Size): number {
   return size.height / 2;
+}
+
+/** Panel height follows its content, clamped between a minimum and a share of the screen height. */
+export function panelHeight(contentHeight: number, screenHeight: number): number {
+  const max = Math.max(PANEL_MIN_HEIGHT, Math.floor(screenHeight * PANEL_MAX_SCREEN_SHARE));
+  return Math.min(Math.max(Math.ceil(contentHeight), PANEL_MIN_HEIGHT), max);
 }

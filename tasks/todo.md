@@ -80,13 +80,15 @@ Không lấy focus, không hiện trên taskbar.
 thu lại sau khi animate xong. Panel cao theo nội dung, tối đa 80% màn hình.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test phủ mọi chuyển trạng thái ở 5.2 (pill↔expanded ở hover/click)
-- [ ] Hover 250ms mở, rời chuột đóng; click mode đóng bằng Esc, ⌃, click ra ngoài
-- [ ] Không thấy giật/nháy khi mở và thu (quay màn hình 60fps để soát)
+- [x] Test phủ mọi chuyển trạng thái ở 5.2 (hover/click/always, đổi mode) — 13 test máy trạng thái + 7 test component
+- [x] Hover 250ms mở, rời chuột đóng; click mode đóng bằng Esc, ⌃, click ra ngoài (mất focus)
+- [~] Không thấy giật/nháy khi mở và thu — chụp giữa chuyển động không thấy nháy; chưa quay 60fps
 
-**Kiểm tra:**
-- [ ] `npm test` qua
-- [ ] Thủ công: thử cả hai mode, so chuyển động với mockup
+**Kiểm tra:** (2026-09-16)
+- [x] `npm test` 24 passed · `npm run lint` sạch
+- [x] Thủ công (tự động di chuột, trả chuột về chỗ cũ): hover 120ms vẫn là pill; ~450ms đã mở 780×138 logic;
+      rời chuột: cửa sổ native giữ lớn 150ms rồi thu về 340×40 sau khi chuyển động xong; hover không lấy focus
+- [ ] Thủ công (bạn): mode click (bấm, Esc, click ra ngoài) — cần bấm chuột thật nên để bạn thử ở Checkpoint 1
 
 **Phụ thuộc:** Task 3
 **File dự kiến:** `src/shell/notch-machine.ts`, `src/shell/notch-machine.test.ts`, `src/shell/Notch.tsx`, `src-tauri/src/window.rs`

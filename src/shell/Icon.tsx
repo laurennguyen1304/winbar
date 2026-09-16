@@ -1,4 +1,4 @@
-import { Search, Settings, Sparks } from "iconoir-react";
+import { NavArrowUp, Search, Settings, Sparks } from "iconoir-react";
 import type { ComponentType, SVGProps } from "react";
 
 // The only place that imports iconoir-react, so the icon set can be swapped in one file.
@@ -6,6 +6,7 @@ const ICONS = {
   sparks: Sparks,
   search: Search,
   settings: Settings,
+  collapse: NavArrowUp,
 } satisfies Record<string, ComponentType<SVGProps<SVGSVGElement>>>;
 
 export type IconName = keyof typeof ICONS;
