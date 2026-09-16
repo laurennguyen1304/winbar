@@ -50,9 +50,12 @@ giao diện command bar, tìm file/app. Nhiều màn hình mức nâng cao (xem 
 | Native | Rust stable; crate `window-vibrancy` (hiệu ứng acrylic/mica), `windows` (Win32 khi cần) |
 | Plugin Tauri | `global-shortcut`, `autostart`, `store` (lưu cài đặt), `single-instance` |
 | Giao diện | React + TypeScript (strict) + Vite |
+| UI kit | **Cửa sổ Cài đặt:** shadcn/ui (Tailwind CSS v4 + Radix) — ScrollArea, Switch, Slider, ToggleGroup; theme chỉnh theo token kính mờ. **Notch:** CSS modules + token, không dùng Tailwind/Radix để giữ nhẹ |
 | State UI | React state + một store nhỏ (Zustand) cho cài đặt và alert |
 | Test | Vitest + Testing Library (UI/logic), `cargo test` (Rust), checklist thủ công cho hành vi cửa sổ |
 | Font | Onest + JetBrains Mono, **đóng gói kèm app** (không tải từ Google Fonts lúc chạy) |
+| Icon | **Iconoir** (MIT): gói `iconoir-react` cho UI, SVG từ gói `iconoir` để tạo icon khay `.ico`; icon đi qua một component `Icon` duy nhất |
+| Chuyển động | CSS transitions/keyframes + vài hook nhỏ (đếm số, hiện lần lượt). Không thêm thư viện animation; chỉ cân nhắc `motion` (motion.dev) nếu CSS không đạt, và phải hỏi trước |
 
 ## 4. Lệnh
 
@@ -88,12 +91,28 @@ alert: hover KHÔNG tự mở (để bấm được nút trên pill); bấm vào
 
 ### 5.3 Chuyển động (lấy từ mockup)
 
-| Việc | Giá trị |
-|---|---|
-| Đổi kích thước | 420ms, `cubic-bezier(.32,1.25,.5,1)` |
-| Nội dung panel hiện ra | fade + trượt 6px, 300ms, trễ 100ms |
-| Đổi tab | fade + trượt ngang 6px, 240ms |
-| Hover delay | 250ms mở; rời chuột là đóng ngay |
+Shell sở hữu **token chuyển động** và chế độ **giảm chuyển động**; widget dùng lại token, không tự đặt số.
+Cột "Ai làm" cho biết module nào hiện thực chuyển động đó.
+
+| # | Chuyển động | Khi nào | Giá trị | Ai làm |
+|---|---|---|---|---|
+| M1 | Đổi kích thước notch | Mọi lần đổi trạng thái | 420ms, `cubic-bezier(.32,1.25,.5,1)` | notch-shell |
+| M2 | Nội dung panel hiện ra | Mở panel | fade + trượt 6px, 300ms, trễ 100ms | notch-shell |
+| M3 | Card hiện lần lượt | Mở panel, đổi tab | mỗi card fade + trượt lên 8px, 260ms, lệch 45ms/card (tối đa 6 card), trễ đầu 90ms | notch-shell |
+| M4 | Đổi tab | Bấm tab | fade + trượt ngang 6px, 240ms | notch-shell |
+| M5 | Alert xuất hiện | Alert mới vào pill | pill giãn 480ms `cubic-bezier(.34,1.56,.64,1)` (có nảy), rồi rung ngang ±3px 380ms; alert chưa xử lý sau 60s thì rung nhắc lại một lần | notch-shell |
+| M6 | Hover delay | Mode hover | 250ms mở; rời chuột là đóng ngay | notch-shell |
+| M7 | Pill "Đã copy" | Copy ở bất kỳ app nào khi notch thu gọn | nội dung pill đổi (fade 240ms), giữ 1.2s rồi trở lại | notch-shell cung cấp "pill tạm thời"; clipboard gọi |
+| M8 | Item vừa copy | Copy trong panel | nền item sáng lên rồi tắt, 550ms | clipboard |
+| M9 | Số hạn mức chạy | Mở tab Claude, hoặc giá trị đổi | đếm từ giá trị cũ (lần đầu từ 0) tới mới, 650ms ease-out, trễ 150ms | claude-usage |
+| M10 | Đổi bài hát | Next/prev hoặc bài tự đổi | ảnh bìa + chữ fade và trượt 14px theo hướng chuyển bài, 320ms | media |
+| M11 | Command bar mở/đóng | Ctrl+Space, Esc | mở: phóng 0.96→1 + fade 180ms; đóng 120ms | command-bar |
+| M12 | Dòng đang chọn | ↑↓ trong command bar | một khối nền trượt giữa các dòng, 120ms | command-bar |
+
+**Giảm chuyển động** (cài đặt `motion`): `system` theo cài đặt "Animation effects" của Windows, `reduce` luôn giảm, `full` luôn đầy đủ.
+Khi giảm: bỏ M3, M5 (nảy/rung), M9, M10 trượt; mọi chuyển động còn lại thành fade/đổi kích thước 120ms.
+
+`ShellApi` thêm: `flashPill(content: React.ComponentType, ms?: number)` cho pill tạm thời (M7).
 
 ### 5.4 Cửa sổ và chuột
 
@@ -134,6 +153,7 @@ export interface ShellApi {
   alerts: { push(alert: PillAlert): void; dismiss(id: string): void };
   openPanel(tab?: TabId): void;
   collapse(): void;
+  flashPill(content: React.ComponentType, ms?: number): void;   // pill tạm thời, vd. "Đã copy" (M7)
 }
 
 export interface SearchProvider {
@@ -160,6 +180,7 @@ Lưu ở `%APPDATA%\winbar\settings.json` qua plugin `store`. Áp dụng ngay, k
   "version": 1,
   "pill":  { "size": "m", "alwaysSize": "m", "panelWidth": "m", "topGap": 8, "openMode": "hover", "priorityWidget": "claude-sessions" },
   "fontScale": 100,
+  "motion": "system",
   "widgets": [ { "id": "media", "enabled": true }, { "id": "system", "enabled": true }, { "id": "clipboard", "enabled": true },
                { "id": "claude-sessions", "enabled": true }, { "id": "claude-usage", "enabled": true } ],
   "hotkeys": { "commandBar": "Ctrl+Space" },
@@ -175,6 +196,7 @@ Lưu ở `%APPDATA%\winbar\settings.json` qua plugin `store`. Áp dụng ngay, k
 | `pill.topGap` | 0–24 (px) |
 | `pill.openMode` | `hover` · `click` · `always` |
 | `fontScale` | 85–130, bước 5 (%), áp dụng cho chữ và biểu tượng trong notch |
+| `motion` | `system` · `reduce` · `full` (mục 5.3) |
 
 - File hỏng hoặc giá trị ngoài khoảng: dùng mặc định cho trường đó, ghi log cảnh báo, không crash.
 - Widget có trong file nhưng không còn tồn tại: bỏ qua. Widget mới chưa có trong file: thêm vào cuối, bật.
@@ -197,7 +219,9 @@ winbar/
     settings/                → màn Cài đặt
     widgets/index.ts         → registerWidget(...) cho từng widget
     widgets/demo/            → widget mẫu (chỉ dev)
-    design/tokens.css        → màu, font, bán kính, chuyển động
+    design/tokens.css        → màu, font, bán kính, token chuyển động
+    design/motion.ts         → hook đếm số, hiện lần lượt, đọc chế độ giảm chuyển động
+    shell/Icon.tsx           → lớp bọc duy nhất cho iconoir-react
     assets/claude/           → claude-fu-transparent.gif, claude_headstone.png
   tests/                     → test Vitest ngoài từng thư mục (nếu cần)
   design/                    → mockup đã duyệt (không build vào app)
@@ -225,7 +249,7 @@ export function Pill({ state, children }: { state: NotchState; children: React.R
 
 | Mức | Công cụ | Nội dung |
 |---|---|---|
-| Unit | Vitest | Máy trạng thái notch (mọi chuyển trạng thái ở 5.2); hàng đợi alert (ưu tiên, thay thế, gỡ khi tắt widget); validate cài đặt; thuật toán xếp bố cục widget |
+| Unit | Vitest | Chế độ giảm chuyển động (`system`/`reduce`/`full`) ra đúng cờ; máy trạng thái notch (mọi chuyển trạng thái ở 5.2); hàng đợi alert (ưu tiên, thay thế, gỡ khi tắt widget); validate cài đặt; thuật toán xếp bố cục widget |
 | Component | Vitest + Testing Library | Pill hiện đúng widget ưu tiên; alert có nút bấm được và không mở panel khi hover; tắt widget thì card biến mất; error boundary |
 | Rust | `cargo test` | Đọc/ghi/validate settings; tính vị trí cửa sổ theo DPI (100/125/150%) |
 | Thủ công | Checklist trong `tests/manual-shell.md` | Click xuyên ngoài notch; không lấy focus khi hover; phím tắt; autostart; single-instance; đổi DPI/màn hình chính |
@@ -244,7 +268,8 @@ Viết test trước cho máy trạng thái, alert queue và validate cài đặ
    Menu khay có đủ các mục ở mục 2 và từng mục chạy đúng; "Thoát winbar" gỡ phím tắt và đóng hẳn app.
 8. `Ctrl+Space` được đăng ký; nếu bị app khác giữ thì Cài đặt báo "phím tắt đang bị dùng" thay vì im lặng.
 9. Khi thu gọn và không có hoạt động: CPU trung bình < 1%, RAM (app + WebView2) < 150 MB, đo bằng Task Manager trong 1 phút.
-10. Chuyển động khớp mục 5.3; so trực quan với mockup không lệch rõ về kích thước, màu, bo góc.
+10. Chuyển động M1–M7 khớp mục 5.3 (quay màn hình để so với mockup); chọn "Giảm" thì không còn nảy, rung, hiện lần lượt.
+    So trực quan với mockup không lệch rõ về kích thước, màu, bo góc.
 11. `npm test`, `cargo test`, `npm run lint` đều qua.
 
 ## 12. Rủi ro
@@ -266,8 +291,12 @@ Viết test trước cho máy trạng thái, alert queue và validate cài đặ
 
 ## 14. Quyết định đã chốt và câu hỏi còn mở
 
-Đã chốt: cài Rust (stable, MSVC) và VS Build Tools; **có** icon khay; Cài đặt là cửa sổ riêng; code đặt ở gốc worktree `firefish` (nhánh `firefish`).
+Đã chốt:
+- Cài Rust (stable, ARM64 MSVC) và VS Build Tools (có ARM64); máy là **Windows on ARM64**.
+- **Có** icon khay; Cài đặt là cửa sổ riêng; code ở gốc worktree `firefish` (nhánh `firefish`).
+- Icon: **Iconoir** (MIT). Chuyển động: M1–M12 ở mục 5.3, làm bằng CSS.
 
-Còn mở (không chặn việc bắt đầu):
-1. **Bộ icon:** bạn sẽ đưa thư viện icon. Cần biết định dạng (SVG rời, icon font, hay gói npm như Lucide/Tabler/Phosphor) và giấy phép.
-   Khi có, dùng cho cả icon khay (.ico nhiều kích thước 16–256) lẫn icon trong UI (thay các icon vẽ tay trong mockup). Trước đó dùng icon tạm.
+- UI kit: shadcn/ui cho cửa sổ Cài đặt; notch dùng CSS riêng. Thanh cuộn Cài đặt dùng `ScrollArea` (mảnh, nổi đè, hiện khi hover/cuộn).
+- Icon khay/app tạm thời: Iconoir `sparks`.
+
+Không còn câu hỏi chặn việc bắt đầu.

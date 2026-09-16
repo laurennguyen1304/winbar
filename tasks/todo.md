@@ -53,7 +53,8 @@ Ghi kết quả và đề xuất vào `docs/spikes/acrylic.md`. Code spike để
 ### Task 3: Pill tĩnh đúng vị trí, kích thước, DPI
 
 **Mô tả:** Cửa sổ notch thật: giữa cạnh trên màn hình chính, cách mép `topGap` (8px), pill 340×40 với nền theo Checkpoint 0.
-Thêm design tokens và font đóng gói kèm (Onest, JetBrains Mono). Tính vị trí theo DPI; định vị lại khi đổi màn hình/DPI.
+Thêm design tokens (gồm token chuyển động M1–M12) và font đóng gói kèm (Onest, JetBrains Mono).
+Thêm `iconoir-react` và component `Icon` bọc duy nhất. Tính vị trí theo DPI; định vị lại khi đổi màn hình/DPI.
 Không lấy focus, không hiện trên taskbar.
 
 **Tiêu chí chấp nhận:**
@@ -66,13 +67,13 @@ Không lấy focus, không hiện trên taskbar.
 - [ ] Thủ công: đổi Scale trong Windows Settings, pill vẫn đúng chỗ
 
 **Phụ thuộc:** Checkpoint 0
-**File dự kiến:** `src-tauri/src/window.rs`, `src/design/tokens.css`, `src/shell/notch-sizes.ts`, `src/shell/Notch.tsx`, `src/assets/fonts/*`
+**File dự kiến:** `src-tauri/src/window.rs`, `src/design/tokens.css`, `src/shell/notch-sizes.ts`, `src/shell/Notch.tsx`, `src/shell/Icon.tsx`
 **Quy mô:** M
 
 ### Task 4: Máy trạng thái notch + mode hover/click + chuyển động mở/thu
 
 **Mô tả:** Viết máy trạng thái thuần (TS) theo mục 5.2 của spec, test trước. Nối vào UI: mode `hover` (250ms), `click`
-(bấm mở; Esc/⌃/click ra ngoài đóng). Chuyển động 420ms theo mục 5.3; cửa sổ native nhảy tới kích thước đích khi mở,
+(bấm mở; Esc/⌃/click ra ngoài đóng). Chuyển động M1, M2, M4, M6 theo mục 5.3; cửa sổ native nhảy tới kích thước đích khi mở,
 thu lại sau khi animate xong. Panel cao theo nội dung, tối đa 80% màn hình.
 
 **Tiêu chí chấp nhận:**
@@ -91,7 +92,7 @@ thu lại sau khi animate xong. Panel cao theo nội dung, tối đa 80% màn h�
 ### Task 5: Hợp đồng widget, registry, tab Core/Claude, bố cục, widget demo
 
 **Mô tả:** Thêm `widget-contract.ts` đúng mục 6 của spec, `registerWidget`, thanh tab Core/Claude (ẩn tab Claude khi
-không có widget Claude bật), thuật toán bố cục (widget `tall` một cột, còn lại xếp chồng theo thứ tự), error boundary.
+không có widget Claude bật), thuật toán bố cục (widget `tall` một cột, còn lại xếp chồng theo thứ tự), error boundary, card hiện lần lượt (M3).
 Widget `demo` (chỉ dev): một card thường, một card `tall`, một widget ở tab Claude, và một widget cố tình lỗi.
 
 **Tiêu chí chấp nhận:**
@@ -120,12 +121,14 @@ Widget `demo` (chỉ dev): một card thường, một card `tall`, một widget
 
 **Mô tả:** `ShellApi.alerts.push/dismiss` với hàng đợi theo `priority` (bằng nhau thì cái đến trước; cùng `id` thì thay thế).
 Có alert: pill chuyển `alert` (rộng pill + 150, cao + 4), hover không tự mở, nút trong alert bấm được, bấm vùng chữ thì
-mở panel ở tab của widget phát alert. Widget bị tắt thì alert của nó bị gỡ. Widget demo có nút "đẩy alert".
+mở panel ở tab của widget phát alert. Widget bị tắt thì alert của nó bị gỡ. Chuyển động M5 (nảy + rung, nhắc lại sau 60s).
+Thêm `flashPill` cho pill tạm thời (M7). Widget demo có nút "đẩy alert" và "flash pill".
 
 **Tiêu chí chấp nhận:**
 - [ ] Test hàng đợi: ưu tiên, thay thế cùng id, gỡ, gỡ theo widget
 - [ ] Hover lên pill alert không mở panel; bấm nút gọi đúng callback rồi pill trở lại
 - [ ] Bấm vùng chữ mở panel ở đúng tab
+- [ ] `flashPill` hiện nội dung tạm 1.2s rồi trở lại; alert đang hiện thì không bị flash đè
 
 **Kiểm tra:**
 - [ ] `npm test` qua
@@ -165,10 +168,12 @@ có alert thì hiện alert ở cỡ pill lớn. Bấm để mở panel, ⌃ đ�
 
 **Mô tả:** `settings.rs`: đọc/ghi `%APPDATA%\winbar\settings.json` đúng schema mục 7 của spec, validate từng trường (ngoài khoảng →
 mặc định + log), gộp danh sách widget (bỏ widget không còn, thêm widget mới ở cuối). Lệnh Tauri `get_settings`/`update_settings`,
-phát sự kiện `settings-changed`. Notch nghe sự kiện và áp dụng ngay: kích thước, `topGap`, mode, widget ưu tiên, bật/tắt, thứ tự, cỡ chữ.
+phát sự kiện `settings-changed`. Notch nghe sự kiện và áp dụng ngay: kích thước, `topGap`, mode, widget ưu tiên, bật/tắt, thứ tự, cỡ chữ,
+chế độ chuyển động (`system` đọc cài đặt Animation effects của Windows).
 
 **Tiêu chí chấp nhận:**
 - [ ] Test Rust: file thiếu, file hỏng, giá trị ngoài khoảng, widget thừa/thiếu
+- [ ] Chọn "Giảm" chuyển động thì không còn nảy/rung/hiện lần lượt
 - [ ] Sửa `settings.json` bằng lệnh `update_settings` thì notch đổi ngay không cần khởi động lại
 - [ ] Tắt app, mở lại vẫn giữ cài đặt
 
@@ -182,8 +187,8 @@ phát sự kiện `settings-changed`. Notch nghe sự kiện và áp dụng ngay
 
 ### Task 9: Cửa sổ Cài đặt (Pill, Widget, Cỡ chữ)
 
-**Mô tả:** Cửa sổ riêng giống màn "Cài đặt" trong mockup: xem trước pill thường + pill always; mục Pill (kích thước, pill always,
-độ rộng panel, cách mép trên, cách mở, widget ưu tiên); Widget (bật/tắt, lên/xuống theo tab); Cỡ chữ (85–130%); nút "Thoát winbar".
+**Mô tả:** Cửa sổ riêng giống màn "Cài đặt" trong mockup, dựng bằng shadcn/ui (Tailwind v4 + Radix; `ScrollArea`, `Switch`, `Slider`, `ToggleGroup`): xem trước pill thường + pill always; mục Pill (kích thước, pill always,
+độ rộng panel, cách mép trên, cách mở, widget ưu tiên); Widget (bật/tắt, lên/xuống theo tab); Cỡ chữ và chuyển động (85–130%; Theo Windows/Giảm/Đầy đủ); nút "Thoát winbar".
 Mở từ nút ⚙ trong panel; mở lần nữa thì đưa cửa sổ đang mở lên trước.
 
 **Tiêu chí chấp nhận:**
@@ -210,7 +215,7 @@ Mở từ nút ⚙ trong panel; mở lần nữa thì đưa cửa sổ đang m�
 
 ### Task 10: Icon khay và menu
 
-**Mô tả:** Icon khay (icon tạm tới khi có bộ icon) với menu: Mở notch · Command bar (Ctrl+Space) · Ẩn notch tạm thời ·
+**Mô tả:** Icon khay tạo từ SVG Iconoir (mặc định `sparks` tới khi bạn chọn) thành `.ico` 16–256px, với menu: Mở notch · Command bar (Ctrl+Space) · Ẩn notch tạm thời ·
 Cài đặt… · Khởi động cùng Windows ✓ · Thoát winbar. "Command bar" phát sự kiện cho module `command-bar` sau này (hiện chưa có gì).
 "Ẩn notch tạm thời" ẩn tới khi bấm lại; alert vẫn xếp hàng. "Thoát winbar" gỡ phím tắt và đóng hẳn app.
 
