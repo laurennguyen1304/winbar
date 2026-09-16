@@ -27,7 +27,8 @@ export const PANEL_MIN_HEIGHT = 120;
 export const PANEL_MAX_SCREEN_SHARE = 0.8;
 
 export const DEFAULT_TOP_GAP = 8;
-export const TOP_GAP_RANGE = { min: 0, max: 24 } as const;
+/** Up to 48 so the pill can sit below a top taskbar such as yasb (~32px). */
+export const TOP_GAP_RANGE = { min: 0, max: 48 } as const;
 
 /** Duration of the size morph (M1). Keep in sync with --motion-resize in design/tokens.css. */
 export const RESIZE_MS = 420;

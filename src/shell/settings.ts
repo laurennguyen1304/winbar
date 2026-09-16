@@ -69,3 +69,24 @@ export function notchPropsFrom(settings: Settings, registered: readonly WidgetDe
     fontScale: settings.fontScale / 100,
   };
 }
+
+/**
+ * Moves a widget one step up (-1) or down (+1) among the widgets of the same tab, keeping every other widget's
+ * position. Returns the list unchanged when the widget is already at that end of its tab.
+ */
+export function moveWidget(
+  list: readonly WidgetSetting[],
+  id: string,
+  direction: -1 | 1,
+  registered: readonly WidgetDefinition[],
+): WidgetSetting[] {
+  const tabOf = new Map(registered.map((w) => [w.id, w.tab]));
+  const tab = tabOf.get(id);
+  const sameTab = list.map((w, i) => ({ w, i })).filter(({ w }) => tabOf.get(w.id) === tab);
+  const at = sameTab.findIndex(({ w }) => w.id === id);
+  const target = sameTab[at + direction];
+  if (at === -1 || !target) return [...list];
+  const next = [...list];
+  [next[sameTab[at].i], next[target.i]] = [next[target.i], next[sameTab[at].i]];
+  return next;
+}

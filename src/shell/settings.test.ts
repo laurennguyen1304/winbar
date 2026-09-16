@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS, mergeWidgets, notchPropsFrom, type Settings } from "./settings";
+import { DEFAULT_SETTINGS, mergeWidgets, moveWidget, notchPropsFrom, type Settings } from "./settings";
 import type { WidgetDefinition } from "./widget-contract";
 
 const C = () => null;
@@ -59,5 +59,32 @@ describe("notchPropsFrom", () => {
   it("treats registered widgets missing from the file as enabled at the end", () => {
     const partial = { ...settings, widgets: [{ id: "system", enabled: true }] };
     expect(notchPropsFrom(partial, registered).widgets.map((w) => w.id)).toEqual(["system", "media", "clipboard"]);
+  });
+});
+
+describe("moveWidget", () => {
+  const reg: WidgetDefinition[] = [
+    { ...def("media"), tab: "core" },
+    { ...def("claude-sessions"), tab: "claude" },
+    { ...def("clipboard"), tab: "core" },
+    { ...def("claude-usage"), tab: "claude" },
+  ];
+  const list = reg.map((w) => ({ id: w.id, enabled: true }));
+  const ids = (l: { id: string }[]) => l.map((w) => w.id);
+
+  it("swaps with the neighbour of the same tab, skipping other tabs", () => {
+    expect(ids(moveWidget(list, "clipboard", -1, reg))).toEqual(["clipboard", "claude-sessions", "media", "claude-usage"]);
+    expect(ids(moveWidget(list, "claude-sessions", 1, reg))).toEqual(["media", "claude-usage", "clipboard", "claude-sessions"]);
+  });
+
+  it("does nothing at the ends of a tab or for unknown ids", () => {
+    expect(ids(moveWidget(list, "media", -1, reg))).toEqual(ids(list));
+    expect(ids(moveWidget(list, "claude-usage", 1, reg))).toEqual(ids(list));
+    expect(ids(moveWidget(list, "gone", 1, reg))).toEqual(ids(list));
+  });
+
+  it("keeps the enabled flags with their widgets", () => {
+    const flagged = [{ id: "media", enabled: false }, { id: "clipboard", enabled: true }];
+    expect(moveWidget(flagged, "clipboard", -1, reg)).toEqual([{ id: "clipboard", enabled: true }, { id: "media", enabled: false }]);
   });
 });

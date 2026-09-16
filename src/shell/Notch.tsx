@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "./Icon";
-import { onWindowBlur, requestNotchLayout } from "./native";
+import { onWindowBlur, openSettings, requestNotchLayout } from "./native";
 import type { OpenMode } from "./notch-machine";
 import {
   ALWAYS_SIZES,
@@ -236,6 +236,7 @@ export function Notch({
               tab={tab}
               onTabChange={setTab}
               onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
+              onOpenSettings={() => void openSettings()}
             />
           </div>
         ) : (

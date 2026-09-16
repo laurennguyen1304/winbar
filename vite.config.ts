@@ -3,14 +3,24 @@ import { fileURLToPath, URL } from "node:url";
 import process from "node:process";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
+  // Two pages: the notch window and the Settings window.
+  build: {
+    rollupOptions: {
+      input: {
+        notch: fileURLToPath(new URL("./index.html", import.meta.url)),
+        settings: fileURLToPath(new URL("./settings.html", import.meta.url)),
+      },
+    },
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
@@ -31,5 +41,7 @@ export default defineConfig(() => ({
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // The first test of a file pays for importing Radix/Tailwind components (several seconds on this machine).
+    testTimeout: 15_000,
   },
 }));

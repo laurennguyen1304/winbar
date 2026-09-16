@@ -13,6 +13,7 @@ const { requestNotchLayout, blurHandlers } = vi.hoisted(() => ({
 }));
 vi.mock("./native", () => ({
   requestNotchLayout,
+  openSettings: () => Promise.resolve(),
   onWindowBlur: (cb: () => void) => {
     blurHandlers.push(cb);
     return () => blurHandlers.splice(blurHandlers.indexOf(cb), 1);

@@ -173,7 +173,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             size: r.choice(pill, "size", &["s", "m", "l"], &d.pill.size),
             always_size: r.choice(pill, "alwaysSize", &["m", "l"], &d.pill.always_size),
             panel_width: r.choice(pill, "panelWidth", &["s", "m", "l"], &d.pill.panel_width),
-            top_gap: r.int(pill, "topGap", 0, 24, 1, d.pill.top_gap),
+            top_gap: r.int(pill, "topGap", 0, 48, 1, d.pill.top_gap),
             open_mode: r.choice(
                 pill,
                 "openMode",
@@ -365,7 +365,7 @@ mod tests {
     #[test]
     fn keeps_valid_fields_and_resets_only_invalid_ones() {
         let (s, w) = from_value(&json!({
-            "pill": { "size": "l", "alwaysSize": "xl", "panelWidth": "s", "topGap": 40, "openMode": "click", "priorityWidget": "media" },
+            "pill": { "size": "l", "alwaysSize": "xl", "panelWidth": "s", "topGap": 60, "openMode": "click", "priorityWidget": "media" },
             "fontScale": 112,
             "launchAtStartup": false
         }));
@@ -392,8 +392,8 @@ mod tests {
     fn accepts_the_range_edges() {
         let (s, w) = from_value(&json!({ "pill": { "topGap": 0 }, "fontScale": 85 }));
         assert_eq!((s.pill.top_gap, s.font_scale), (0, 85));
-        let (s, _) = from_value(&json!({ "pill": { "topGap": 24 }, "fontScale": 130 }));
-        assert_eq!((s.pill.top_gap, s.font_scale), (24, 130));
+        let (s, _) = from_value(&json!({ "pill": { "topGap": 48 }, "fontScale": 130 }));
+        assert_eq!((s.pill.top_gap, s.font_scale), (48, 130));
         assert!(w.is_empty());
     }
 

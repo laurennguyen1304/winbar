@@ -12,6 +12,7 @@ interface PanelProps {
   tab: TabId;
   onTabChange(tab: TabId): void;
   onCollapse(): void;
+  onOpenSettings?(): void;
 }
 
 const TABS: Array<{ id: TabId; label: string }> = [
@@ -19,7 +20,7 @@ const TABS: Array<{ id: TabId; label: string }> = [
   { id: "claude", label: "Claude" },
 ];
 
-export function Panel({ widgets, tab, onTabChange, onCollapse }: PanelProps) {
+export function Panel({ widgets, tab, onTabChange, onCollapse, onOpenSettings }: PanelProps) {
   const visibleTabs = TABS.filter((t) => t.id === "core" || widgets.some((w) => w.tab === t.id));
   const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : "core";
   const tabWidgets = widgets.filter((w) => w.tab === activeTab);
@@ -43,6 +44,11 @@ export function Panel({ widgets, tab, onTabChange, onCollapse }: PanelProps) {
           ))}
         </div>
         <span className={styles.grow} />
+        {onOpenSettings && (
+          <button type="button" className={styles.iconButton} aria-label="Cài đặt" onClick={onOpenSettings}>
+            <Icon name="settings" size={16} />
+          </button>
+        )}
         <button type="button" className={styles.iconButton} aria-label="Thu gọn" onClick={onCollapse}>
           <Icon name="collapse" size={16} />
         </button>

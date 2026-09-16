@@ -1,4 +1,5 @@
 mod settings;
+mod settings_window;
 mod window;
 
 use tauri::Manager;
@@ -10,7 +11,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             window::notch_layout,
             settings::get_settings,
-            settings::update_settings
+            settings::update_settings,
+            settings_window::open_settings,
+            settings_window::quit_app
         ])
         .setup(|app| {
             let settings = settings::SettingsState::load(app.handle())?;

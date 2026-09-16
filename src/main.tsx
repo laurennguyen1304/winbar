@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "@fontsource-variable/onest";
 import "@fontsource-variable/jetbrains-mono";
 import "./design/tokens.css";
+import "./notch.css";
 import "./widgets";
 import App from "./App";
 

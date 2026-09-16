@@ -52,3 +52,16 @@ export function onSettingsChanged(handler: (settings: Settings) => void): () => 
     unlisten?.();
   };
 }
+
+// ---------------------------------------------------------------- windows
+
+/** Opens the Settings window, or focuses it if it is already open. */
+export async function openSettings(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("open_settings");
+}
+
+export async function quitApp(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("quit_app");
+}

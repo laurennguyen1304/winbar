@@ -208,13 +208,20 @@ phát sự kiện `settings-changed`. Notch nghe sự kiện và áp dụng ngay
 Mở từ nút ⚙ trong panel; mở lần nữa thì đưa cửa sổ đang mở lên trước.
 
 **Tiêu chí chấp nhận:**
-- [ ] Mọi điều khiển ghi qua `update_settings`, notch đổi ngay
-- [ ] Xem trước đổi theo khi kéo thanh cỡ chữ và cách mép
-- [ ] Chỉ có một cửa sổ Cài đặt tại một thời điểm
+- [x] Mọi điều khiển ghi qua `update_settings`, notch đổi ngay
+- [x] Xem trước đổi theo khi kéo thanh cỡ chữ và cách mép (bản nháp khi kéo, lưu khi thả)
+- [x] Chỉ có một cửa sổ Cài đặt tại một thời điểm
 
 **Kiểm tra:**
-- [ ] `npm test` qua (component: bật/tắt, đổi thứ tự gửi đúng dữ liệu)
-- [ ] Thủ công: so với mockup `?view=settings`
+- [x] `npm test` 97 passed (SettingsApp 7, moveWidget 3, …) · `cargo test` 13 · clippy sạch · `npm run lint` sạch · `npm run build` ra `index.html` + `settings.html`
+- [x] Thủ công (2026-09-17, điều khiển WebView2 qua cổng debug): gọi `open_settings` 2 lần → 1 cửa sổ; bấm "Lớn" trong Cài đặt → notch đổi ngay 400×46 logic không khởi động lại, về "Vừa" → 340×40; "Thoát winbar" → không còn tiến trình
+- [x] So với mockup: bố cục, xem trước, các mục Pill/Widget/Cỡ chữ khớp (ảnh chụp trong phiên)
+
+**Ghi chú:**
+- shadcn/ui: không dùng `shadcn init` (preset kèm Geist/Lucide); tạo `components.json` tay, `shadcn add` scroll-area, switch, slider, toggle-group, button. `cn` là gói chính thức của shadcn. Tailwind chỉ nạp trong trang Cài đặt.
+- Sửa component Slider để nhãn nằm trên núm kéo (role `slider`) — bản gốc để nhãn ở khung ngoài, trình đọc màn hình không đọc được.
+- Mở rộng `topGap` từ 0–24 lên **0–48** (Rust, TS, spec) để đặt pill dưới thanh yasb như R6 đề xuất.
+- Tăng `testTimeout` của Vitest lên 15s: test đầu tiên của file nạp Radix mất ~8s trên máy này.
 
 **Phụ thuộc:** Task 8
 **File dự kiến:** `src/settings/SettingsApp.tsx`, `src/settings/sections/*.tsx`, `src/settings/SettingsApp.test.tsx`, `src-tauri/tauri.conf.json`

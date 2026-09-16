@@ -45,7 +45,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 
 ### Giai đoạn 3 — Cài đặt
 - [x] Task 8: Mô hình cài đặt (Rust) + áp dụng trực tiếp lên notch
-- [ ] Task 9: Cửa sổ Cài đặt (Pill, Widget, Cỡ chữ)
+- [x] Task 9: Cửa sổ Cài đặt (Pill, Widget, Cỡ chữ)
 
 ### Checkpoint 3 — Cài đặt đổi là notch đổi, khởi động lại vẫn nhớ
 
