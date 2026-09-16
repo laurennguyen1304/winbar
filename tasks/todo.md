@@ -13,13 +13,13 @@
 ESLint + Prettier, `cargo fmt`/`clippy`. Mở được một cửa sổ trống. Thêm `.gitignore` cho `node_modules`, `target`, `dist`.
 
 **Tiêu chí chấp nhận:**
-- [ ] `npm run tauri dev` mở cửa sổ app không lỗi
-- [ ] `npm test` chạy được một test mẫu; `npm run lint` sạch
-- [ ] `cargo test` và `cargo clippy -- -D warnings` sạch
+- [x] `npm run tauri dev` mở cửa sổ app không lỗi
+- [x] `npm test` chạy được một test mẫu; `npm run lint` sạch
+- [x] `cargo test` và `cargo clippy -- -D warnings` sạch
 
-**Kiểm tra:**
-- [ ] Chạy 4 lệnh ở trên, ghi kết quả
-- [ ] Thủ công: cửa sổ app hiện lên
+**Kiểm tra:** (2026-09-16, Windows 11 ARM64, rustc 1.98.1)
+- [x] `npm test`: 1 passed · `npm run lint`: sạch · `cargo test`: ok · `cargo clippy -D warnings`: sạch · `cargo fmt --check`: sạch
+- [x] Thủ công: `npm run tauri dev` mở cửa sổ "winbar" (winbar.exe ~31 MB). Build Rust lần đầu ~8 phút.
 
 **Phụ thuộc:** Rust + VS Build Tools đã cài
 **File dự kiến:** `package.json`, `vite.config.ts`, `tsconfig.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, `.gitignore`, `eslint.config.js`

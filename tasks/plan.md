@@ -1,7 +1,7 @@
 # Implementation Plan: notch-shell
 
 > Spec: `SPEC-notch-shell.md` (đã duyệt 2026-09-16) · Mockup: `design/winbar-mockup.html` · Bản đồ module: `CAPABILITY-MAP.md`
-> Danh sách task chi tiết: `tasks/todo.md`. Trạng thái plan: **chờ duyệt**.
+> Danh sách task chi tiết: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**.
 
 ## Tổng quan
 
@@ -25,7 +25,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 ## Danh sách task
 
 ### Giai đoạn 0 — Nền móng và spike
-- [ ] Task 1: Scaffold Tauri 2 + React/TS + công cụ test/lint
+- [x] Task 1: Scaffold Tauri 2 + React/TS + công cụ test/lint
 - [ ] Task 2: Spike kính mờ, bo góc và RAM
 
 ### Checkpoint 0 — Bạn xem kết quả spike và chọn cách vẽ nền
