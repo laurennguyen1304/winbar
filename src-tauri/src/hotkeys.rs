@@ -175,6 +175,13 @@ mod tests {
             "ctrl+space",
             "Alt+Space",
             "CommandOrControl+Shift+K",
+            // Every form the Settings recorder (src/settings/accelerator.ts) produces.
+            "Ctrl+Alt+Shift+K",
+            "Alt+3",
+            "Ctrl+Super+Up",
+            "F9",
+            "Ctrl+Backquote",
+            "Ctrl+PageDown",
             " Ctrl+Space ",
         ] {
             assert!(parse(text).is_ok(), "{text}");

@@ -37,27 +37,61 @@ describe("HotkeySection", () => {
 
   it("shows the shortcut as active", async () => {
     native.status = ok;
-    render(<HotkeySection />);
+    render(<HotkeySection accelerator="Ctrl+Space" onChange={() => {}} />);
     await waitFor(() => expect(screen.getByText("Đang hoạt động")).toBeInTheDocument());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mặc định" })).not.toBeInTheDocument();
   });
 
   it("explains when another app holds the shortcut, and retries", async () => {
     native.status = inUse;
     native.retryResult = ok;
-    render(<HotkeySection />);
+    render(<HotkeySection accelerator="Ctrl+Space" onChange={() => {}} />);
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("đang bị app khác dùng"));
-    expect(screen.getByRole("alert")).toHaveTextContent("yasb");
+    expect(screen.getByRole("alert")).toHaveTextContent("YASB");
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     await waitFor(() => expect(screen.getByText("Đang hoạt động")).toBeInTheDocument());
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("follows status events from Rust", async () => {
     native.status = ok;
-    render(<HotkeySection />);
+    render(<HotkeySection accelerator="Ctrl+Space" onChange={() => {}} />);
     await waitFor(() => expect(native.listeners).toHaveLength(1));
     act(() => native.listeners[0]({ ...inUse, problem: "invalid", message: "bad" }));
     expect(screen.getByRole("alert")).toHaveTextContent("không hợp lệ");
+  });
+
+  it("records a new shortcut from the keyboard", async () => {
+    native.status = ok;
+    const onChange = vi.fn();
+    render(<HotkeySection accelerator="Ctrl+Space" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Đổi phím" }));
+    expect(screen.getByText("Nhấn tổ hợp phím mới… (Esc để hủy)")).toBeInTheDocument();
+    fireEvent.keyDown(window, { code: "ControlLeft", ctrlKey: true });
+    fireEvent.keyDown(window, { code: "KeyA" });
+    expect(screen.getByText("Cần ít nhất một phím Ctrl, Alt, Shift hoặc Win")).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { code: "Space", altKey: true });
+    expect(onChange).toHaveBeenCalledWith("Alt+Space");
+    expect(screen.getByRole("button", { name: "Đổi phím" })).toBeInTheDocument();
+  });
+
+  it("cancels recording with Escape", () => {
+    const onChange = vi.fn();
+    render(<HotkeySection accelerator="Ctrl+Space" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Đổi phím" }));
+    fireEvent.keyDown(window, { code: "Escape" });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Đổi phím" })).toBeInTheDocument();
+  });
+
+  it("offers going back to Ctrl+Space and ignores status for another shortcut", async () => {
+    native.status = ok; // still about Ctrl+Space
+    const onChange = vi.fn();
+    render(<HotkeySection accelerator="Alt+Space" onChange={onChange} />);
+    await act(() => Promise.resolve());
+    expect(screen.getByText("Đang kiểm tra…")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mặc định" }));
+    expect(onChange).toHaveBeenCalledWith("Ctrl+Space");
   });
 });

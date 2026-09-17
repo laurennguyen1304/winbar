@@ -259,7 +259,10 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
             </Row>
           </section>
 
-          <HotkeySection />
+          <HotkeySection
+            accelerator={view.hotkeys.commandBar}
+            onChange={(commandBar) => save({ ...view, hotkeys: { ...view.hotkeys, commandBar } })}
+          />
         </main>
       </ScrollArea>
     </div>

@@ -280,7 +280,10 @@ vì app khác giữ: ghi trạng thái lỗi, Cài đặt hiện "phím tắt đ
 - [x] Thủ công — đăng ký thành công (dùng phím trống Ctrl+Alt+F9 qua `update_settings`): trạng thái `registered`, nhấn phím → log sự kiện, Cài đặt hiện "Đang hoạt động"; `quit_app` → 0 tiến trình, phím trống lại
 - [x] Đổi phím trong cài đặt → gỡ phím cũ, đăng ký phím mới ngay
 
-**Ghi chú:** chưa tìm ra app đang giữ Ctrl+Space trên máy bạn — cần bạn kiểm tra (xem báo cáo). Cài đặt có nút "Thử lại" sau khi nhả phím ở app kia.
+**Ghi chú:**
+- App giữ Ctrl+Space trên máy là **YASB** (bạn xác nhận); giữ Ctrl+Space làm mặc định vì winbar sẽ thay YASB.
+- *(Bổ sung theo yêu cầu, 2026-09-17)* Cài đặt › Phím tắt có **Đổi phím** (ghi tổ hợp tiếp theo, Esc hủy, cần ít nhất một phím bổ trợ trừ F1–F24) và **Mặc định**. Thử thật: đổi sang Alt+Space → lưu + "Đang hoạt động"; Mặc định → Ctrl+Space + báo đang bị dùng. Test: bộ ghi phím 4, HotkeySection 6; Rust parse được mọi dạng bộ ghi tạo ra.
+- Giới hạn: khi đang ghi, tổ hợp mà app khác (hoặc chính winbar) đã đăng ký toàn cục sẽ bị Windows chặn trước nên không ghi được.
 
 **Phụ thuộc:** Task 10
 **File dự kiến:** `src-tauri/src/hotkeys.rs`, `src-tauri/src/main.rs`, `src/settings/sections/Hotkeys.tsx`
