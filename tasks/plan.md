@@ -51,7 +51,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 
 ### Giai đoạn 4 — Tích hợp hệ thống
 - [x] Task 10: Icon khay và menu
-- [ ] Task 11: Phím tắt toàn cục + phát hiện trùng
+- [x] Task 11: Phím tắt toàn cục + phát hiện trùng
 - [ ] Task 12: Chạy một bản + khởi động cùng Windows
 - [ ] Task 13: Đo hiệu năng, checklist thủ công, soát lại với mockup
 

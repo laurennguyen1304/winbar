@@ -185,6 +185,7 @@ fn run<R: Runtime>(app: &AppHandle<R>, action: TrayAction) {
                 .map(|_| ())
         }
         TrayAction::Quit => {
+            crate::hotkeys::release(app);
             app.exit(0);
             Ok(())
         }

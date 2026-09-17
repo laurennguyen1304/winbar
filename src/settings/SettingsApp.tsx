@@ -5,6 +5,7 @@ import { PillPreview } from "../shell/PillPreview";
 import { registry } from "../shell/registry";
 import { mergeWidgets, moveWidget, type Settings } from "../shell/settings";
 import { useSettings } from "../shell/use-settings";
+import { HotkeySection } from "./HotkeySection";
 import type { TabId, WidgetDefinition } from "../shell/widget-contract";
 import { Button } from "@/settings/components/ui/button";
 import { ScrollArea } from "@/settings/components/ui/scroll-area";
@@ -16,6 +17,7 @@ const SECTIONS = [
   { id: "pill", label: "Pill" },
   { id: "widget", label: "Widget" },
   { id: "font", label: "Cỡ chữ" },
+  { id: "hotkey", label: "Phím tắt" },
 ] as const;
 
 const TAB_LABEL: Record<TabId, string> = { core: "Tab Core", claude: "Tab Claude" };
@@ -256,6 +258,8 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
               </div>
             </Row>
           </section>
+
+          <HotkeySection />
         </main>
       </ScrollArea>
     </div>

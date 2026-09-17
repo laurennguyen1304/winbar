@@ -32,5 +32,6 @@ pub async fn open_settings<R: Runtime>(app: AppHandle<R>) -> Result<(), String> 
 /// Closes every window and exits the process.
 #[tauri::command]
 pub fn quit_app<R: Runtime>(app: AppHandle<R>) {
+    crate::hotkeys::release(&app);
     app.exit(0);
 }

@@ -20,6 +20,9 @@ vi.mock("../shell/native", () => ({
     return Promise.resolve(s);
   },
   onSettingsChanged: () => () => {},
+  getHotkeyStatus: () => Promise.resolve(undefined),
+  retryHotkey: () => Promise.resolve(undefined),
+  onHotkeyStatus: () => () => {},
   quitApp: () => {
     native.quit += 1;
     return Promise.resolve();
@@ -45,7 +48,7 @@ describe("SettingsApp", () => {
     await renderLoaded();
     expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "340px", height: "40px" });
     expect(screen.getByTestId("preview-always")).toHaveStyle({ width: "620px", height: "64px" });
-    for (const name of ["Pill", "Widget", "Cỡ chữ"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
+    for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
   });
 
   it("saves the pill size and updates the preview", async () => {

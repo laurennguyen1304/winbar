@@ -270,13 +270,17 @@ Cài đặt… · Khởi động cùng Windows ✓ · Thoát winbar. "Command ba
 vì app khác giữ: ghi trạng thái lỗi, Cài đặt hiện "phím tắt đang bị dùng" kèm gợi ý tắt bên yasb.
 
 **Tiêu chí chấp nhận:**
-- [ ] Nhấn `Ctrl+Space` phát sự kiện (ghi log trong dev)
-- [ ] Khi phím bị giữ (thử bằng yasb đang chạy), Cài đặt báo rõ, app không crash
-- [ ] Thoát app thì phím được trả lại
+- [x] Nhấn phím tắt phát sự kiện `command-bar-toggle` (log "winbar hotkey: command bar")
+- [x] Khi phím bị giữ, Cài đặt báo rõ, app không crash
+- [x] Thoát app thì phím được trả lại
 
-**Kiểm tra:**
-- [ ] `cargo test` cho phần parse/validate phím tắt
-- [ ] Thủ công: có và không có yasb chạy song song
+**Kiểm tra:** (2026-09-17)
+- [x] `cargo test` 20 (hotkeys 4: parse hợp lệ/không hợp lệ, phân loại lỗi, JSON trạng thái) · clippy sạch · `npm test` 101 (HotkeySection 3) · lint sạch
+- [x] Thủ công — xung đột thật: trên máy này **Ctrl+Space đã bị một app khác giữ** (Windows lỗi 1409, kể cả khi winbar tắt; yasb không chạy; nghi UniKey/Orca/Claude). winbar báo `in-use`, không crash
+- [x] Thủ công — đăng ký thành công (dùng phím trống Ctrl+Alt+F9 qua `update_settings`): trạng thái `registered`, nhấn phím → log sự kiện, Cài đặt hiện "Đang hoạt động"; `quit_app` → 0 tiến trình, phím trống lại
+- [x] Đổi phím trong cài đặt → gỡ phím cũ, đăng ký phím mới ngay
+
+**Ghi chú:** chưa tìm ra app đang giữ Ctrl+Space trên máy bạn — cần bạn kiểm tra (xem báo cáo). Cài đặt có nút "Thử lại" sau khi nhả phím ở app kia.
 
 **Phụ thuộc:** Task 10
 **File dự kiến:** `src-tauri/src/hotkeys.rs`, `src-tauri/src/main.rs`, `src/settings/sections/Hotkeys.tsx`

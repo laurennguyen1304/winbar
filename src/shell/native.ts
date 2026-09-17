@@ -81,3 +81,36 @@ export function onOpenNotchRequested(handler: () => void): () => void {
     unlisten?.();
   };
 }
+
+// ---------------------------------------------------------------- hotkeys (src-tauri/src/hotkeys.rs)
+
+export interface HotkeyStatus {
+  accelerator: string;
+  registered: boolean;
+  problem: "invalid" | "in-use" | "failed" | null;
+  message: string | null;
+}
+
+export async function getHotkeyStatus(): Promise<HotkeyStatus | undefined> {
+  if (!isTauri()) return undefined;
+  return (await invoke<HotkeyStatus | null>("get_hotkey_status")) ?? undefined;
+}
+
+/** Registers the stored shortcut again (e.g. after freeing it in another app). */
+export async function retryHotkey(): Promise<HotkeyStatus | undefined> {
+  if (!isTauri()) return undefined;
+  return invoke<HotkeyStatus>("retry_hotkey");
+}
+
+export function onHotkeyStatus(handler: (status: HotkeyStatus) => void): () => void {
+  if (!isTauri()) return () => {};
+  let unlisten: (() => void) | undefined;
+  let disposed = false;
+  listen<HotkeyStatus>("hotkey-status", (e) => handler(e.payload))
+    .then((fn) => (disposed ? fn() : (unlisten = fn)))
+    .catch((err: unknown) => console.error("listen hotkey-status failed", err));
+  return () => {
+    disposed = true;
+    unlisten?.();
+  };
+}

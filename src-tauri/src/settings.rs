@@ -314,9 +314,13 @@ pub fn apply<R: Runtime>(
     for w in &warnings {
         eprintln!("winbar settings: {w}");
     }
+    let previous_hotkey = state.get().hotkeys.command_bar;
     save(&state.path, &next)?;
     *state.current.lock().map_err(|e| e.to_string())? = next.clone();
     crate::tray::sync_settings(app, &next);
+    if previous_hotkey != next.hotkeys.command_bar {
+        crate::hotkeys::apply(app, &next.hotkeys.command_bar);
+    }
     app.emit(SETTINGS_CHANGED, &next)
         .map_err(|e| e.to_string())?;
     Ok(next)
