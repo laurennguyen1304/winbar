@@ -72,7 +72,7 @@ impl AppsState {
         }
     }
 
-    fn find(&self, id: &str) -> Option<AppEntry> {
+    pub fn find(&self, id: &str) -> Option<AppEntry> {
         self.current().iter().find(|a| a.id == id).cloned()
     }
 }
@@ -85,7 +85,11 @@ pub async fn refresh<R: Runtime>(app: &AppHandle<R>) {
     }
     let listed = tauri::async_runtime::spawn_blocking(enumerate).await;
     match listed {
-        Ok(Ok(apps)) => state.store(clean(apps)),
+        Ok(Ok(apps)) => {
+            let apps = clean(apps);
+            super::icons::warm_app_icons(app, apps.clone());
+            state.store(apps);
+        }
         Ok(Err(e)) => eprintln!("winbar apps: listing failed: {e}"),
         Err(e) => eprintln!("winbar apps: listing task failed: {e}"),
     }

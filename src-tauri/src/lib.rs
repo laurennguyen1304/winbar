@@ -18,6 +18,7 @@ pub fn run() {
         .manage(hotkeys::HotkeyState::default())
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
+        .manage(command_bar::icons::IconsState::default())
         .invoke_handler(tauri::generate_handler![
             window::notch_layout,
             command_bar::command_bar_hide,
@@ -27,6 +28,7 @@ pub fn run() {
             command_bar::apps::launch_app,
             command_bar::apps::reveal_app,
             command_bar::files::search_files,
+            command_bar::icons::shell_icons,
             command_bar::launch::open_path,
             command_bar::launch::open_url,
             command_bar::launch::reveal_path,

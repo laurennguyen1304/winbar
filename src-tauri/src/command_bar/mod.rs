@@ -3,6 +3,7 @@
 
 pub mod apps;
 pub mod files;
+pub mod icons;
 pub mod launch;
 pub mod placement;
 

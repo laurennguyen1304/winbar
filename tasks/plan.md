@@ -51,7 +51,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 
 ### Giai đoạn 3 — App và lịch sử
 - [x] Task 7: Liệt kê app (AppsFolder), chấm điểm tên, mở app
-- [ ] Task 8: Icon app (PNG cache, tải dần)
+- [x] Task 8: Icon app (PNG cache, tải dần)
 - [ ] Task 9: Lịch sử + nhóm "Gần đây"
 
 ### Checkpoint 2 — (dời lên sau Task 11, xem "Thứ tự làm")

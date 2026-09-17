@@ -40,6 +40,7 @@ vi.mock("./native", () => ({
   openPath: () => Promise.resolve(),
   openUrl: () => Promise.resolve(),
   listApps: () => Promise.resolve([]),
+  shellIcons: (specs: string[]) => Promise.resolve(specs.map(() => null)),
   launchApp: () => Promise.resolve(),
   revealApp: () => Promise.resolve(),
   revealPath: () => Promise.resolve(),

@@ -34,8 +34,8 @@ describe("files provider", () => {
     const rows = await pending;
     expect(native.search).toHaveBeenCalledWith("brief", expect.any(Number));
     expect(rows.map((r) => [r.title, r.subtitle, r.icon, r.verb])).toEqual([
-      ["brief.docx", "Documents", "file", "Mở"],
-      ["Briefs", "Thư mục người dùng", "folder", "Mở"],
+      ["brief.docx", "Documents", "shell:file:C:/Users/me/Documents/brief.docx", "Mở"],
+      ["Briefs", "Thư mục người dùng", "shell:folder:C:/Users/me/Briefs", "Mở"],
     ]);
     await rows[0].run();
     await rows[0].runAlt?.();

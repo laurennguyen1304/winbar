@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Icon, isIconName } from "../shell/Icon";
+import { SHELL_ICON, useShellIcon } from "./icons";
 import type { SearchResult } from "../shell/widget-contract";
 import type { Instant } from "./instant";
 import type { Group } from "./search";
@@ -22,8 +23,21 @@ export const flattenRows = (groups: readonly Group[]): Row[] =>
 
 const IMAGE_ICON = /^(data:|https?:|asset:|\/)/;
 
+/** Real icon from Windows; the first letter (apps) or a generic file/folder icon until it arrives or if there is none. */
+function ShellTile({ spec, title }: { spec: string; title: string }) {
+  const url = useShellIcon(spec);
+  if (url) return <img className={styles.tile} src={url} alt="" />;
+  const generic = spec.startsWith("shell:folder:") ? "folder" : spec.startsWith("shell:file:") ? "file" : undefined;
+  return (
+    <span className={styles.tile} aria-hidden>
+      {generic ? <Icon name={generic} size={16} /> : title.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
 function Tile({ result }: { result: SearchResult }) {
   const { icon } = result;
+  if (icon?.startsWith(SHELL_ICON)) return <ShellTile spec={icon} title={result.title} />;
   if (icon && IMAGE_ICON.test(icon)) return <img className={styles.tile} src={icon} alt="" />;
   return (
     <span className={styles.tile} aria-hidden>

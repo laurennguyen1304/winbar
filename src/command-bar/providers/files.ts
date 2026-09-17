@@ -1,5 +1,6 @@
 // "File" group of the command bar (SPEC-command-bar §5.4): a running Everything, else the Windows Search index.
 import type { SearchProvider, SearchResult } from "../../shell/widget-contract";
+import { fileIcon } from "../icons";
 import { openPath, revealPath, searchFiles, type FileSearch } from "../native";
 
 /** Wait after the last keystroke before asking the index. */
@@ -80,7 +81,7 @@ export function createFilesProvider(native: FilesNative = { search: searchFiles,
         id: hit.path,
         title: hit.name,
         subtitle: hit.location,
-        icon: hit.folder ? "folder" : "file",
+        icon: fileIcon(hit.path, hit.folder),
         verb: "Mở",
         run: () => native.open(hit.path),
         runAlt: () => native.reveal(hit.path),

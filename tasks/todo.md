@@ -286,13 +286,17 @@
 - **Cache:** khóa theo id + thời gian sửa của file đích.
 
 **Tiêu chí chấp nhận:**
-- [ ] App desktop và app Store đều có icon thật, sắc nét ở 125%.
-- [ ] Lần mở thứ hai đọc từ cache (không gọi COM lại). Xóa thư mục cache thì tự tạo lại.
-- [ ] Asset protocol chỉ đọc được thư mục icons.
+- [x] App desktop và app Store đều có icon thật (VS Code, Chrome… kiểm trên ảnh chụp). Icon vẽ 48px, hiện 32px, nét ở 125%.
+- [x] Lần mở thứ hai đọc từ cache: 187 icon app tạo sẵn lúc khởi động vào `%LOCALAPPDATA%\winbar\icons`, lấy 5 icon mất 7ms. Xóa thư mục thì tự tạo lại (tên file theo hash).
+- [x] ~~Asset protocol chỉ đọc thư mục icons~~ → **đổi cách**: trả data URL, không bật asset protocol nên không phải mở phạm vi đọc file cho trang.
 
-**Kiểm tra:**
-- [ ] `cargo test` (tên file cache, phạm vi đường dẫn), clippy, `npm test`, lint qua.
-- [ ] Thủ công: so icon với menu Start; đo thời gian tạo lần đầu cho toàn bộ app.
+**Kiểm tra:** (2026-09-17)
+- [x] `cargo test` 63:
+  - icons 7: đọc spec, icon chung theo đuôi file, exe/lnk/thư mục khóa riêng, icon app theo thời gian sửa exe, hash tên file ổn định, base64, **vẽ thật icon thư mục ra PNG**;
+  - clippy sạch.
+- [x] `npm test` 258 (icon store 5: gộp yêu cầu + nhớ, chia lô 32, lỗi thành "không có icon", hook render lại khi có icon) · lint sạch.
+- [x] Thủ công: ảnh chụp command bar với `code` (icon VS Code) và `/f spec` (icon Notion cho .md theo app mặc định, icon thư mục, icon file chung).
+- [x] Sửa thêm: thanh cuộn vùng kết quả đổi thành thanh mảnh trong suốt, thay thanh mặc định của Windows.
 
 **Phụ thuộc:** Task 7
 **File dự kiến:** `src-tauri/src/command_bar/icons.rs`, `src-tauri/tauri.conf.json` (asset scope), `src/command-bar/providers/apps.ts`, `src/command-bar/ResultList.tsx`

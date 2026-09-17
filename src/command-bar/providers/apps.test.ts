@@ -23,7 +23,9 @@ describe("apps provider", () => {
     const native = fakeNative();
     const provider = createAppsProvider(native);
     const rows = await provider.search("vsc", signal());
-    expect(rows.map((r) => [r.title, r.subtitle, r.verb])).toEqual([["Visual Studio Code", "Ứng dụng", "Mở"]]);
+    expect(rows.map((r) => [r.title, r.subtitle, r.icon, r.verb])).toEqual([
+      ["Visual Studio Code", "Ứng dụng", "shell:app:Microsoft.VisualStudioCode", "Mở"],
+    ]);
     expect(rows[0].score).toBeGreaterThan(0);
     await rows[0].run();
     expect(native.launch).toHaveBeenCalledWith("Microsoft.VisualStudioCode");

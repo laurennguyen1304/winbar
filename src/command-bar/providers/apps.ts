@@ -1,5 +1,6 @@
 // "Ứng dụng" group (SPEC-command-bar §5.4): Start menu apps listed by Rust, ranked here by name.
 import type { SearchProvider } from "../../shell/widget-contract";
+import { appIcon } from "../icons";
 import { launchApp, listApps, revealApp, type AppEntry } from "../native";
 import { rankNames } from "../rank";
 
@@ -37,6 +38,7 @@ export function createAppsProvider(
         id: item.id,
         title: item.name,
         subtitle: "Ứng dụng",
+        icon: appIcon(item.id),
         verb: "Mở",
         score,
         run: () => native.launch(item.id),

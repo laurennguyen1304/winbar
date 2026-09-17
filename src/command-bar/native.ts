@@ -67,6 +67,12 @@ export async function revealApp(id: string): Promise<void> {
   await invoke("reveal_app", { id });
 }
 
+/** Data URLs for icon specs (src-tauri/src/command_bar/icons.rs), in order; null where there is none. */
+export async function shellIcons(specs: string[]): Promise<Array<string | null>> {
+  if (!isTauri()) return specs.map(() => null);
+  return invoke<Array<string | null>>("shell_icons", { specs });
+}
+
 // ---------------------------------------------------------------- files (src-tauri/src/command_bar/files, launch.rs)
 
 export interface FileHit {
