@@ -17,11 +17,15 @@ pub fn run() {
         .manage(window::NotchState::default())
         .manage(hotkeys::HotkeyState::default())
         .manage(command_bar::files::FileSearchState::default())
+        .manage(command_bar::apps::AppsState::default())
         .invoke_handler(tauri::generate_handler![
             window::notch_layout,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
             command_bar::command_bar_save_position,
+            command_bar::apps::list_apps,
+            command_bar::apps::launch_app,
+            command_bar::apps::reveal_app,
             command_bar::files::search_files,
             command_bar::launch::open_path,
             command_bar::launch::open_url,
@@ -41,6 +45,7 @@ pub fn run() {
             startup::sync_autostart(app.handle(), initial.launch_at_startup);
             window::create(app.handle())?;
             command_bar::create(app.handle())?;
+            command_bar::apps::warm_up(app.handle());
             tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());
             Ok(())

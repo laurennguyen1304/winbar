@@ -42,6 +42,31 @@ export function onCommandBarOpened(handler: (opened: Opened) => void): () => voi
   );
 }
 
+// ---------------------------------------------------------------- apps (src-tauri/src/command_bar/apps.rs)
+
+export interface AppEntry {
+  /** AppsFolder id: an AUMID or a path-like id. */
+  id: string;
+  name: string;
+  /** Executable behind the Start shortcut; Store apps have none. */
+  path: string | null;
+}
+
+export async function listApps(): Promise<AppEntry[]> {
+  if (!isTauri()) return [];
+  return invoke<AppEntry[]>("list_apps");
+}
+
+export async function launchApp(id: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("launch_app", { id });
+}
+
+export async function revealApp(id: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("reveal_app", { id });
+}
+
 // ---------------------------------------------------------------- files (src-tauri/src/command_bar/files, launch.rs)
 
 export interface FileHit {

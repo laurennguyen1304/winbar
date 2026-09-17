@@ -530,9 +530,8 @@ mod tests {
             json!({ "x": 9_000_000, "y": 5 }),
             json!([1, 2]),
         ] {
-            let (s, w) = from_value(
-                &json!({ "commandBar": { "position": bad, "webSearch": "youtube" } }),
-            );
+            let (s, w) =
+                from_value(&json!({ "commandBar": { "position": bad, "webSearch": "youtube" } }));
             assert_eq!(s.command_bar.position, None, "{bad}");
             assert_eq!(s.command_bar.web_search, "youtube");
             assert_eq!(w.len(), 1, "{bad}");

@@ -251,14 +251,27 @@
 - **Dòng app:** tile chữ cái đầu (icon ở Task 8).
 
 **Tiêu chí chấp nhận:**
-- [ ] Test `rank.ts`: 6 bậc, "vsc" → Visual Studio Code, "cai dat" khớp "Cài đặt", không khớp → loại.
-- [ ] Test Rust: `launch` từ chối id không có trong danh sách.
-- [ ] Số app liệt kê ≈ `Get-StartApps` (196 trên máy này). "code", "term", "vsc", "sett" ra app đúng trong 3 dòng đầu.
-- [ ] Mở được app desktop và app Store (Calculator, Settings).
+- [x] Test `rank.ts`: 6 bậc, "vsc" → Visual Studio Code, "cai dat" khớp "Cài đặt", không khớp → loại.
+- [x] Test Rust: `launch_app` từ chối id không có trong danh sách (kiểm cả khi chạy thật: `unknown app id "not-an-app"`).
+- [x] Số app ≈ `Get-StartApps`: 187 sau khi lọc link web/gỡ cài đặt (196 trước lọc), 133 có đường dẫn exe.
+  "code", "term", "vsc", "sett" ra đúng app ở dòng đầu.
+- [ ] Mở được app desktop và app Store → bạn thử (mình không tự mở app trên máy bạn).
 
-**Kiểm tra:**
-- [ ] `cargo test`, clippy, `npm test`, lint qua.
-- [ ] Thủ công: mở 3 app desktop + 2 app Store; Ctrl+Enter trên VS Code mở thư mục cài.
+**Kiểm tra:** (2026-09-17)
+- [x] `cargo test` 56:
+  - apps 3: lọc danh sách, trạng thái, **liệt kê thật Start menu máy này**;
+  - clippy sạch.
+- [x] `npm test` 253:
+  - rank 17;
+  - apps provider 4: xếp hạng + mở theo id, Ctrl+Enter chỉ khi có exe, cache 1 phút, thử lại sau lỗi.
+- [x] Lint sạch.
+- [x] Thủ công qua trang (app dev): danh sách 187 app trả về trong 8ms (đã nạp sẵn lúc khởi động);
+  `code` → Visual Studio Code, `term` → Terminal, `vsc` → Visual Studio Code, `sett` → Settings, WSL Settings, `chrome` → Google Chrome, `slack` → Slack.
+
+**Ghi chú:**
+- Khớp "các chữ cái theo thứ tự" chỉ dùng khi không có kiểu khớp nào tốt hơn. Lúc chạy thật, `code` ra cả "Microsoft Edge", "Steps Recorder"… nên đã tắt trường hợp đó.
+- Liệt kê lại khi danh sách cũ hơn 10 phút. Chưa theo dõi thay đổi thư mục Start Menu; cài app mới thì chờ tối đa 10 phút.
+- Icon: tạm chữ cái đầu, icon thật ở Task 8.
 
 **Phụ thuộc:** Checkpoint 1, Task 6 (`launch.rs`)
 **File dự kiến:** `src-tauri/src/command_bar/apps.rs`, `src-tauri/src/command_bar/launch.rs`, `src-tauri/Cargo.toml` (crate `windows`), `src/command-bar/rank.ts` (+ test), `src/command-bar/providers/apps.ts`

@@ -39,6 +39,9 @@ vi.mock("./native", () => ({
   searchFiles: (_q: string, generation: number) => Promise.resolve({ generation, source: "off", hits: [], error: null }),
   openPath: () => Promise.resolve(),
   openUrl: () => Promise.resolve(),
+  listApps: () => Promise.resolve([]),
+  launchApp: () => Promise.resolve(),
+  revealApp: () => Promise.resolve(),
   revealPath: () => Promise.resolve(),
   saveCommandBarPosition: native.save,
   onMoved: (h: () => void) => {

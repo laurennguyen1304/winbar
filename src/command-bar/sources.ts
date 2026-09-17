@@ -1,12 +1,16 @@
 // Which providers the command bar asks, in group order (SPEC-command-bar §5.4). Built-in sources join in later tasks.
 import { mergeWidgets, type Settings, type WidgetSetting } from "../shell/settings";
 import type { WidgetDefinition } from "../shell/widget-contract";
+import { createAppsProvider } from "./providers/apps";
 import { createFilesProvider } from "./providers/files";
 import { createEngineProvider, createWebProvider, ENGINES, type EngineId } from "./providers/web";
 import type { Slot } from "./search";
 
 /** Rows per group without a prefix (SPEC-command-bar §5.4). */
+export const APPS_LIMIT = 6;
 export const FILES_LIMIT = 4;
+
+const apps: Slot = { provider: createAppsProvider(), limit: APPS_LIMIT };
 
 /** Built-in sources, created once for the window: the files provider numbers its requests. */
 const files: Slot = { provider: createFilesProvider(), limit: FILES_LIMIT };
@@ -31,8 +35,8 @@ const web: Slot = { provider: createWebProvider(() => preferredEngine), limit: 1
 /** /g /y /r /x: one site each, only through the command. */
 const engines: Slot[] = ENGINES.map((engine) => ({ provider: createEngineProvider(engine), limit: 1 }));
 
-/** Every slot in group order: built-in sources, widgets, site commands, then the web fallback. */
+/** Every slot in group order: apps, files, widgets, site commands, then the web fallback. */
 export function allSlots(settings: Settings, registered: readonly WidgetDefinition[]): Slot[] {
   preferredEngine = settings.commandBar.webSearch;
-  return [files, ...widgetSlots(settings.widgets, registered), ...engines, web];
+  return [apps, files, ...widgetSlots(settings.widgets, registered), ...engines, web];
 }

@@ -50,7 +50,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 - [ ] Task 6: Tìm web + hành động winbar + lệnh `launch` an toàn
 
 ### Giai đoạn 3 — App và lịch sử
-- [ ] Task 7: Liệt kê app (AppsFolder), chấm điểm tên, mở app
+- [x] Task 7: Liệt kê app (AppsFolder), chấm điểm tên, mở app
 - [ ] Task 8: Icon app (PNG cache, tải dần)
 - [ ] Task 9: Lịch sử + nhóm "Gần đây"
 

@@ -31,6 +31,14 @@ fn shell_open(target: &Path) -> Result<(), String> {
     }
 }
 
+/// Opens a target already checked by the caller, e.g. `shell:AppsFolder\<id>` for a listed app.
+pub fn open_shell_target(target: &str) -> Result<(), String> {
+    #[cfg(windows)]
+    return shell_open(Path::new(target));
+    #[cfg(not(windows))]
+    return Err(format!("unsupported platform for {target}"));
+}
+
 /// A web address the command bar may hand to the browser: `http`/`https` only, no spaces or control characters.
 pub fn web_url(url: &str) -> Result<&str, String> {
     let lower = url.to_ascii_lowercase();
