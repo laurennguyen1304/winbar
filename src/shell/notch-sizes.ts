@@ -9,10 +9,11 @@ export interface Size {
   height: number;
 }
 
+/** Heights 32/36/40 chosen on the machine with the attached notch (SPEC §15 V5, 2026-09-17). */
 export const PILL_SIZES: Record<PillSize, Size> = {
-  s: { width: 300, height: 36 },
-  m: { width: 340, height: 40 },
-  l: { width: 400, height: 46 },
+  s: { width: 300, height: 32 },
+  m: { width: 340, height: 36 },
+  l: { width: 400, height: 40 },
 };
 
 export const ALWAYS_SIZES: Record<AlwaysSize, Size> = {

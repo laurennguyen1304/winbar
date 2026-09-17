@@ -64,7 +64,7 @@ describe("notchPropsFrom", () => {
 
   it("maps sizes, gap, mode, priority and font scale", () => {
     const props = notchPropsFrom(settings, registered);
-    expect(props.pillSize).toEqual({ width: 400, height: 46 });
+    expect(props.pillSize).toEqual({ width: 400, height: 40 });
     expect(props.alwaysSize).toEqual({ width: 700, height: 76 });
     expect(props.panelWidth).toBe(720);
     expect(props.topGap).toBe(40);

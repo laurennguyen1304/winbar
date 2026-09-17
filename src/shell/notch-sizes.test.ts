@@ -3,17 +3,21 @@ import { ALWAYS_SIZES, PANEL_WIDTHS, PILL_SIZES, alertSize, panelHeight, pillRad
 
 describe("notch sizes", () => {
   it("matches the approved defaults", () => {
-    expect(PILL_SIZES.m).toEqual({ width: 340, height: 40 });
+    expect(PILL_SIZES).toEqual({
+      s: { width: 300, height: 32 },
+      m: { width: 340, height: 36 },
+      l: { width: 400, height: 40 },
+    });
     expect(ALWAYS_SIZES.m).toEqual({ width: 620, height: 64 });
     expect(PANEL_WIDTHS.m).toBe(780);
   });
 
   it("derives the alert pill from the regular pill", () => {
-    expect(alertSize(PILL_SIZES.m)).toEqual({ width: 490, height: 44 });
+    expect(alertSize(PILL_SIZES.m)).toEqual({ width: 490, height: 40 });
   });
 
   it("rounds pill ends fully", () => {
-    expect(pillRadius(PILL_SIZES.l)).toBe(23);
+    expect(pillRadius(PILL_SIZES.l)).toBe(20);
   });
 
   it("sizes the panel to its content within limits", () => {

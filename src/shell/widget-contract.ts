@@ -12,7 +12,7 @@ export interface WidgetDefinition {
   description: string;
   /** Content of the widget's card in the expanded panel. */
   Card: ComponentType;
-  /** Content of the 340×40 pill when this widget has pill priority. */
+  /** Content of the 340×36 pill when this widget has pill priority. */
   Pill?: ComponentType;
   /** Half of the 620×64 always-mode pill. */
   MidPill?: ComponentType;

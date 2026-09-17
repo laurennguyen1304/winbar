@@ -45,7 +45,7 @@
 **Quy mô:** M
 
 ## Checkpoint 1
-- [ ] Bạn xem trên máy thật: hình dạng, nền, kéo; chốt chiều cao pill (S/M/L hay cỡ mới)
+- [x] Bạn xem trên máy thật: hình dạng, nền, kéo; chốt chiều cao pill → **32/36/40** (2026-09-17)
 
 ### Task 3: Sticky (Windows AppBar)
 

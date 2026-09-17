@@ -75,7 +75,7 @@ Format:        npm run format      (prettier) ; cargo fmt --manifest-path src-ta
 
 | Trạng thái | Khi nào | Kích thước mặc định | Nội dung |
 |---|---|---|---|
-| `pill` | Mode `hover`/`click`, đang thu gọn, không có alert | 340×40 | `Pill` của widget ưu tiên |
+| `pill` | Mode `hover`/`click`, đang thu gọn, không có alert | 340×36 | `Pill` của widget ưu tiên |
 | `alert` | Mode `hover`/`click`, đang thu gọn, có alert | rộng pill + 150, cao pill + 4 | Alert đầu hàng đợi, kèm nút hành động |
 | `always` | Mode `always`, đang thu gọn | 620×64 | `MidPill` của 2 widget: ưu tiên trước, rồi widget kế tiếp; nếu có alert thì hiện alert |
 | `expanded` | Người dùng mở | rộng 780, cao theo nội dung (tối đa 80% chiều cao màn hình, phần dư cuộn) | Thanh tab + card của các widget đang bật |
@@ -134,7 +134,7 @@ export interface WidgetDefinition {
   title: string;                          // hiện trong Cài đặt › Widget
   description: string;
   Card: React.ComponentType;              // nội dung trong panel mở rộng
-  Pill?: React.ComponentType;             // nội dung pill 340×40 khi là widget ưu tiên
+  Pill?: React.ComponentType;             // nội dung pill 340×36 khi là widget ưu tiên
   MidPill?: React.ComponentType;          // nửa pill always 620×64
   Background?: React.ComponentType;       // luôn mount khi widget bật, không hiện gì; chạy việc nền (vd. theo dõi và đẩy alert khi panel đóng)
   layout?: { tall?: boolean };            // tall: chiếm riêng một cột (vd. clipboard)
@@ -190,7 +190,7 @@ Lưu ở `%APPDATA%\winbar\settings.json` (Rust tự đọc/ghi JSON, ghi nguyê
 
 | Trường | Giá trị hợp lệ |
 |---|---|
-| `pill.size` | `s` 300×36 · `m` 340×40 · `l` 400×46 |
+| `pill.size` | `s` 300×32 · `m` 340×36 · `l` 400×40 (đổi 2026-09-17, §15 V5) |
 | `pill.alwaysSize` | `m` 620×64 · `l` 700×76 |
 | `pill.panelWidth` | `s` 720 · `m` 780 · `l` 860 |
 | `pill.topGap` | 0–48 (px) — *mở rộng từ 0–24 ở Task 9 để đặt được pill dưới thanh yasb (R6)* |
@@ -311,7 +311,7 @@ Mockup: `design/notch-upgrade-mockup.html`. Bạn chốt sau khi xem mockup:
 | V2 | **Nền liquid glass** (`pill.material = "liquid"`) | Windows không làm mờ phía sau (spike), nên giả lập: thân trong hơn có ánh màu, vệt sáng phía trên, viền sáng ở hai đầu, mép trong mờ. **Mặc định.** `"dense"` giữ nền đặc cũ |
 | V3 | **Kéo ngang** | Nhấn giữ notch và kéo; di quá 6px mới tính là kéo (bấm để mở vẫn dùng được). Chỉ trượt dọc mép trên, không hít vào giữa. Lưu `pill.offsetX` (px logic tính từ giữa màn hình). Cài đặt có nút "Về giữa" |
 | V4 | **Sticky** (`pill.sticky`) | Giữ chỗ phía trên bằng Windows AppBar, cao bằng notch thu gọn, hết chiều ngang. **Notch nằm trong dải đó** (sửa 2026-09-17: Windows dời cửa sổ notch xuống dưới dải mới, nên đặt lại sau mỗi lần giữ chỗ). Có AppBar khác ở cạnh trên (YASB) thì dải và notch nằm ngay dưới nó. Cửa sổ phóng to bắt đầu dưới dải; panel mở rộng vẫn nổi đè. **Mặc định tắt** |
-| V5 | Chiều cao | Bạn xem trên máy thật rồi quyết có giảm chiều cao pill không (dùng thử cỡ S/M/L đang có: 36/40/46) |
+| V5 | Chiều cao | Chốt trên máy (2026-09-17): pill S/M/L cao **32/36/40**, rộng giữ 300/340/400. Alert vẫn +150×+4 |
 | V6 | Emoji trạng thái Claude | Nhận thêm file theo trạng thái; định dạng WebP động (hoặc APNG), gấp đôi cỡ hiển thị, nền trong suốt |
 
 Cài đặt thêm (validate từng trường như §7):

@@ -226,7 +226,7 @@ Kiểm trên app dev bằng sự kiện con trỏ giả lập trong webview (kh�
 
 ## V5. Chiều cao pill
 
-- [ ] 👤 Chưa chốt. Thử Nhỏ 36 / Vừa 40 / Lớn 46 trong Cài đặt. Cần thấp hơn (ví dụ 32) thì thêm cỡ mới.
+- [x] ✅ Bạn chốt Nhỏ 32 / Vừa 36 / Lớn 40 (rộng giữ nguyên). Trên máy: Nhỏ 410×40 vật lý = 328×32 logic (gồm loe), Lớn 535×50 = 428×40.
 
 ## Hiệu năng v2
 

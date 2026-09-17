@@ -46,7 +46,7 @@ describe("SettingsApp", () => {
 
   it("shows both previews and every section", async () => {
     await renderLoaded();
-    expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "340px", height: "40px" });
+    expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "340px", height: "36px" });
     expect(screen.getByTestId("preview-always")).toHaveStyle({ width: "620px", height: "64px" });
     for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt", "Command bar", "Chung"])
       expect(screen.getByRole("link", { name })).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe("SettingsApp", () => {
     const group = screen.getByRole("radiogroup", { name: "Kích thước pill" });
     fireEvent.click(within(group).getByRole("radio", { name: "Lớn" }));
     await waitFor(() => expect(lastSaved().pill.size).toBe("l"));
-    await waitFor(() => expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "400px", height: "46px" }));
+    await waitFor(() => expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "400px", height: "40px" }));
   });
 
   it("saves the notch layout and material", async () => {

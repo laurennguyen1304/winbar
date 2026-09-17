@@ -1,6 +1,6 @@
 import type { WidgetDefinition, WidgetId } from "./widget-contract";
 
-/** Widget shown on the 340×40 pill: the priority widget if it has pill content, else the first widget that does. */
+/** Widget shown on the 340×36 pill: the priority widget if it has pill content, else the first widget that does. */
 export function pickPill(widgets: readonly WidgetDefinition[], priority: WidgetId | undefined): WidgetDefinition | undefined {
   return widgets.find((w) => w.id === priority && w.Pill) ?? widgets.find((w) => w.Pill);
 }
