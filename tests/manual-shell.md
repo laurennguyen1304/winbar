@@ -159,3 +159,86 @@ So ảnh chụp thật (hover mở, always, alert) với `design/winbar-mockup.h
 - [x] Đã xóa `%APPDATA%\winbar\settings.json` dùng để test.
 - [x] Không còn mục `Run\winbar`.
 - [x] Không còn tiến trình winbar hay Vite.
+
+---
+
+# v2: giọt nước, liquid glass, kéo ngang, sticky
+
+> Spec: `SPEC-notch-shell.md` §15 · Plan: `tasks/plan.md` · Chạy: 2026-09-17 (Task 4)
+> Cùng máy như trên. YASB đang chạy và giữ 47px phía trên màn hình.
+
+## V1. Dạng giọt nước (mặc định)
+
+- [x] ✅ Cửa sổ dính mép trên, rộng thêm 2×14px cho phần loe: pill 460×50 tại y=0 (368×40 logic).
+- [x] ✅ Viền là một nét liền. Phóng to ảnh chụp chỗ phần loe nối vào thân: không có vệt thẳng.
+- [x] ✅ Đúng hình ở cả bốn trạng thái: pill, always, cảnh báo (490×44 + loe), panel mở rộng.
+- [x] ✅ `float` + `dense`: cách mép 8px, bo tròn đều, nền đặc như v1.
+- [x] ✅ Đổi Kiểu notch / Nền notch trong Cài đặt: notch đổi ngay.
+- [x] ⚠️ Hai góc loe vẫn thuộc cửa sổ (hình chữ nhật), nên vài px trong suốt ở đó không click xuyên được. Đã ghi trong spec §15.
+
+## V2. Nền liquid glass (mặc định)
+
+- [x] ✅ Pill: thân trong (74–80%), vệt sáng phía trên, viền sáng hai đầu, mép trong mờ, giống mockup.
+- [x] ⚠️ Panel mở dùng nền dày hơn mockup (88–90%). Ở độ trong của mockup, chữ của cửa sổ phía sau lộ ra, khó đọc.
+- [ ] 👤 Chưa chụp trên nền sáng: dưới notch lúc test là YASB và terminal tối. Mở một trang trắng phóng to, xem pill và panel có dễ đọc không. Nếu khó đọc, chọn Nền notch › Đặc.
+
+## V3. Kéo ngang
+
+Kiểm trên app dev bằng sự kiện con trỏ giả lập trong webview (không dùng chuột thật).
+
+- [x] ✅ Kéo sang trái 300px logic: cửa sổ dời từ x=730 sang x=355, tức 375px vật lý ở 125%. Lưu `pill.offsetX = −300`.
+- [x] ✅ Kéo quá mép trái: dừng ở x=0, lưu −584.
+- [x] ✅ Không hít vào giữa; cú bấm cuối lúc thả không mở panel.
+- [x] ✅ Bấm (di < 6px) vẫn mở; nhấn giữ hủy hẹn giờ hover (test `Notch.test.tsx`, `notch-machine.test.ts`).
+- [x] ✅ Tải lại notch khi đang lệch −300: cửa sổ hiện thẳng ở x=355, không nhảy từ giữa.
+- [x] ✅ Nút "Về giữa" trong Cài đặt đưa về 0 (test `SettingsApp.test.tsx`, và trên app).
+- [x] ✅ Kẹp mép màn hình ở 100/125/150% và màn có gốc âm: test Rust `window.rs`.
+- [ ] 👤 Kéo bằng chuột thật xem có mượt không, nhất là kéo nhanh.
+
+## V4. Sticky (mặc định tắt)
+
+Đo mép trên vùng làm việc (`SPI_GETWORKAREA`, px vật lý). Trước khi bật: 47 (YASB).
+
+| Bước | Mép trên | Kết quả |
+|---|---|---|
+| Bật, pill 40 logic | 97 | ✅ +50 = 40 × 1.25 |
+| Chế độ always, 64 logic | 127 | ✅ +80 |
+| Tắt | 47 | ✅ trả lại |
+| Bản release, bật rồi "Thoát winbar" | 47 | ✅ trả lại ngay |
+| Mở lại khi sticky đang lưu là bật | 97 | ✅ tự giữ chỗ lại |
+| Tắt ngang tiến trình (`Stop-Process -Force`) | 47 | ✅ Windows tự gỡ ngay |
+
+- [x] ✅ Test Rust: chiều cao dải theo DPI và gốc màn hình (`sticky.rs`). Test TS: theo layout, always, khoảng cách mép (`notch-shape.test.ts`, `Notch.test.tsx`).
+- [x] ⚠️ Có YASB: Windows xếp dải của winbar **dưới** YASB (47→97), còn notch vẫn ở mép trên, đè lên YASB. Giữa YASB và cửa sổ phóng to có khoảng trống cao bằng notch. Hết khi gỡ YASB. Đã ghi trong Cài đặt.
+- [ ] 👤 Bật Sticky, mở trình duyệt phóng to: trang bắt đầu dưới dải, panel mở vẫn nổi đè lên.
+
+## V5. Chiều cao pill
+
+- [ ] 👤 Chưa chốt. Thử Nhỏ 36 / Vừa 40 / Lớn 46 trong Cài đặt. Cần thấp hơn (ví dụ 32) thì thêm cỡ mới.
+
+## Hiệu năng v2
+
+Bản release, không bật cổng debug. Đo từ giây 60 sau khi mở, pill thu gọn, command bar đóng, 8 tiến trình.
+
+| Thời điểm | Task Manager ("Memory") | Private bytes |
+|---|---|---|
+| +35s | 109.5 MB | 182.6 MB |
+| +98s | 109.2 MB | 182.2 MB |
+| +193s | 109.1 MB | 182.1 MB |
+
+- [x] ✅ CPU trung bình **0.003%** trên 12 nhân trong 193s: nền liquid là CSS tĩnh, không tốn khi đứng yên.
+- [x] ✅ RAM theo Task Manager **109 MB** < 150 MB, không tăng dần. Bằng lần đo sau command-bar (109–116 MB): v2 không làm tăng RAM.
+
+## Tự động v2
+
+- [x] ✅ `npm test`: 31 file, 307 test.
+- [x] ✅ `cargo test`: 80 test. `cargo clippy -D warnings`: sạch.
+- [x] ✅ `npm run lint`: sạch.
+- [x] ✅ `npm run tauri build -- --no-bundle`: `winbar.exe` 4.5 MB.
+
+## Dọn dẹp sau lần chạy v2
+
+- [x] Trả `settings.json` từ bản sao lưu (bản release đã bỏ widget demo). Giữ `offsetX −233` bạn tự kéo.
+- [x] Gỡ `Run\winbar` do bản release thêm vào.
+- [x] Sticky tắt, vùng làm việc về 47.
+- [x] Tắt bản release, mở lại app dev.

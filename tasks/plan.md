@@ -22,13 +22,13 @@ Bạn muốn xem hình dạng thật trên máy sớm để quyết chiều cao,
 
 ## Danh sách task
 
-- [ ] Task 1: Dạng giọt nước + nền liquid glass (cài đặt `layout`, `material`)
-- [ ] Task 2: Kéo ngang dọc mép trên + lưu `offsetX` + "Về giữa"
+- [x] Task 1: Dạng giọt nước + nền liquid glass (cài đặt `layout`, `material`)
+- [x] Task 2: Kéo ngang dọc mép trên + lưu `offsetX` + "Về giữa"
 
 ### Checkpoint 1 — Bạn xem trên máy, chốt chiều cao pill
 
-- [ ] Task 3: Sticky (Windows AppBar)
-- [ ] Task 4: Đo, checklist thủ công, so mockup
+- [x] Task 3: Sticky (Windows AppBar)
+- [x] Task 4: Đo, checklist thủ công, so mockup
 
 ## Rủi ro
 

@@ -21,7 +21,7 @@
 
 **Kiểm tra:**
 - [x] `npm test`, `cargo test`, clippy, `npm run lint` qua.
-- [ ] Thủ công: ảnh chụp app thật ở cả 4 trạng thái trên nền sáng và tối.
+- [x] Thủ công: ảnh chụp app thật ở cả 4 trạng thái trên nền tối (Task 4). Nền sáng: 👤 trong `tests/manual-shell.md` V2.
   - 2026-09-17: đã chụp pill, always, mở rộng (attached/liquid và float/dense) trên nền tối. Panel mở dùng nền liquid dày hơn (0.88–0.9) cho dễ đọc. Còn: nền sáng + alert, xem ở Checkpoint 1.
 
 **File dự kiến:** `src/shell/notch-shape.ts` (+ test), `src/shell/NotchShape.tsx`, `src/shell/Notch.tsx`, `src/shell/Notch.module.css`, `src/shell/PillPreview.tsx`, `src/shell/settings.ts`, `src-tauri/src/settings.rs`, `src/settings/SettingsApp.tsx`
@@ -57,7 +57,7 @@
 
 **Tiêu chí chấp nhận:**
 - [x] Bật: cửa sổ phóng to (browser) bắt đầu dưới notch. Tắt hoặc thoát: trả lại toàn màn hình.
-- [ ] Không để lại vùng giữ chỗ sau khi thoát.
+- [x] Không để lại vùng giữ chỗ sau khi thoát.
 - [x] Test Rust: tính chiều cao dải giữ chỗ theo layout/kích thước/DPI.
 
 - 2026-09-17: đo vùng làm việc trên máy (125%, YASB giữ 47px): bật → mép trên 97 (+50), always → 127 (+80), tắt → 47. Dải nằm ngay dưới YASB (shell xếp AppBar chồng nhau). Gỡ khi thoát qua RunEvent ExitRequested/Exit; chưa thử thoát thật (sẽ tắt app dev) và chưa kiểm chứng trường hợp app bị tắt ngang.
@@ -68,8 +68,8 @@
 ### Task 4: Đo, checklist thủ công, so mockup
 
 **Tiêu chí chấp nhận:**
-- [ ] CPU < 1%, RAM Task Manager < 150 MB khi đứng yên (bản release).
-- [ ] `tests/manual-shell.md` thêm phần v2 (giọt nước, kéo, sticky); so ảnh với mockup.
+- [x] CPU < 1%, RAM Task Manager < 150 MB khi đứng yên (bản release).
+- [x] `tests/manual-shell.md` thêm phần v2 (giọt nước, kéo, sticky); so ảnh với mockup.
 
 **Phụ thuộc:** Task 3
 **Quy mô:** S
