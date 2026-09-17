@@ -101,8 +101,10 @@ export function Notch({
   const { visual, dispatch } = useNotchMachine(mode, alert !== undefined);
   const expanded = visual === "expanded";
   const [tab, setTab] = useState<TabId>("core");
-  const priority = pickPill(widgets, priorityWidget);
-  const midPills = pickMidPills(widgets, priorityWidget);
+  // Widgets that hid themselves (ShellApi.setHidden) leave the pill and the panel; their Background keeps running.
+  const shown = snapshot.hidden.size === 0 ? widgets : widgets.filter((w) => !snapshot.hidden.has(w.id));
+  const priority = pickPill(shown, priorityWidget);
+  const midPills = pickMidPills(shown, priorityWidget);
 
   // Let widgets open/collapse the panel through ShellApi.
   useEffect(() => {
@@ -278,7 +280,7 @@ export function Notch({
           {expanded ? (
             <div className={styles.panel} ref={contentRef} style={{ width: panelWidth / fontScale, zoom: fontScale }}>
               <Panel
-                widgets={widgets}
+                widgets={shown}
                 tab={tab}
                 onTabChange={setTab}
                 onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}

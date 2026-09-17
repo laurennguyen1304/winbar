@@ -27,6 +27,22 @@ describe("shell runtime", () => {
     expect(shell.getSnapshot()).toBe(before);
   });
 
+  it("hides and shows widgets, notifying only on a change", () => {
+    const shell = createShell();
+    const listener = vi.fn();
+    shell.subscribe(listener);
+    expect(shell.getSnapshot().hidden.size).toBe(0);
+    shell.api.setHidden("media", true);
+    expect([...shell.getSnapshot().hidden]).toEqual(["media"]);
+    const hiddenSnapshot = shell.getSnapshot();
+    shell.api.setHidden("media", true);
+    expect(shell.getSnapshot()).toBe(hiddenSnapshot);
+    shell.api.setHidden("media", false);
+    expect(shell.getSnapshot().hidden.size).toBe(0);
+    shell.api.setHidden("other", false);
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it("flashes pill content for 1.2s", () => {
     const shell = createShell();
     shell.api.flashPill(Content);

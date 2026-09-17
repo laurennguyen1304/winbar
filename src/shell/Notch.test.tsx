@@ -5,7 +5,7 @@ import { demoWidgets } from "../widgets/demo";
 import { PILL_SIZES, RESIZE_MS } from "./notch-sizes";
 import { FLASH_MS, createShell, type Shell } from "./shell";
 import { ShellProvider } from "./shell-context";
-import type { PillAlert } from "./widget-contract";
+import type { PillAlert, WidgetDefinition } from "./widget-contract";
 
 const { requestNotchLayout, requestSticky, blurHandlers, trayOpenHandlers } = vi.hoisted(() => ({
   requestNotchLayout: vi.fn(() => Promise.resolve()),
@@ -71,6 +71,77 @@ describe("Notch", () => {
     expect(notch()).toHaveAttribute("data-state", "expanded");
     tick(0);
     expect(lastLayout()[0].width).toBe(780 + 28);
+  });
+
+  describe("hidden widgets (ShellApi.setHidden)", () => {
+    const backgroundRuns = vi.fn();
+    const widget = (id: string, tab: "core" | "claude", extra: Partial<WidgetDefinition> = {}): WidgetDefinition => ({
+      id,
+      tab,
+      title: id,
+      description: "",
+      Card: () => <p>{`card ${id}`}</p>,
+      Pill: () => <span>{`pill ${id}`}</span>,
+      MidPill: () => <span>{`mid ${id}`}</span>,
+      ...extra,
+    });
+    const media = widget("media", "core", {
+      Background: () => {
+        backgroundRuns();
+        return null;
+      },
+    });
+    const clipboard = widget("clipboard", "core");
+    const claude = widget("claude-sessions", "claude");
+
+    let shell: Shell;
+    const renderWith = (mode: "hover" | "click" | "always", widgets = [media, clipboard, claude]) =>
+      render(
+        <ShellProvider shell={shell}>
+          <Notch widgets={widgets} mode={mode} priorityWidget="media" />
+        </ShellProvider>,
+      );
+    beforeEach(() => {
+      shell = createShell();
+      backgroundRuns.mockClear();
+    });
+
+    it("the pill falls back to the next widget and comes back when shown again", () => {
+      renderWith("click");
+      expect(screen.getByText("pill media")).toBeInTheDocument();
+      act(() => shell.api.setHidden("media", true));
+      expect(screen.queryByText("pill media")).not.toBeInTheDocument();
+      expect(screen.getByText("pill clipboard")).toBeInTheDocument();
+      act(() => shell.api.setHidden("media", false));
+      expect(screen.getByText("pill media")).toBeInTheDocument();
+    });
+
+    it("always mode keeps only the other half, without a divider", () => {
+      renderWith("always", [media, clipboard]);
+      expect(screen.getByTestId("mid-divider")).toBeInTheDocument();
+      act(() => shell.api.setHidden("media", true));
+      expect(screen.queryByTestId("mid-media")).not.toBeInTheDocument();
+      expect(screen.getByTestId("mid-clipboard")).toBeInTheDocument();
+      expect(screen.queryByTestId("mid-divider")).not.toBeInTheDocument();
+    });
+
+    it("the panel drops the hidden card while its Background keeps running", () => {
+      renderWith("click");
+      act(() => shell.api.setHidden("media", true));
+      fireEvent.click(screen.getByRole("button", { name: "Mở notch" }));
+      expect(notch()).toHaveAttribute("data-state", "expanded");
+      expect(screen.queryByText("card media")).not.toBeInTheDocument();
+      expect(screen.getByText("card clipboard")).toBeInTheDocument();
+      expect(backgroundRuns).toHaveBeenCalled();
+    });
+
+    it("hides the Claude tab when every Claude widget is hidden", () => {
+      renderWith("click");
+      fireEvent.click(screen.getByRole("button", { name: "Mở notch" }));
+      expect(screen.getByRole("tab", { name: "Claude" })).toBeInTheDocument();
+      act(() => shell.api.setHidden("claude-sessions", true));
+      expect(screen.queryByRole("tab", { name: "Claude" })).not.toBeInTheDocument();
+    });
   });
 
   describe("sticky", () => {

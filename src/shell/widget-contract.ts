@@ -43,6 +43,11 @@ export interface ShellApi {
   collapse(): void;
   /** Temporary pill content, e.g. "Copied" (M7). */
   flashPill(content: ComponentType, ms?: number): void;
+  /**
+   * Hides or shows a widget everywhere (card, pill, always half) without disabling it in Settings; its Background
+   * keeps running. Widgets start shown. Used by media when nothing is playing (SPEC-media §6.1).
+   */
+  setHidden(widgetId: WidgetId, hidden: boolean): void;
 }
 
 export interface SearchProvider {

@@ -1,13 +1,22 @@
 // Shell runtime behind ShellApi: alert queue, temporary pill content, and panel commands.
 import type { ComponentType } from "react";
-import { currentAlert, dismissAlert, pushAlert, retainAlertSources, type AlertQueue, type QueuedAlert } from "./alert-queue";
-import type { PillAlert, ShellApi, TabId } from "./widget-contract";
+import {
+  currentAlert,
+  dismissAlert,
+  pushAlert,
+  retainAlertSources,
+  type AlertQueue,
+  type QueuedAlert,
+} from "./alert-queue";
+import type { PillAlert, ShellApi, TabId, WidgetId } from "./widget-contract";
 
 export const FLASH_MS = 1200;
 
 export interface ShellSnapshot {
   alert: QueuedAlert | undefined;
   flash: { key: number; Content: ComponentType } | undefined;
+  /** Widgets that asked to be hidden (`ShellApi.setHidden`). */
+  hidden: ReadonlySet<WidgetId>;
 }
 
 export interface NotchControls {
@@ -31,11 +40,12 @@ export function createShell(): Shell {
   let flash: ShellSnapshot["flash"];
   let flashTimer: ReturnType<typeof setTimeout> | undefined;
   let notch: NotchControls | undefined;
-  let snapshot: ShellSnapshot = { alert: undefined, flash: undefined };
+  let hidden: ReadonlySet<WidgetId> = new Set();
+  let snapshot: ShellSnapshot = { alert: undefined, flash: undefined, hidden };
   const listeners = new Set<() => void>();
 
   const emit = () => {
-    snapshot = { alert: currentAlert(queue), flash };
+    snapshot = { alert: currentAlert(queue), flash, hidden };
     listeners.forEach((l) => l());
   };
   const setQueue = (next: AlertQueue) => {
@@ -61,6 +71,14 @@ export function createShell(): Shell {
         flash = undefined;
         emit();
       }, ms);
+    },
+    setHidden: (widgetId, hide) => {
+      if (hidden.has(widgetId) === hide) return;
+      const next = new Set(hidden);
+      if (hide) next.add(widgetId);
+      else next.delete(widgetId);
+      hidden = next;
+      emit();
     },
   };
 

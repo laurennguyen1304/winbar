@@ -33,10 +33,10 @@
 - **Ghi chú:** tab Claude ẩn khi mọi widget Claude đều ẩn, như khi tắt.
 
 **Tiêu chí chấp nhận:**
-- [ ] Widget ưu tiên bị ẩn: pill hiện widget kế tiếp có pill; hiện lại thì pill trở về.
-- [ ] Always: một widget ẩn thì chỉ còn một nửa, không vạch ngăn.
-- [ ] Panel bỏ card widget ẩn; Background của nó vẫn chạy.
-- [ ] Không widget nào ẩn: mọi test cũ vẫn qua.
+- [x] Widget ưu tiên bị ẩn: pill hiện widget kế tiếp có pill; hiện lại thì pill trở về.
+- [x] Always: một widget ẩn thì chỉ còn một nửa, không vạch ngăn.
+- [x] Panel bỏ card widget ẩn; Background của nó vẫn chạy.
+- [x] Không widget nào ẩn: mọi test cũ vẫn qua.
 
 **Kiểm tra:** `npm test`, `npm run lint`.
 
