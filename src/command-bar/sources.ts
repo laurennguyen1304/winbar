@@ -2,7 +2,7 @@
 import { mergeWidgets, type Settings, type WidgetSetting } from "../shell/settings";
 import type { WidgetDefinition } from "../shell/widget-contract";
 import { createFilesProvider } from "./providers/files";
-import { createWebProvider, type PreferredEngine } from "./providers/web";
+import { createEngineProvider, createWebProvider, ENGINES, type EngineId } from "./providers/web";
 import type { Slot } from "./search";
 
 /** Rows per group without a prefix (SPEC-command-bar §5.4). */
@@ -25,12 +25,14 @@ export function widgetSlots(stored: readonly WidgetSetting[], registered: readon
     });
 }
 
-let preferredEngine: PreferredEngine = "google";
+let preferredEngine: EngineId = "google";
 /** Web rows: every engine with "?", otherwise one row for the preferred engine when nothing else matched. */
 const web: Slot = { provider: createWebProvider(() => preferredEngine), limit: 1, fallback: true };
+/** /g /y /r /x: one site each, only through the command. */
+const engines: Slot[] = ENGINES.map((engine) => ({ provider: createEngineProvider(engine), limit: 1 }));
 
-/** Every slot in group order: built-in sources, widgets, then the web fallback. */
+/** Every slot in group order: built-in sources, widgets, site commands, then the web fallback. */
 export function allSlots(settings: Settings, registered: readonly WidgetDefinition[]): Slot[] {
   preferredEngine = settings.commandBar.webSearch;
-  return [files, ...widgetSlots(settings.widgets, registered), web];
+  return [files, ...widgetSlots(settings.widgets, registered), ...engines, web];
 }

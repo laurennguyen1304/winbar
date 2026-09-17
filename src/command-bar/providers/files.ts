@@ -44,14 +44,14 @@ export function createFilesProvider(native: FilesNative = { search: searchFiles,
     get title() {
       return SOURCE_LABEL[source];
     },
-    prefix: "f",
+    prefix: "/f",
     async search(query, signal) {
-      // Only reachable as "f" alone: without the prefix an empty query never reaches providers.
+      // Only reachable as "/f" alone: without the prefix an empty query never reaches providers.
       if (!query.trim()) {
         const hint: SearchResult = {
           id: "files-hint",
           title: "Tìm file và thư mục",
-          subtitle: "Gõ tên sau f · * và ? để khớp mẫu, ví dụ f *.pdf",
+          subtitle: "Gõ tên sau /f · * và ? để khớp mẫu, ví dụ /f *.pdf",
           icon: "file",
           verb: "",
           remember: false,

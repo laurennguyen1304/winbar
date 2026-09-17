@@ -26,7 +26,7 @@ export interface Settings {
     /** Top-left in physical px; null until the user drags the command bar. */
     position: { x: number; y: number } | null;
     fileSearch: "auto" | "everything" | "windows" | "off";
-    webSearch: "google" | "bing" | "duckduckgo";
+    webSearch: "google" | "youtube" | "reddit" | "x";
   };
 }
 

@@ -85,7 +85,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
     !instant && !query.trimStart().startsWith("?") && groups.length > 0 && groups.every((g) => g.id === "web");
   const noResults = (
     <>
-      Không tìm thấy kết quả. Thử <b className={styles.hint}>f</b> để tìm file hoặc <b className={styles.hint}>=</b> để
+      Không tìm thấy kết quả. Thử <b className={styles.hint}>/f</b> để tìm file hoặc <b className={styles.hint}>=</b> để
       tính.
     </>
   );
@@ -285,8 +285,8 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
         </span>
         <span className={styles.grow} />
         <span>
-          <b className={styles.hint}>=</b> tính <b className={styles.hint}>cb</b> clipboard <b className={styles.hint}>f</b> file{" "}
-          <b className={styles.hint}>?</b> web
+          <b className={styles.hint}>=</b> tính <b className={styles.hint}>/f</b> file <b className={styles.hint}>/g /y /r /x</b>{" "}
+          web
         </span>
       </div>
       {toast && (

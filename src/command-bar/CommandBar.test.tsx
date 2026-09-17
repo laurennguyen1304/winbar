@@ -354,7 +354,7 @@ describe("CommandBar", () => {
     expect(screen.getByRole("option", { name: /= 7/ })).toBeInTheDocument();
   });
 
-  it("offers a web search under the no-results note, and lists every engine after ?", async () => {
+  it("offers a web search under the no-results note, lists the four sites after ?, and /y searches YouTube only", async () => {
     render(<CommandBar registered={[]} />);
     openBar();
     await type("tauri tray");
@@ -365,7 +365,11 @@ describe("CommandBar", () => {
     await type("? tauri tray");
     expect(screen.queryByText(/Không tìm thấy kết quả/)).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Web" })).toBeInTheDocument();
-    expect(screen.getAllByRole("option").length).toBeGreaterThan(5);
+    expect(screen.getAllByRole("option")).toHaveLength(4);
+
+    await type("/y lofi");
+    expect(screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["YouTube"]);
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([expect.stringContaining('Tìm "lofi" trên YouTube')]);
   });
 
   it("clears with the Xóa button and keeps typing focus", async () => {

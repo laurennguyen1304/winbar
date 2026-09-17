@@ -93,8 +93,8 @@ Theo mockup:
 | Nhóm kết quả | Tiêu đề nhóm: Gần đây · Ứng dụng · File · Clipboard · Hành động · Web |
 | Dòng kết quả | Icon 32 · tên · dòng phụ (đường dẫn rút gọn "Documents › Reports", "Ứng dụng", …) · dòng đang chọn hiện động từ + `↵` ("Mở", "Copy", "Chạy") |
 | Máy tính / đơn vị | Một khối lớn: `= 87` (mono 30px), biểu thức gốc ở dưới, "Copy ↵" bên phải |
-| Không có kết quả | "Không tìm thấy kết quả. Thử `f` để tìm file hoặc `=` để tính." + dòng "Tìm trên web: …" |
-| Hàng dưới | `↑↓` chọn · `↵` chạy · `Esc` xóa / đóng · bên phải: `=` tính · `cb` clipboard · `f` file · `?` web |
+| Không có kết quả | "Không tìm thấy kết quả. Thử `/f` để tìm file hoặc `=` để tính." + dòng "Tìm trên web: …" |
+| Hàng dưới | `↑↓` chọn · `↵` chạy · `Esc` xóa / đóng · bên phải: `=` tính · `/f` file · `/g /y /r /x` web |
 | Toast | Viên thuốc trắng "✓ Đã copy …" ở đáy, 1.2s |
 | Nguồn file không chạy được | Dòng mờ trong nhóm File: "Không tìm được file: Windows Search đang tắt" (không chặn các nguồn khác) |
 
@@ -138,8 +138,9 @@ Lần mở sau giữ chữ cũ nhưng bôi đen, gõ là thay luôn.
 | Tiền tố | Chỉ tìm |
 |---|---|
 | `=` | Máy tính |
-| `f` | File (tối đa 20) |
-| `?` | Web |
+| `/f` | File (tối đa 20) |
+| `/g` · `/y` · `/r` · `/x` | Tìm trên Google · YouTube · Reddit · X (một dòng) |
+| `?` | Cả 4 trang trên, trang ưu tiên đứng đầu |
 | `cb` | Clipboard (khi module clipboard có) |
 | tiền tố của widget khác | Provider đó |
 
@@ -183,7 +184,9 @@ Cùng bậc thì xếp theo lịch sử dùng (tần suất × độ mới, nử
 | Dữ liệu | b kb mb gb tb (1024) |
 | Thời gian | ms s min h d |
 
-**Tìm web:** `https://www.google.com/search?q=<chữ đã mã hóa>` (đổi được trong Cài đặt: Google / Bing / DuckDuckGo).
+**Tìm web:** chỉ 4 trang Google, YouTube, Reddit, X, mỗi trang có lệnh riêng (`/g`, `/y`, `/r`, `/x`).
+Trang ưu tiên đổi được trong Cài đặt, mặc định Google. Không có lệnh thì chỉ hiện 1 dòng của trang ưu tiên, và chỉ khi không có kết quả nào khác.
+*(Đổi 2026-09-17 theo yêu cầu của bạn: `f` → `/f`, thêm lệnh cho từng trang, bỏ Bing/DuckDuckGo. Dòng gợi ý khi chỉ gõ lệnh, và ký tự đại diện `*` `?` cho file, lấy theo Quick Launch của yasb.)*
 
 **Nguồn file:**
 - **Chọn nguồn khi mở command bar:**
@@ -277,7 +280,7 @@ Thêm vào `settings.json` (validate từng trường như `notch-shell`):
 |---|---|---|
 | `commandBar.position` | `null` hoặc `{ "x": int, "y": int }` (px vật lý) | `null` |
 | `commandBar.fileSearch` | `auto` (Everything → Windows Search) · `everything` · `windows` · `off` | `auto` |
-| `commandBar.webSearch` | `google` · `bing` · `duckduckgo` | `google` |
+| `commandBar.webSearch` | `google` · `youtube` · `reddit` · `x` | `google` |
 
 Cửa sổ Cài đặt thêm mục **Command bar**:
 - **Tìm file** (ToggleGroup 4 lựa chọn) + dòng trạng thái: "Đang dùng Everything", "Đang dùng Windows Search", hoặc "Không có nguồn file".

@@ -232,7 +232,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             web_search: r.choice(
                 command_bar,
                 "webSearch",
-                &["google", "bing", "duckduckgo"],
+                &["google", "youtube", "reddit", "x"],
                 &d.command_bar.web_search,
             ),
         },
@@ -501,7 +501,7 @@ mod tests {
     #[test]
     fn reads_the_command_bar_section_field_by_field() {
         let (s, w) = from_value(&json!({
-            "commandBar": { "position": { "x": -1500, "y": 320 }, "fileSearch": "windows", "webSearch": "bing" }
+            "commandBar": { "position": { "x": -1500, "y": 320 }, "fileSearch": "windows", "webSearch": "reddit" }
         }));
         assert_eq!(s.command_bar.position, Some(Position { x: -1500, y: 320 }));
         assert_eq!(
@@ -509,7 +509,7 @@ mod tests {
                 s.command_bar.file_search.as_str(),
                 s.command_bar.web_search.as_str()
             ),
-            ("windows", "bing")
+            ("windows", "reddit")
         );
         assert!(w.is_empty());
 
@@ -531,10 +531,10 @@ mod tests {
             json!([1, 2]),
         ] {
             let (s, w) = from_value(
-                &json!({ "commandBar": { "position": bad, "webSearch": "duckduckgo" } }),
+                &json!({ "commandBar": { "position": bad, "webSearch": "youtube" } }),
             );
             assert_eq!(s.command_bar.position, None, "{bad}");
-            assert_eq!(s.command_bar.web_search, "duckduckgo");
+            assert_eq!(s.command_bar.web_search, "youtube");
             assert_eq!(w.len(), 1, "{bad}");
         }
         let (s, w) =

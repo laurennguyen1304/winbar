@@ -34,12 +34,22 @@ describe("widgetSlots", () => {
     expect(slots.map((s) => s.provider.id)).toEqual(["system-search"]);
   });
 
-  it("puts File before widget groups and Web last as the fallback", () => {
+  it("puts File first, then widgets, the site commands, and Web last as the fallback", () => {
     const slots = allSlots(DEFAULT_SETTINGS, registered);
-    expect(slots.map((s) => s.provider.id)).toEqual(["files", "clipboard-search", "system-search", "web"]);
+    expect(slots.map((s) => s.provider.id)).toEqual([
+      "files",
+      "clipboard-search",
+      "system-search",
+      "web-google",
+      "web-youtube",
+      "web-reddit",
+      "web-x",
+      "web",
+    ]);
+    expect(slots.slice(3, 7).map((s) => s.provider.prefix)).toEqual(["/g", "/y", "/r", "/x"]);
     expect(slots.at(-1)).toMatchObject({ limit: 1, fallback: true });
     expect(slots.at(-1)?.provider.prefix).toBe("?");
     expect(slots[0]).toMatchObject({ limit: FILES_LIMIT });
-    expect(slots[0].provider.prefix).toBe("f");
+    expect(slots[0].provider.prefix).toBe("/f");
   });
 });
