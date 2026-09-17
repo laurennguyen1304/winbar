@@ -7,9 +7,16 @@ import {
   Folder,
   Globe,
   LogOut,
+  MusicDoubleNote,
+  NavArrowLeft,
+  NavArrowRight,
   NavArrowUp,
+  PauseSolid,
+  PlaySolid,
   Search,
   Settings,
+  SkipNextSolid,
+  SkipPrevSolid,
   Sparks,
   WarningTriangle,
 } from "iconoir-react";
@@ -40,6 +47,13 @@ const ICONS = {
   eyeClosed: EyeClosed,
   logOut: LogOut,
   warning: WarningTriangle,
+  music: MusicDoubleNote,
+  play: PlaySolid,
+  pause: PauseSolid,
+  skipNext: SkipNextSolid,
+  skipPrev: SkipPrevSolid,
+  previous: NavArrowLeft,
+  next: NavArrowRight,
 } satisfies Record<string, ComponentType<SVGProps<SVGSVGElement>>>;
 
 export type IconName = keyof typeof ICONS;

@@ -1,5 +1,6 @@
 //! Media module (SPEC-media): Windows media sessions → `media-changed` events and commands for the media widget.
 
+pub mod art;
 pub mod model;
 #[cfg(windows)]
 mod session;
@@ -30,6 +31,8 @@ pub struct MediaStore {
     /// Session id the user picked in the card; `None` follows Windows.
     manual: Mutex<Option<String>>,
     wake: Mutex<Option<Sender<Wake>>>,
+    /// Artwork of the current track: its track key and PNG data URL (`None` when the app has none).
+    art: Mutex<Option<(String, Option<String>)>>,
 }
 
 impl MediaStore {
@@ -43,6 +46,24 @@ impl MediaStore {
         }
     }
 
+    /// Keeps the artwork of `track_key`, reading it with `read` only when the track changed.
+    pub fn cache_art(&self, track_key: &str, read: impl FnOnce() -> Option<String>) {
+        let Ok(mut art) = self.art.lock() else {
+            return;
+        };
+        if art.as_ref().is_some_and(|(key, _)| key == track_key) {
+            return;
+        }
+        *art = Some((track_key.to_string(), read()));
+    }
+
+    fn art_for(&self, track_key: &str) -> Option<String> {
+        let art = self.art.lock().ok()?;
+        art.as_ref()
+            .filter(|(key, _)| key == track_key)
+            .and_then(|(_, url)| url.clone())
+    }
+
     pub fn set_wake(&self, tx: Sender<Wake>) {
         if let Ok(mut w) = self.wake.lock() {
             *w = Some(tx);
@@ -54,6 +75,12 @@ impl MediaStore {
 #[tauri::command]
 pub fn media_state(store: tauri::State<'_, MediaStore>) -> MediaState {
     store.state.lock().map(|s| s.clone()).unwrap_or_default()
+}
+
+/// Artwork of the track with this key as a PNG data URL; `null` when the app has none or the track changed since.
+#[tauri::command]
+pub fn media_art(store: tauri::State<'_, MediaStore>, track_key: String) -> Option<String> {
+    store.art_for(&track_key)
 }
 
 /// Starts watching Windows media sessions in the background.

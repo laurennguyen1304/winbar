@@ -13,8 +13,10 @@ use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSessionPlaybackControls as PlaybackControls,
     GlobalSystemMediaTransportControlsSessionTimelineProperties as TimelineProperties,
 };
+use windows::Storage::Streams::IRandomAccessStreamReference;
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
 
+use super::art;
 use super::model::{self, Controls, MediaSession, MediaState, Track};
 use super::{publish, MediaStore, Wake};
 use crate::command_bar::apps::AppsState;
@@ -178,7 +180,18 @@ fn snapshot<R: Runtime>(
     let manual = app.state::<MediaStore>().manual();
     let current = model::pick_session(&ids, system.as_deref(), manual.as_deref())
         .and_then(|id| ids.iter().position(|i| i == id))
-        .and_then(|i| read_track(&watched[i].session, &ids[i]));
+        .and_then(|i| read_track(&watched[i].session, &ids[i]))
+        .map(|(track, thumbnail)| {
+            // Artwork is ready before the state goes out, so the page can fetch it right away.
+            app.state::<MediaStore>().cache_art(&track.track_key, || {
+                thumbnail.and_then(|t| {
+                    art::read(&t)
+                        .map_err(|e| eprintln!("winbar media: artwork: {e}"))
+                        .ok()
+                })
+            });
+            track
+        });
 
     MediaState { sessions, current }
 }
@@ -187,8 +200,12 @@ fn text(value: windows::core::Result<HSTRING>) -> String {
     value.map(|s| s.to_string()).unwrap_or_default()
 }
 
-/// Reads one session. `None` only when the session is gone; missing fields become empty or unknown.
-fn read_track(session: &Session, id: &str) -> Option<Track> {
+/// Reads one session with its thumbnail reference. `None` only when the session is gone; missing fields become empty
+/// or unknown.
+fn read_track(
+    session: &Session,
+    id: &str,
+) -> Option<(Track, Option<IRandomAccessStreamReference>)> {
     let info = session.GetPlaybackInfo().ok()?;
     // Apps that are still starting can fail here; show what the other calls return.
     let props = session
@@ -199,6 +216,7 @@ fn read_track(session: &Session, id: &str) -> Option<Track> {
         Some(p) => (text(p.Title()), text(p.Artist()), text(p.AlbumTitle())),
         None => Default::default(),
     };
+    let thumbnail = props.as_ref().and_then(|p| p.Thumbnail().ok());
 
     let status = model::status_name(info.PlaybackStatus().map(|s| s.0).unwrap_or(0));
     let rate = info
@@ -234,9 +252,9 @@ fn read_track(session: &Session, id: &str) -> Option<Track> {
         .filter(|ms| *ms > 0)
         .unwrap_or_else(now_ms);
 
-    Some(Track {
+    let track = Track {
         session_id: id.to_string(),
-        track_key: model::track_key(id, &title, &artist, &album),
+        track_key: model::track_key(id, &title, &artist, &album, thumbnail.is_some()),
         title,
         artist,
         album,
@@ -251,7 +269,8 @@ fn read_track(session: &Session, id: &str) -> Option<Track> {
             previous: flag(&|c| c.IsPreviousEnabled()),
             seek: duration_ms.is_some() && flag(&|c| c.IsPlaybackPositionEnabled()),
         },
-    })
+    };
+    Some((track, thumbnail))
 }
 
 fn now_ms() -> i64 {

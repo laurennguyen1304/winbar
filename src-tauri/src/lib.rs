@@ -27,6 +27,7 @@ pub fn run() {
             window::notch_layout,
             sticky::notch_sticky,
             media::media_state,
+            media::media_art,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
             command_bar::command_bar_save_position,

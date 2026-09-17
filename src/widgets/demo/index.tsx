@@ -31,7 +31,9 @@ function DemoPill() {
 const twoLines = (title: string, sub: string) => (
   <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
     <b style={{ fontSize: 13, whiteSpace: "nowrap" }}>{title}</b>
-    <span style={{ fontSize: 12, color: "var(--text-faint)", fontFamily: "var(--mono)", whiteSpace: "nowrap" }}>{sub}</span>
+    <span style={{ fontSize: 12, color: "var(--text-faint)", fontFamily: "var(--mono)", whiteSpace: "nowrap" }}>
+      {sub}
+    </span>
   </span>
 );
 
@@ -87,7 +89,9 @@ function makeApprovalAlert(dismiss: () => void, onAnswer: (answer: string) => vo
       <>
         <img src={claudeWorking} alt="" width={22} height={22} />
         <b style={{ whiteSpace: "nowrap" }}>wait for you</b>
-        <span style={{ color: "var(--text-faint)", fontFamily: "var(--mono)", fontSize: 12, whiteSpace: "nowrap" }}>Bash · git push</span>
+        <span style={{ color: "var(--text-faint)", fontFamily: "var(--mono)", fontSize: 12, whiteSpace: "nowrap" }}>
+          Bash · git push
+        </span>
         <span style={{ flexGrow: 1 }} />
         <button type="button" onClick={() => answer("deny")}>
           Từ chối
@@ -119,7 +123,10 @@ function DemoAlerts() {
       id,
       source,
       priority,
-      Content: makeApprovalAlert(() => shell.alerts.dismiss(id), (a) => (lastAnswer = `${id}: ${a}`)),
+      Content: makeApprovalAlert(
+        () => shell.alerts.dismiss(id),
+        (a) => (lastAnswer = `${id}: ${a}`),
+      ),
     });
     shell.collapse();
   };
@@ -183,9 +190,38 @@ function DemoBroken(): never {
 }
 
 export const demoWidgets: WidgetDefinition[] = [
-  { id: "demo-card", tab: "core", title: "Demo card", description: "Card thường", Card: DemoCard, Pill: DemoPill, MidPill: DemoMidPill, searchProvider: demoSearch },
-  { id: "demo-alerts", tab: "core", title: "Demo cảnh báo", description: "Đẩy cảnh báo và flash pill", Card: DemoAlerts },
+  {
+    id: "demo-card",
+    tab: "core",
+    title: "Demo card",
+    description: "Card thường",
+    Card: DemoCard,
+    Pill: DemoPill,
+    MidPill: DemoMidPill,
+    searchProvider: demoSearch,
+  },
+  {
+    id: "demo-alerts",
+    tab: "core",
+    title: "Demo cảnh báo",
+    description: "Đẩy cảnh báo và flash pill",
+    Card: DemoAlerts,
+  },
   { id: "demo-broken", tab: "core", title: "Demo lỗi", description: "Luôn lỗi khi render", Card: DemoBroken },
-  { id: "demo-tall", tab: "core", title: "Demo tall", description: "Chiếm một cột", Card: DemoTall, layout: { tall: true } },
-  { id: "demo-claude", tab: "claude", title: "Demo Claude", description: "Widget ở tab Claude", Card: DemoClaude, MidPill: DemoClaudeMidPill },
+  {
+    id: "demo-tall",
+    tab: "core",
+    title: "Demo tall",
+    description: "Chiếm một cột",
+    Card: DemoTall,
+    layout: { tall: true },
+  },
+  {
+    id: "demo-claude",
+    tab: "claude",
+    title: "Demo Claude",
+    description: "Widget ở tab Claude",
+    Card: DemoClaude,
+    MidPill: DemoClaudeMidPill,
+  },
 ];

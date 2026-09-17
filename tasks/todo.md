@@ -54,12 +54,13 @@
 - **Đăng ký:** widget `media` trong `src/widgets/index.ts`.
 
 **Tiêu chí chấp nhận:**
-- [ ] Script test đang phát: card đúng tên, tiến độ chạy mỗi giây khi panel mở, ảnh bìa (hoặc gradient).
-- [ ] Tắt script: card biến mất trong 1 giây, bố cục dồn lại.
-- [ ] Livestream / không độ dài: ẩn thanh tiến độ.
-- [ ] Test: `progress.ts`, card theo trạng thái (phát, dừng, không ảnh, không độ dài).
+- [x] Script test đang phát: card đúng tên, tiến độ chạy mỗi giây khi panel mở, ảnh bìa (hoặc gradient).
+- [x] Tắt script: card biến mất trong 1 giây, bố cục dồn lại.
+- [x] Livestream / không độ dài: ẩn thanh tiến độ.
+- [x] Test: `progress.ts`, card theo trạng thái (phát, dừng, không ảnh, không độ dài).
 
 **Kiểm tra:** `npm test`, `cargo test`, `npm run lint`; ảnh chụp card so với mockup.
+- 2026-09-17: nguồn thử có ảnh 600×600 (`media-source.ps1 -Artwork`): `media_art` trả PNG 280×280, 11 KB; card đúng tên/nghệ sĩ/album/app, nền ảnh mờ, tiến độ 0:00 → 0:03 sau 3s; tắt nguồn thì card biến mất. Livestream: test component (chưa có nguồn thử).
 
 **Phụ thuộc:** Task 1, Task 2
 **File dự kiến:** `src-tauri/src/media/art.rs`, `src/widgets/media/{index.tsx,native.ts,store.ts,progress.ts,MediaCard.tsx,Artwork.tsx,Media.module.css}`, test

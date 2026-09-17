@@ -59,9 +59,17 @@ pub fn pick_session<'a>(
         .or_else(|| ids.first())
 }
 
-/// Stable key for "the same track in the same app".
-pub fn track_key(session_id: &str, title: &str, artist: &str, album: &str) -> String {
-    [session_id, title, artist, album].join("\u{1f}")
+/// Stable key for "the same track in the same app". It also changes when artwork shows up, since apps often report
+/// the title before the thumbnail.
+pub fn track_key(
+    session_id: &str,
+    title: &str,
+    artist: &str,
+    album: &str,
+    has_art: bool,
+) -> String {
+    let art = if has_art { "art" } else { "" };
+    [session_id, title, artist, album, art].join("\u{1f}")
 }
 
 /// `GlobalSystemMediaTransportControlsSessionPlaybackStatus` as the frontend's status.
@@ -203,15 +211,26 @@ mod tests {
 
     #[test]
     fn track_key_changes_with_any_field() {
-        let a = track_key("Spotify", "Midnight City", "M83", "Hurry Up");
-        assert_eq!(a, track_key("Spotify", "Midnight City", "M83", "Hurry Up"));
-        assert_ne!(a, track_key("Spotify", "Midnight City", "M83", ""));
+        let a = track_key("Spotify", "Midnight City", "M83", "Hurry Up", true);
+        assert_eq!(
+            a,
+            track_key("Spotify", "Midnight City", "M83", "Hurry Up", true)
+        );
+        assert_ne!(a, track_key("Spotify", "Midnight City", "M83", "", true));
         assert_ne!(
             a,
-            track_key("chrome.exe", "Midnight City", "M83", "Hurry Up")
+            track_key("chrome.exe", "Midnight City", "M83", "Hurry Up", true)
+        );
+        // Artwork arriving after the title refreshes it.
+        assert_ne!(
+            a,
+            track_key("Spotify", "Midnight City", "M83", "Hurry Up", false)
         );
         // Fields cannot run into each other.
-        assert_ne!(track_key("a", "bc", "", ""), track_key("a", "b", "c", ""));
+        assert_ne!(
+            track_key("a", "bc", "", "", false),
+            track_key("a", "b", "c", "", false)
+        );
     }
 
     #[test]
