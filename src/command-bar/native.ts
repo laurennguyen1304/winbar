@@ -42,6 +42,39 @@ export function onCommandBarOpened(handler: (opened: Opened) => void): () => voi
   );
 }
 
+// ---------------------------------------------------------------- files (src-tauri/src/command_bar/files, launch.rs)
+
+export interface FileHit {
+  path: string;
+  name: string;
+  /** Parent folder as breadcrumbs, e.g. "Documents › Reports". */
+  location: string;
+  folder: boolean;
+}
+
+export interface FileSearch {
+  generation: number;
+  source: "windows" | "everything" | "off";
+  hits: FileHit[];
+  error: string | null;
+}
+
+export async function searchFiles(query: string, generation: number): Promise<FileSearch> {
+  if (!isTauri()) return { generation, source: "off", hits: [], error: null };
+  return invoke<FileSearch>("search_files", { query, generation });
+}
+
+export async function openPath(path: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("open_path", { path });
+}
+
+/** Explorer on the containing folder with the item selected. */
+export async function revealPath(path: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("reveal_path", { path });
+}
+
 /** Native window drag from the grip. */
 export async function startDragging(): Promise<void> {
   if (!isTauri()) return;

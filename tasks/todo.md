@@ -322,14 +322,22 @@
 - **Lỗi:** WSearch tắt thì hiện dòng báo trong nhóm File.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test Rust: escape `'` `%` `_` `[`; chữ có dấu tiếng Việt; chuỗi rỗng; `launch` từ chối đường dẫn không tồn tại.
-- [ ] "brief" ra file brief ≤ 300ms sau khi dừng gõ (đo trên release).
-- [ ] Ctrl+Enter mở Explorer chọn đúng file.
+- [x] Test Rust: escape `'` `%` `_` `[`; chữ có dấu tiếng Việt; chuỗi rỗng; `launch` từ chối đường dẫn không tồn tại.
+- [ ] "brief" ra file brief ≤ 300ms sau khi dừng gõ (đo trên release) → đo ở Task 13. Spike đo truy vấn 53–96ms, cộng 120ms chờ gõ.
+- [ ] Ctrl+Enter mở Explorer chọn đúng file → bạn thử trên bản dev đang chạy.
 
-**Kiểm tra:**
-- [ ] `cargo test`, clippy, `npm test`, lint qua.
-- [ ] Thủ công: tìm 5 tên file; gõ nhanh không bị kết quả cũ đè lên.
-- [ ] Không tắt WSearch trên máy bạn: đường lỗi kiểm bằng test giả lập.
+**Kiểm tra:** (2026-09-17)
+- [x] `cargo test` 44 (windows_search 5, files 4, launch 2) · clippy sạch.
+- [x] `npm test` 223 (files provider 5: chờ gõ + map dòng + mở/hiện thư mục, < 2 ký tự, gõ tiếp thì không hỏi index, đánh số lần tìm, dòng báo lỗi; sources +1) · lint sạch.
+- [x] Windows Search trả `System.ItemType = "Directory"` cho thư mục (kiểm bằng truy vấn thật).
+- [x] Bản dev của bạn đã tự build lại với code này (winbar.exe 2:02 PM).
+
+**Ghi chú:**
+- Làm trước Task 6/7/8 theo thứ tự bạn chốt. `launch.rs` có `open_path` + `reveal_path`, kiểm tra đường dẫn tuyệt đối và đang tồn tại.
+- Icon file tạm theo loại (file / thư mục); icon thật ở Task 8.
+- Loại khỏi kết quả: `node_modules`, `target`, `.git`, `.cargo`, `.rustup`, `AppData`.
+- Nhiều từ thì mọi từ phải có trong tên file.
+- Thêm crate `windows` 0.61 (đã duyệt trong spec).
 
 **Phụ thuộc:** Task 8
 **File dự kiến:** `src-tauri/src/command_bar/files/{mod,windows_search}.rs`, `src-tauri/src/command_bar/launch.rs`, `src/command-bar/providers/files.ts`

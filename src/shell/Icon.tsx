@@ -1,4 +1,4 @@
-import { Calculator, Check, NavArrowUp, Search, Settings, Sparks } from "iconoir-react";
+import { Calculator, Check, EmptyPage, Folder, NavArrowUp, Search, Settings, Sparks, WarningTriangle } from "iconoir-react";
 import type { ComponentType, SVGProps } from "react";
 
 /** Six-dot drag handle from the mockup; Iconoir has no 2×3 grip. */
@@ -19,6 +19,9 @@ const ICONS = {
   grip: Grip,
   calculator: Calculator,
   check: Check,
+  file: EmptyPage,
+  folder: Folder,
+  warning: WarningTriangle,
 } satisfies Record<string, ComponentType<SVGProps<SVGSVGElement>>>;
 
 export type IconName = keyof typeof ICONS;

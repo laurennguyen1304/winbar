@@ -36,6 +36,9 @@ vi.mock("./native", () => ({
     return () => native.opened.splice(native.opened.indexOf(h), 1);
   },
   startDragging: native.drag,
+  searchFiles: (_q: string, generation: number) => Promise.resolve({ generation, source: "off", hits: [], error: null }),
+  openPath: () => Promise.resolve(),
+  revealPath: () => Promise.resolve(),
   saveCommandBarPosition: native.save,
   onMoved: (h: () => void) => {
     native.moved.push(h);
@@ -47,7 +50,8 @@ const input = () => screen.getByRole("textbox", { name: "Tìm kiếm" });
 const bar = () => screen.getByTestId("command-bar");
 const openBar = (maxHeight = 800) => act(() => native.opened.forEach((h) => h({ maxHeight })));
 const move = () => act(() => native.moved.forEach((h) => h()));
-const flush = () => act(async () => void (await vi.advanceTimersByTimeAsync(0)));
+// Long enough for the files provider to get past its typing pause (it finds nothing outside Tauri).
+const flush = () => act(async () => void (await vi.advanceTimersByTimeAsync(150)));
 const type = async (value: string) => {
   fireEvent.change(input(), { target: { value } });
   await flush();

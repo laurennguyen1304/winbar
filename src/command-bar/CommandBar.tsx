@@ -6,7 +6,7 @@ import { hideCommandBar, onCommandBarOpened, onMoved, resizeCommandBar, saveComm
 import { copyText } from "./clipboard";
 import { calculatorOnly, instantAnswer, type Instant } from "./instant";
 import { flattenRows, INSTANT_KEY, InstantBlock, ResultList, type Row } from "./ResultList";
-import { widgetSlots } from "./sources";
+import { allSlots } from "./sources";
 import { useCommandSearch } from "./use-command-search";
 import styles from "./CommandBar.module.css";
 
@@ -57,7 +57,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
   const dragging = useRef(false);
 
   const { settings } = useSettings(registered);
-  const slots = useMemo(() => widgetSlots(settings.widgets, registered), [settings.widgets, registered]);
+  const slots = useMemo(() => allSlots(settings.widgets, registered), [settings.widgets, registered]);
   const instant = useMemo(() => instantAnswer(query), [query]);
   const { groups, settled } = useCommandSearch(calculatorOnly(query) ? "" : query, slots);
 

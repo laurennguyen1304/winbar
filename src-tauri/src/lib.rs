@@ -16,11 +16,15 @@ pub fn run() {
         .plugin(hotkeys::plugin())
         .manage(window::NotchState::default())
         .manage(hotkeys::HotkeyState::default())
+        .manage(command_bar::files::FileSearchState::default())
         .invoke_handler(tauri::generate_handler![
             window::notch_layout,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
             command_bar::command_bar_save_position,
+            command_bar::files::search_files,
+            command_bar::launch::open_path,
+            command_bar::launch::reveal_path,
             settings::get_settings,
             settings::update_settings,
             settings_window::open_settings,

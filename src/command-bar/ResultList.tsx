@@ -111,7 +111,7 @@ export function ResultList({ groups, selectedKey, onSelect, onRun }: Props) {
                   <span className={styles.title}>{result.title}</span>
                   {result.subtitle && <span className={styles.subtitle}>{result.subtitle}</span>}
                 </div>
-                {selected && (
+                {selected && result.verb && (
                   <span className={styles.verb}>
                     {result.verb} <kbd className={styles.kbd}>↵</kbd>
                   </span>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SearchProvider, WidgetDefinition } from "../shell/widget-contract";
-import { WIDGET_LIMIT, widgetSlots } from "./sources";
+import { allSlots, FILES_LIMIT, WIDGET_LIMIT, widgetSlots } from "./sources";
 
 const provider = (id: string): SearchProvider => ({ id, title: id, search: () => Promise.resolve([]) });
 const widget = (id: string, withProvider: boolean): WidgetDefinition => ({
@@ -31,5 +31,12 @@ describe("widgetSlots", () => {
   it("leaves out disabled widgets and includes widgets new since the settings were saved", () => {
     const slots = widgetSlots([{ id: "clipboard", enabled: false }], registered);
     expect(slots.map((s) => s.provider.id)).toEqual(["system-search"]);
+  });
+
+  it("puts the built-in File group before widget groups", () => {
+    const slots = allSlots([], registered);
+    expect(slots.map((s) => s.provider.id)).toEqual(["files", "clipboard-search", "system-search"]);
+    expect(slots[0]).toMatchObject({ limit: FILES_LIMIT });
+    expect(slots[0].provider.prefix).toBe("f");
   });
 });
