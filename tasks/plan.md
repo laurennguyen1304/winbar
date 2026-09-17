@@ -1,40 +1,55 @@
-# Implementation Plan: notch-shell v2
+# Implementation Plan: media
 
-> Spec: `SPEC-notch-shell.md` §15 (duyệt 2026-09-17) · Mockup: `design/notch-upgrade-mockup.html`
-> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**. Trước đó: `tasks/notch-shell/`, `tasks/command-bar/` (xong).
+> Spec: `SPEC-media.md` (duyệt 2026-09-17) · Mockup: `design/winbar-mockup.html` (card "Đang phát", pill media, nửa always)
+> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**. Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/` (xong).
 
 ## Tổng quan
 
-Đổi notch sang dạng giọt nước dính mép trên với nền liquid glass (mặc định), cho kéo ngang dọc mép trên, và thêm chế độ sticky giữ chỗ phía trên màn hình.
-Bạn muốn xem hình dạng thật trên máy sớm để quyết chiều cao, nên Task 1 làm hình dạng + nền trước.
+Widget `media` đọc phiên media của Windows trong Rust (WinRT), đẩy trạng thái lên frontend bằng sự kiện, và hiện
+ở card, pill ưu tiên và nửa always. Có điều khiển, tua, đổi app, và tự ẩn khi không có phiên nào.
 
 ## Quyết định kiến trúc
 
-- **Một viền liền:** hình notch là một path tính theo kích thước hiện tại.
-  - Nền: lớp `clip-path: path()`.
-  - Viền: SVG `path` mở ở cạnh trên.
-  - Vẽ lại theo `ResizeObserver` trong lúc notch co giãn (CSS transition vẫn giữ nguyên).
-- **Hàm hình học thuần** (`notch-shape.ts`) có test: path giọt nước, path pill, bo góc bị giới hạn theo kích thước.
-- **Cửa sổ native:**
-  - dạng giọt nước: rộng thêm 2×14px cho phần loe, `topGap` = 0;
-  - kéo ngang (Task 2): Rust đặt vị trí theo `offsetX`, kẹp trong màn hình.
-- **Sticky** (Task 3) là phần Rust riêng: `SHAppBarMessage` ABM_NEW/SETPOS/REMOVE, cập nhật khi kích thước notch thu gọn hoặc màn hình đổi, gỡ khi thoát app.
+- **Rust sở hữu WinRT.**
+  - Một luồng riêng giữ manager và session, đăng ký 5 sự kiện.
+  - Handler gom thay đổi (debounce ~50ms) rồi phát `media-changed`.
+  - Phần thuần tách vào `model.rs` để test không cần WinRT: chọn phiên, `trackKey`, độ dài hợp lệ, tên app.
+- **Ảnh bìa tách khỏi sự kiện:** `media_art(trackKey)` đọc stream, thu nhỏ bằng WIC (dùng lại code icon), cache một ảnh.
+- **Frontend:**
+  - `store.ts` theo `useSyncExternalStore`, dùng chung cho Card/Pill/MidPill/Background.
+  - Tiến độ tự ước lượng, đồng hồ chỉ chạy khi card đang hiện.
+- **Tự ẩn qua hợp đồng shell:** `ShellApi.setHidden`. Background của media gọi nó theo `current === null`.
+- **Nguồn test không đụng nhạc của bạn:** một tiến trình PowerShell dùng `Windows.Media.Playback.MediaPlayer` phát file WAV im lặng, tắt tiếng, đặt tên bài/nghệ sĩ giả. Script tắt được lúc nào cũng được.
+  - Nếu PowerShell không tạo được phiên, sẽ hỏi bạn trước khi thử với app thật.
+
+## Thứ tự và phụ thuộc
+
+```
+Task 1 (spike + Rust đọc trạng thái) ─┐
+Task 2 (shell setHidden)             ─┼─→ Task 3 (card hiển thị + ảnh bìa + tự ẩn)
+                                      │        │
+                                      │   Checkpoint 1 (bạn xem card thật)
+                                      │        │
+                                      └─→ Task 4 (điều khiển, tua, đổi app) → Task 5 (pill + nửa always) → Task 6 (đo + checklist)
+```
 
 ## Danh sách task
 
-- [x] Task 1: Dạng giọt nước + nền liquid glass (cài đặt `layout`, `material`)
-- [x] Task 2: Kéo ngang dọc mép trên + lưu `offsetX` + "Về giữa"
+- [ ] Task 1: Spike WinRT + Rust đọc trạng thái (`media_state`, `media-changed`)
+- [ ] Task 2: `ShellApi.setHidden` trong notch-shell
+- [ ] Task 3: Card "Đang phát" (hiển thị, ảnh bìa, tiến độ chỉ xem) + tự ẩn
 
-### Checkpoint 1 — Bạn xem trên máy, chốt chiều cao pill
+### Checkpoint 1: bạn xem card với nhạc thật
 
-- [x] Task 3: Sticky (Windows AppBar)
-- [x] Task 4: Đo, checklist thủ công, so mockup
+- [ ] Task 4: Điều khiển ⏮ ⏯ ⏭, tua, đổi app
+- [ ] Task 5: Pill ưu tiên + nửa always
+- [ ] Task 6: Đo hiệu năng, checklist thủ công, so mockup
 
 ## Rủi ro
 
 | Rủi ro | Mức | Cách xử lý |
 |---|---|---|
-| Vẽ lại path theo từng khung khi co giãn bị giật | Trung bình | ResizeObserver chỉ đặt thuộc tính; đo trên máy. Nếu giật, bỏ transition viền, chỉ vẽ khi xong |
-| Nền trong hơn khó đọc trên trang sáng | Trung bình | Giữ độ đục ~0.75–0.8; có tùy chọn "Đặc" trong Cài đặt |
-| AppBar đụng với YASB (cũng giữ chỗ phía trên) | Trung bình | Chỉ bật khi bạn chọn; ghi rõ trong Cài đặt |
-| Kéo notch lẫn với hover mở / bấm mở | Thấp | Ngưỡng 6px; kéo thì hủy hẹn giờ hover |
+| WinRT event handler trên luồng lạ gây deadlock/crash | Trung bình | Spike ở Task 1 trước khi làm UI; handler không chạm cửa sổ |
+| PowerShell không tạo được phiên media để test | Trung bình | Thử ngay Task 1; không được thì hỏi bạn cho test với app thật |
+| Cột sóng ở pill tốn CPU | Trung bình | Đo ở Task 6; phương án dự phòng ghi trong spec §12 |
+| `setHidden` làm lệch pill/always đã ổn | Thấp | Task 2 riêng, test shell trước |
