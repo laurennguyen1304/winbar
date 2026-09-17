@@ -77,10 +77,11 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
   // Empty input: "Gần đây" from history (SPEC-command-bar §5.4).
   const historyEntries = useHistoryEntries();
   const groups = useMemo<Group[]>(() => {
-    if (query) return searchGroups;
+    // The web row is a fallback for "nothing matched": a calculation or conversion already answered.
+    if (query) return instant ? searchGroups.filter((g) => g.id !== "web") : searchGroups;
     const results = recentResults(historyEntries, { launchApp, openPath, revealPath, runAction: (id) => runActionById(id) });
     return results.length > 0 ? [{ id: "recent", title: "Gần đây", results }] : [];
-  }, [query, searchGroups, historyEntries]);
+  }, [query, instant, searchGroups, historyEntries]);
 
   const copyInstant = useCallback((answer: Instant) => {
     copyText(answer.copy)

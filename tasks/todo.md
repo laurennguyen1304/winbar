@@ -435,19 +435,21 @@ Mọi thay đổi áp dụng ngay cho command bar đang mở.
 - So từng trạng thái với mockup; sửa chỗ lệch, hoặc ghi lý do.
 
 **Tiêu chí chấp nhận:**
-- [ ] Mở ≤ 150ms. CPU < 1%. RAM Task Manager < 150 MB (ghi số đo).
-- [ ] Mọi mục checklist qua hoặc có ghi chú.
-- [ ] Đạt 15 tiêu chí ở mục 11 của spec.
+- [x] Mở ≤ 150ms (release: 60–118ms tới khung hình đầu). CPU 0.022%. RAM Task Manager 109–116 MB < 150 MB. Số đo ghi trong checklist.
+- [x] Mọi mục checklist qua hoặc có ghi chú. 7 mục 👤 cần bạn: app quyền admin, mở app thật, Everything, Ctrl+Enter file, rút màn phụ, gõ Telex/UniKey.
+- [x] Đạt 15 tiêu chí ở mục 11 của spec, trừ các phần 👤 trên.
 
-**Kiểm tra:**
-- [ ] `npm test`, `cargo test`, `npm run lint`, `npm run tauri build -- --no-bundle` qua.
-- [ ] Checklist đã điền.
+**Kiểm tra:** (2026-09-17)
+- [x] `npm test` 280 · `cargo test` 72 · clippy sạch · `npm run lint` sạch · `npm run tauri build -- --no-bundle` ra `winbar.exe`.
+- [x] Checklist đã điền: `tests/manual-command-bar.md`.
+- [x] Sửa trong lúc soát: khối máy tính không còn kèm dòng "Tìm trên Google" (dòng web chỉ là dự phòng khi không có gì khớp).
+- [x] Dọn dẹp: gỡ `Run\winbar` do bản release thêm, xóa lịch sử thử, trả `settings.json` (bản release bỏ widget demo), mở lại app dev.
 
 **Phụ thuộc:** Task 12
 **File dự kiến:** `tests/manual-command-bar.md`, các file sửa lỗi nhỏ
 **Quy mô:** S–M
 
 ## Checkpoint cuối
-- [ ] Đạt 15 tiêu chí của spec
-- [ ] Test, lint, build qua
+- [x] Đạt 15 tiêu chí của spec (còn các mục 👤 trong `tests/manual-command-bar.md`)
+- [x] Test, lint, build qua
 - [ ] Bạn duyệt để chuyển sang module `media`

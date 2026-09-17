@@ -358,6 +358,15 @@ describe("CommandBar", () => {
     expect(ran).toEqual([]);
   });
 
+  it("does not add the web fallback under a calculation", async () => {
+    render(<CommandBar registered={[]} />);
+    openBar();
+    await type("12*7+3");
+    expect(screen.getByRole("option", { name: /= 87/ })).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Web" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+  });
+
   it("with = asks no other provider and shows the empty state for an invalid expression", async () => {
     const search = vi.fn(() => Promise.resolve([item("x")]));
     const widget: WidgetDefinition = { ...searchWidget("apps", []), searchProvider: { id: "apps", title: "APPS", search } };
