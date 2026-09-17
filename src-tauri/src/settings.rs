@@ -21,6 +21,10 @@ pub struct PillSettings {
     pub top_gap: u32,
     pub open_mode: String,
     pub priority_widget: Option<String>,
+    /// `attached` (flush with the top edge, flared) or `float` (rounded pill below the edge). SPEC §15.
+    pub layout: String,
+    /// `liquid` (translucent glass) or `dense` (the original opaque fill).
+    pub material: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -75,6 +79,8 @@ impl Default for Settings {
                 top_gap: 8,
                 open_mode: "hover".into(),
                 priority_widget: Some("claude-sessions".into()),
+                layout: "attached".into(),
+                material: "liquid".into(),
             },
             font_scale: 100,
             widgets: Vec::new(),
@@ -206,6 +212,8 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
                 &d.pill.open_mode,
             ),
             priority_widget,
+            layout: r.choice(pill, "layout", &["attached", "float"], &d.pill.layout),
+            material: r.choice(pill, "material", &["liquid", "dense"], &d.pill.material),
         },
         font_scale: r.int(root, "fontScale", 85, 130, 5, d.font_scale),
         widgets: read_widgets(root.and_then(|o| o.get("widgets")), r.warnings),
@@ -461,6 +469,16 @@ mod tests {
         assert_eq!(s.font_scale, 100, "112 is not a 5% step");
         assert!(!s.launch_at_startup);
         assert_eq!(w.len(), 3);
+    }
+
+    #[test]
+    fn reads_layout_and_material() {
+        let (s, w) = from_value(&json!({ "pill": { "layout": "float", "material": "dense" } }));
+        assert_eq!((s.pill.layout.as_str(), s.pill.material.as_str()), ("float", "dense"));
+        assert!(w.is_empty());
+        let (s, w) = from_value(&json!({ "pill": { "layout": "drop", "material": 3 } }));
+        assert_eq!((s.pill.layout.as_str(), s.pill.material.as_str()), ("attached", "liquid"));
+        assert_eq!(w.len(), 2);
     }
 
     #[test]

@@ -14,14 +14,15 @@
 - Cửa sổ Cài đặt: hai mục chọn. Phần xem trước dùng đúng hình dạng mới.
 
 **Tiêu chí chấp nhận:**
-- [ ] Mặc định là giọt nước + liquid glass. Đổi trong Cài đặt thì notch đổi ngay.
-- [ ] Không có vệt thẳng chỗ phần loe nối vào thân (một viền liền). Ở mọi trạng thái: pill, alert, always, mở rộng.
-- [ ] `float` + `dense` trông như trước.
-- [ ] Test: path, validate cài đặt, kích thước cửa sổ theo layout.
+- [x] Mặc định là giọt nước + liquid glass. Đổi trong Cài đặt thì notch đổi ngay.
+- [x] Không có vệt thẳng chỗ phần loe nối vào thân (một viền liền). Ở mọi trạng thái: pill, alert, always, mở rộng.
+- [x] `float` + `dense` trông như trước.
+- [x] Test: path, validate cài đặt, kích thước cửa sổ theo layout.
 
 **Kiểm tra:**
-- [ ] `npm test`, `cargo test`, clippy, `npm run lint` qua.
+- [x] `npm test`, `cargo test`, clippy, `npm run lint` qua.
 - [ ] Thủ công: ảnh chụp app thật ở cả 4 trạng thái trên nền sáng và tối.
+  - 2026-09-17: đã chụp pill, always, mở rộng (attached/liquid và float/dense) trên nền tối. Panel mở dùng nền liquid dày hơn (0.88–0.9) cho dễ đọc. Còn: nền sáng + alert, xem ở Checkpoint 1.
 
 **File dự kiến:** `src/shell/notch-shape.ts` (+ test), `src/shell/NotchShape.tsx`, `src/shell/Notch.tsx`, `src/shell/Notch.module.css`, `src/shell/PillPreview.tsx`, `src/shell/settings.ts`, `src-tauri/src/settings.rs`, `src/settings/SettingsApp.tsx`
 **Quy mô:** M

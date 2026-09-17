@@ -7,18 +7,23 @@
   align-items: flex-start;
 }
 
+/* Background and rim come from NotchShape, which also draws the flares outside this box when attached. */
 .notch {
+  position: relative;
   box-sizing: border-box;
   flex-shrink: 0;
-  overflow: hidden;
-  background: var(--notch-bg);
-  border: var(--notch-border);
-  box-shadow: var(--notch-highlight);
   color: var(--text);
   transition:
     width var(--motion-resize),
-    height var(--motion-resize),
-    border-radius var(--motion-resize);
+    height var(--motion-resize);
+}
+
+.body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transition: border-radius var(--motion-resize);
 }
 
 .pill {

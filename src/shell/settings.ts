@@ -1,6 +1,15 @@
 // Frontend view of settings (SPEC §7). Rust validates and stores them; this module maps them onto the notch.
 import type { OpenMode } from "./notch-machine";
-import { ALWAYS_SIZES, PANEL_WIDTHS, PILL_SIZES, type AlwaysSize, type PanelWidth, type PillSize, type Size } from "./notch-sizes";
+import type { NotchLayout, NotchMaterial } from "./notch-shape";
+import {
+  ALWAYS_SIZES,
+  PANEL_WIDTHS,
+  PILL_SIZES,
+  type AlwaysSize,
+  type PanelWidth,
+  type PillSize,
+  type Size,
+} from "./notch-sizes";
 import type { WidgetDefinition } from "./widget-contract";
 
 export interface WidgetSetting {
@@ -17,6 +26,8 @@ export interface Settings {
     topGap: number;
     openMode: OpenMode;
     priorityWidget: string | null;
+    layout: NotchLayout;
+    material: NotchMaterial;
   };
   fontScale: number;
   widgets: WidgetSetting[];
@@ -33,7 +44,16 @@ export interface Settings {
 /** Must match `Settings::default()` in src-tauri/src/settings.rs. */
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
-  pill: { size: "m", alwaysSize: "m", panelWidth: "m", topGap: 8, openMode: "hover", priorityWidget: "claude-sessions" },
+  pill: {
+    size: "m",
+    alwaysSize: "m",
+    panelWidth: "m",
+    topGap: 8,
+    openMode: "hover",
+    priorityWidget: "claude-sessions",
+    layout: "attached",
+    material: "liquid",
+  },
   fontScale: 100,
   widgets: [],
   hotkeys: { commandBar: "Ctrl+Space" },
@@ -42,7 +62,10 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 /** Stored order and flags win; widgets that no longer exist are dropped; new widgets are appended, enabled. */
-export function mergeWidgets(stored: readonly WidgetSetting[], registered: readonly WidgetDefinition[]): WidgetSetting[] {
+export function mergeWidgets(
+  stored: readonly WidgetSetting[],
+  registered: readonly WidgetDefinition[],
+): WidgetSetting[] {
   const known = new Set(registered.map((w) => w.id));
   const kept = stored.filter((w) => known.has(w.id));
   const seen = new Set(kept.map((w) => w.id));
@@ -57,6 +80,8 @@ export interface NotchSettingsProps {
   alwaysSize: Size;
   panelWidth: number;
   topGap: number;
+  layout: NotchLayout;
+  material: NotchMaterial;
   fontScale: number;
 }
 
@@ -73,6 +98,8 @@ export function notchPropsFrom(settings: Settings, registered: readonly WidgetDe
     alwaysSize: ALWAYS_SIZES[settings.pill.alwaysSize],
     panelWidth: PANEL_WIDTHS[settings.pill.panelWidth],
     topGap: settings.pill.topGap,
+    layout: settings.pill.layout,
+    material: settings.pill.material,
     fontScale: settings.fontScale / 100,
   };
 }

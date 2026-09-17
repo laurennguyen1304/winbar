@@ -26,6 +26,8 @@ vi.mock("./native", () => ({
 }));
 
 const notch = () => screen.getByTestId("notch");
+/** The notch's content box; it carries the corner radius (the shape layer draws the background). */
+const body = () => notch().children[1] as HTMLElement;
 const lastLayout = () => requestNotchLayout.mock.calls.at(-1) as unknown as [{ width: number; height: number }, number];
 const tick = (ms: number) => act(() => vi.advanceTimersByTime(ms));
 
@@ -37,12 +39,22 @@ describe("Notch", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it("starts as a 340x40 pill, 8px from the top, with fully rounded ends", () => {
+  it("starts as a 340x40 attached notch: flush with the top, window wider by the flares, rounded bottom", () => {
     render(<Notch />);
     tick(0);
     expect(notch()).toHaveAttribute("data-state", "pill");
-    expect(notch()).toHaveStyle({ width: "340px", height: "40px", borderRadius: "20px" });
+    expect(notch()).toHaveAttribute("data-layout", "attached");
+    expect(notch()).toHaveStyle({ width: "340px", height: "40px" });
+    expect(body()).toHaveStyle({ borderRadius: "0 0 20px 20px" });
+    expect(lastLayout()).toEqual([{ width: 368, height: 40 }, 0]);
+  });
+
+  it("float layout: 8px from the top with fully rounded ends", () => {
+    render(<Notch layout="float" material="dense" />);
+    tick(0);
+    expect(body()).toHaveStyle({ borderRadius: "20px" });
     expect(lastLayout()).toEqual([{ width: 340, height: 40 }, 8]);
+    expect(notch().querySelector("[data-material]")).toHaveAttribute("data-material", "dense");
   });
 
   it("hover mode: opens after 250ms and grows the native window before the morph", () => {
@@ -54,7 +66,7 @@ describe("Notch", () => {
     tick(1);
     expect(notch()).toHaveAttribute("data-state", "expanded");
     tick(0);
-    expect(lastLayout()[0].width).toBe(780);
+    expect(lastLayout()[0].width).toBe(780 + 28);
   });
 
   it("hover mode: closes on leave and shrinks the native window only after the morph", () => {
@@ -67,7 +79,7 @@ describe("Notch", () => {
     tick(RESIZE_MS - 1);
     expect(requestNotchLayout).not.toHaveBeenCalled();
     tick(1);
-    expect(lastLayout()).toEqual([{ width: 340, height: 40 }, 8]);
+    expect(lastLayout()).toEqual([{ width: 368, height: 40 }, 0]);
   });
 
   it("click mode: ignores hover, opens on click, closes with Escape", () => {
@@ -100,7 +112,8 @@ describe("Notch", () => {
     fireEvent.mouseEnter(notch());
     tick(500);
     expect(notch()).toHaveAttribute("data-state", "always");
-    expect(notch()).toHaveStyle({ width: "620px", height: "64px", borderRadius: "32px" });
+    expect(notch()).toHaveStyle({ width: "620px", height: "64px" });
+    expect(body()).toHaveStyle({ borderRadius: "0 0 32px 32px" });
   });
 
   it("opens the panel when the tray asks for it, in any mode", () => {
@@ -118,9 +131,15 @@ describe("Notch", () => {
   });
 
   it("uses the requested pill size and gap", () => {
-    render(<Notch pillSize={PILL_SIZES.l} topGap={40} />);
+    render(<Notch pillSize={PILL_SIZES.l} topGap={40} layout="float" />);
     tick(0);
     expect(lastLayout()).toEqual([{ width: 400, height: 46 }, 40]);
+  });
+
+  it("ignores the gap when attached", () => {
+    render(<Notch pillSize={PILL_SIZES.l} topGap={40} />);
+    tick(0);
+    expect(lastLayout()).toEqual([{ width: 428, height: 46 }, 0]);
   });
 
   it("shows the first widget that provides pill content", () => {
@@ -159,10 +178,11 @@ describe("Notch", () => {
       renderWithShell();
       act(() => shell.api.alerts.push(approval));
       expect(notch()).toHaveAttribute("data-state", "alert");
-      expect(notch()).toHaveStyle({ width: "490px", height: "44px", borderRadius: "22px" });
+      expect(notch()).toHaveStyle({ width: "490px", height: "44px" });
+      expect(body()).toHaveStyle({ borderRadius: "0 0 22px 22px" });
       expect(screen.getByText("wait for you")).toBeInTheDocument();
       tick(0);
-      expect(lastLayout()).toEqual([{ width: 490, height: 44 }, 8]);
+      expect(lastLayout()).toEqual([{ width: 518, height: 44 }, 0]);
     });
 
     it("does not open on hover while an alert is shown", () => {

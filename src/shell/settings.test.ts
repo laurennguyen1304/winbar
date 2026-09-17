@@ -32,7 +32,16 @@ describe("mergeWidgets", () => {
 describe("notchPropsFrom", () => {
   const settings: Settings = {
     ...DEFAULT_SETTINGS,
-    pill: { size: "l", alwaysSize: "l", panelWidth: "s", topGap: 40, openMode: "click", priorityWidget: "media" },
+    pill: {
+      size: "l",
+      alwaysSize: "l",
+      panelWidth: "s",
+      topGap: 40,
+      openMode: "click",
+      priorityWidget: "media",
+      layout: "float",
+      material: "dense",
+    },
     fontScale: 115,
     widgets: [
       { id: "clipboard", enabled: true },
@@ -40,6 +49,11 @@ describe("notchPropsFrom", () => {
       { id: "system", enabled: true },
     ],
   };
+
+  it("maps layout and material", () => {
+    expect(notchPropsFrom(settings, registered)).toMatchObject({ layout: "float", material: "dense" });
+    expect(notchPropsFrom(DEFAULT_SETTINGS, registered)).toMatchObject({ layout: "attached", material: "liquid" });
+  });
 
   it("maps sizes, gap, mode, priority and font scale", () => {
     const props = notchPropsFrom(settings, registered);
@@ -73,8 +87,18 @@ describe("moveWidget", () => {
   const ids = (l: { id: string }[]) => l.map((w) => w.id);
 
   it("swaps with the neighbour of the same tab, skipping other tabs", () => {
-    expect(ids(moveWidget(list, "clipboard", -1, reg))).toEqual(["clipboard", "claude-sessions", "media", "claude-usage"]);
-    expect(ids(moveWidget(list, "claude-sessions", 1, reg))).toEqual(["media", "claude-usage", "clipboard", "claude-sessions"]);
+    expect(ids(moveWidget(list, "clipboard", -1, reg))).toEqual([
+      "clipboard",
+      "claude-sessions",
+      "media",
+      "claude-usage",
+    ]);
+    expect(ids(moveWidget(list, "claude-sessions", 1, reg))).toEqual([
+      "media",
+      "claude-usage",
+      "clipboard",
+      "claude-sessions",
+    ]);
   });
 
   it("does nothing at the ends of a tab or for unknown ids", () => {
@@ -84,7 +108,13 @@ describe("moveWidget", () => {
   });
 
   it("keeps the enabled flags with their widgets", () => {
-    const flagged = [{ id: "media", enabled: false }, { id: "clipboard", enabled: true }];
-    expect(moveWidget(flagged, "clipboard", -1, reg)).toEqual([{ id: "clipboard", enabled: true }, { id: "media", enabled: false }]);
+    const flagged = [
+      { id: "media", enabled: false },
+      { id: "clipboard", enabled: true },
+    ];
+    expect(moveWidget(flagged, "clipboard", -1, reg)).toEqual([
+      { id: "clipboard", enabled: true },
+      { id: "media", enabled: false },
+    ]);
   });
 });

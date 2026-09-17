@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { Icon } from "./Icon";
+import { NotchShape } from "./NotchShape";
 import { pickMidPills, pickPill } from "./pill-content";
 import { notchPropsFrom, type Settings } from "./settings";
 import type { WidgetDefinition } from "./widget-contract";
@@ -47,19 +48,27 @@ export function PillPreview({
     );
   }
 
+  const radius = size.height / 2;
   return (
     <div
       className={styles.notch}
       data-testid={`preview-${variant}`}
-      style={{ width: size.width, height: size.height, borderRadius: size.height / 2 }}
+      data-layout={props.layout}
+      style={{ width: size.width, height: size.height }}
       aria-hidden
       inert
     >
+      <NotchShape layout={props.layout} material={props.material} targetHeight={size.height} radius={radius} />
       <div
-        className={variant === "always" ? `${styles.pill} ${styles.large}` : styles.pill}
-        style={{ zoom: props.fontScale, cursor: "default" }}
+        className={styles.body}
+        style={{ borderRadius: props.layout === "attached" ? `0 0 ${radius}px ${radius}px` : radius }}
       >
-        {content}
+        <div
+          className={variant === "always" ? `${styles.pill} ${styles.large}` : styles.pill}
+          style={{ zoom: props.fontScale, cursor: "default" }}
+        >
+          {content}
+        </div>
       </div>
     </div>
   );

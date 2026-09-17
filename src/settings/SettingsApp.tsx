@@ -153,7 +153,32 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
                 ]}
               />
             </Row>
-            <Row title="Cách mép trên màn hình" description="Tăng lên ~40 nếu dùng cùng thanh yasb">
+            <Row title="Kiểu notch" description="Giọt nước: dính mép trên, loe cong vào mép · Pill nổi: cách mép trên">
+              <Choice
+                label="Kiểu notch"
+                value={view.pill.layout}
+                onChange={(layout) => setPill({ layout })}
+                options={[
+                  { value: "attached", label: "Giọt nước" },
+                  { value: "float", label: "Pill nổi" },
+                ]}
+              />
+            </Row>
+            <Row title="Nền notch" description="Liquid glass: trong hơn, có vệt sáng · Đặc: dễ đọc trên trang sáng">
+              <Choice
+                label="Nền notch"
+                value={view.pill.material}
+                onChange={(material) => setPill({ material })}
+                options={[
+                  { value: "liquid", label: "Liquid glass" },
+                  { value: "dense", label: "Đặc" },
+                ]}
+              />
+            </Row>
+            <Row
+              title="Cách mép trên màn hình"
+              description="Chỉ dùng cho pill nổi. Tăng lên ~40 nếu dùng cùng thanh yasb"
+            >
               <div className="flex w-64 items-center gap-3">
                 <Slider
                   aria-label="Cách mép trên màn hình"
@@ -164,7 +189,9 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
                   onValueChange={([topGap]) => setDraft({ ...view, pill: { ...view.pill, topGap } })}
                   onValueCommit={([topGap]) => setPill({ topGap })}
                 />
-                <output className="w-10 text-right font-mono text-xs text-muted-foreground">{view.pill.topGap}px</output>
+                <output className="w-10 text-right font-mono text-xs text-muted-foreground">
+                  {view.pill.topGap}px
+                </output>
               </div>
             </Row>
             <Row title="Cách mở" description="hover: rê chuột · click: bấm · always: pill lớn luôn hiện">
@@ -197,11 +224,17 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
               if (rows.length === 0) return null;
               return (
                 <div key={tab} className="mt-4">
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">{TAB_LABEL[tab]}</span>
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
+                    {TAB_LABEL[tab]}
+                  </span>
                   {rows.map((row, i) => {
                     const def = byId.get(row.id) as WidgetDefinition;
                     return (
-                      <div key={row.id} className="flex items-center gap-3 border-b py-2.5" data-testid={`widget-row-${row.id}`}>
+                      <div
+                        key={row.id}
+                        className="flex items-center gap-3 border-b py-2.5"
+                        data-testid={`widget-row-${row.id}`}
+                      >
                         <div className="flex gap-0.5">
                           <Button
                             variant="ghost"
@@ -271,7 +304,10 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
 
           <section id="set-general">
             <h2 className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Chung</h2>
-            <Row title="Khởi động cùng Windows" description="Tự mở winbar khi đăng nhập (chỉ bản cài đặt, không áp dụng khi chạy dev)">
+            <Row
+              title="Khởi động cùng Windows"
+              description="Tự mở winbar khi đăng nhập (chỉ bản cài đặt, không áp dụng khi chạy dev)"
+            >
               <Switch
                 aria-label="Khởi động cùng Windows"
                 checked={view.launchAtStartup}

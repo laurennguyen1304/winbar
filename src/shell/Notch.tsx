@@ -24,6 +24,8 @@ import {
   pillRadius,
   type Size,
 } from "./notch-sizes";
+import { windowSizeFor, type NotchLayout, type NotchMaterial } from "./notch-shape";
+import { NotchShape } from "./NotchShape";
 import { Panel } from "./Panel";
 import { pickMidPills, pickPill } from "./pill-content";
 import { registry } from "./registry";
@@ -43,6 +45,8 @@ interface NotchProps {
   alwaysSize?: Size;
   panelWidth?: number;
   topGap?: number;
+  layout?: NotchLayout;
+  material?: NotchMaterial;
   /** Settings › Cỡ chữ, 0.85–1.3: scales text and icons inside the notch, not the notch size. */
   fontScale?: number;
 }
@@ -78,6 +82,8 @@ export function Notch({
   alwaysSize = ALWAYS_SIZES.m,
   panelWidth = PANEL_WIDTHS.m,
   topGap = DEFAULT_TOP_GAP,
+  layout = "attached",
+  material = "liquid",
   fontScale = 1,
 }: NotchProps) {
   const { shell, snapshot } = useShellRuntime();
@@ -154,12 +160,15 @@ export function Notch({
     firstLayout.current = false;
     lastTarget.current = target;
     const timer = setTimeout(() => {
-      requestNotchLayout(target, topGap).catch((err: unknown) => console.error("notch_layout failed", err));
+      // Attached: flush with the top edge, window wider by the flares (SPEC §15).
+      requestNotchLayout(windowSizeFor(target, layout), layout === "attached" ? 0 : topGap).catch((err: unknown) =>
+        console.error("notch_layout failed", err),
+      );
     }, delay);
     return () => clearTimeout(timer);
     // Depend on the numbers, not the object identities.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, panel.width, panel.height, collapsed.width, collapsed.height, topGap]);
+  }, [expanded, panel.width, panel.height, collapsed.width, collapsed.height, topGap, layout]);
 
   // Esc and clicks elsewhere close the panel.
   useEffect(() => {
@@ -221,11 +230,7 @@ export function Notch({
     pillContent = defaultPill;
   }
 
-  const pillClass = [
-    styles.pill,
-    visual === "always" ? styles.large : "",
-    alert ? styles.alert : "",
-  ]
+  const pillClass = [styles.pill, visual === "always" ? styles.large : "", alert ? styles.alert : ""]
     .filter(Boolean)
     .join(" ");
 
@@ -235,38 +240,45 @@ export function Notch({
         className={styles.notch}
         data-testid="notch"
         data-state={visual}
-        style={{ width: block.width, height: block.height, borderRadius: radius }}
+        data-layout={layout}
+        style={{ width: block.width, height: block.height }}
         onMouseEnter={() => dispatch({ type: "pointerEnter" })}
         onMouseLeave={() => dispatch({ type: "pointerLeave" })}
       >
-        {expanded ? (
-          <div className={styles.panel} ref={contentRef} style={{ width: panelWidth / fontScale, zoom: fontScale }}>
-            <Panel
-              widgets={widgets}
-              tab={tab}
-              onTabChange={setTab}
-              onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
-              onOpenSettings={() => void openSettings()}
-            />
-          </div>
-        ) : (
-          <div
-            className={pillClass}
-            style={{ zoom: fontScale }}
-            role="button"
-            tabIndex={0}
-            aria-label={alert ? "Thông báo trên pill" : "Mở notch"}
-            onClick={openFromPill}
-            onKeyDown={(e) => {
-              if ((e.key === "Enter" || e.key === " ") && !fromControl(e)) {
-                e.preventDefault();
-                openFromPill(e);
-              }
-            }}
-          >
-            {pillContent}
-          </div>
-        )}
+        <NotchShape layout={layout} material={material} targetHeight={block.height} radius={radius} />
+        <div
+          className={styles.body}
+          style={{ borderRadius: layout === "attached" ? `0 0 ${radius}px ${radius}px` : radius }}
+        >
+          {expanded ? (
+            <div className={styles.panel} ref={contentRef} style={{ width: panelWidth / fontScale, zoom: fontScale }}>
+              <Panel
+                widgets={widgets}
+                tab={tab}
+                onTabChange={setTab}
+                onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
+                onOpenSettings={() => void openSettings()}
+              />
+            </div>
+          ) : (
+            <div
+              className={pillClass}
+              style={{ zoom: fontScale }}
+              role="button"
+              tabIndex={0}
+              aria-label={alert ? "Thông báo trên pill" : "Mở notch"}
+              onClick={openFromPill}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === " ") && !fromControl(e)) {
+                  e.preventDefault();
+                  openFromPill(e);
+                }
+              }}
+            >
+              {pillContent}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Widgets' background work keeps running while the panel is closed. */}

@@ -1,0 +1,81 @@
+/* Notch background and rim (SPEC §15 V1–V2). Positioned and sized by NotchShape from the notch's live size. */
+.shape {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.rim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.rim path {
+  fill: none;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Dense: the original opaque fill. */
+.shape[data-material="dense"] .fill {
+  background: var(--notch-bg);
+}
+
+.shape[data-material="dense"] .outer {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+
+.shape[data-material="dense"] .inner {
+  display: none;
+}
+
+/* Liquid glass Windows can draw: no blur behind the window, so a lighter tinted body, top sheen, bright rim, inner edge. */
+.shape[data-material="liquid"] .fill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.04) 34%, rgba(255, 255, 255, 0) 58%),
+    radial-gradient(120% 140% at 50% 130%, rgba(140, 170, 255, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(30, 36, 48, 0.74), rgba(14, 18, 26, 0.8));
+}
+
+/* The open panel is mostly text: a denser body keeps it readable over busy windows. */
+:global([data-state="expanded"]) > .shape[data-material="liquid"] .fill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 18%, rgba(255, 255, 255, 0) 40%),
+    radial-gradient(120% 60% at 50% 110%, rgba(140, 170, 255, 0.12), transparent 62%),
+    linear-gradient(180deg, rgba(28, 33, 44, 0.88), rgba(14, 18, 26, 0.9));
+}
+
+.shape[data-material="liquid"] .fill::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 0;
+  height: 46%;
+  background: radial-gradient(60% 100% at 50% 0%, rgba(255, 255, 255, 0.16), transparent 70%);
+}
+
+.shape[data-material="liquid"] .fill::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  bottom: 10%;
+  width: 36%;
+  height: 30%;
+  background: radial-gradient(closest-side, rgba(160, 200, 255, 0.1), transparent);
+  filter: blur(4px);
+}
+
+.shape[data-material="liquid"] .inner {
+  stroke: rgba(255, 255, 255, 0.07);
+}
