@@ -10,6 +10,8 @@ const EXCLUDED: &[&str] = &[
     "\\.cargo\\",
     "\\.rustup\\",
     "\\AppData\\",
+    "\\.venv\\",
+    "\\__pycache__\\",
     "$Recycle.Bin",
 ];
 

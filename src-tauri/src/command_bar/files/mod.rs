@@ -6,6 +6,7 @@ pub mod windows_search;
 
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 use tauri::path::BaseDirectory;
@@ -42,8 +43,11 @@ pub struct FileSearch {
 /// Highest generation the page has asked for; older searches skip or drop their work.
 #[derive(Default)]
 pub struct FileSearchState {
-    latest: AtomicU64,
+    latest: Arc<AtomicU64>,
 }
+
+/// One index query at a time: parallel queries slowed each other past the page's 1.5 s provider timeout.
+static WINDOWS_SEARCH_LOCK: Mutex<()> = Mutex::new(());
 
 pub const HOME_LABEL: &str = "Thư mục người dùng";
 
@@ -169,7 +173,7 @@ pub async fn search_files<R: Runtime>(
                 else {
                     return Ok(response);
                 };
-                match run_windows_search(sql).await {
+                match run_windows_search(sql, state.latest.clone(), generation).await {
                     Ok(rows) if !superseded(&state, generation) => {
                         response.hits = rows
                             .into_iter()
@@ -217,9 +221,20 @@ async fn run_everything(
     Err(EverythingError::Unavailable("Windows only".into()))
 }
 
+/// Waits for the previous query, then skips the work entirely if the user has typed on since.
 #[cfg(windows)]
-async fn run_windows_search(sql: String) -> Result<Vec<(String, String)>, String> {
+async fn run_windows_search(
+    sql: String,
+    latest: Arc<AtomicU64>,
+    generation: u64,
+) -> Result<Vec<(String, String)>, String> {
     tauri::async_runtime::spawn_blocking(move || {
+        let _one_at_a_time = WINDOWS_SEARCH_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if latest.load(Ordering::SeqCst) > generation {
+            return Ok(Vec::new());
+        }
         windows_search::query(&sql).map_err(|e| e.to_string())
     })
     .await
@@ -227,7 +242,11 @@ async fn run_windows_search(sql: String) -> Result<Vec<(String, String)>, String
 }
 
 #[cfg(not(windows))]
-async fn run_windows_search(_sql: String) -> Result<Vec<(String, String)>, String> {
+async fn run_windows_search(
+    _sql: String,
+    _latest: Arc<AtomicU64>,
+    _generation: u64,
+) -> Result<Vec<(String, String)>, String> {
     Err("Windows only".into())
 }
 

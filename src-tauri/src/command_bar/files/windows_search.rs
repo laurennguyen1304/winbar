@@ -1,14 +1,19 @@
 //! File search through the Windows Search index (SPEC-command-bar §5.4). The SQL is built only by
 //! [`build_sql`], which escapes everything the user typed; the OLE DB plumbing lives in [`query`].
 
-/// Folders whose contents are noise in a file launcher (build output, package caches, app data).
+/// Folder words whose contents are noise in a file launcher (build output, package caches, app data).
+/// Matched with full-text `CONTAINS` on the folder path: `NOT LIKE` on the path made queries 3-5x slower
+/// (330-630 ms vs 70-200 ms on the development machine). A folder whose name contains one of these words is
+/// left out too, which is accepted. `.git` is not listed: its word "git" would hide ordinary folders named git,
+/// and hidden folders are not indexed by default.
 const EXCLUDED_DIRS: &[&str] = &[
     "node_modules",
     "target",
-    ".git",
+    "AppData",
     ".cargo",
     ".rustup",
-    "AppData",
+    ".venv",
+    "__pycache__",
 ];
 const MAX_TERMS: usize = 6;
 const MAX_TERM_CHARS: usize = 64;
@@ -62,7 +67,7 @@ pub fn build_sql(query: &str, scope: &str, limit: u32) -> Option<String> {
     }
     for dir in EXCLUDED_DIRS {
         sql.push_str(&format!(
-            " AND System.ItemPathDisplay NOT LIKE '%\\{dir}\\%'"
+            " AND NOT CONTAINS(System.ItemFolderPathDisplay, '\"{dir}\"')"
         ));
     }
     sql.push_str(" ORDER BY System.DateModified DESC");
@@ -255,7 +260,11 @@ mod tests {
         let sql = build_sql("  brief   qikify ", "C:\\Users\\Lenovo", 20).unwrap();
         assert!(sql.starts_with("SELECT TOP 20 System.ItemPathDisplay, System.ItemType FROM SystemIndex WHERE SCOPE='file:C:/Users/Lenovo'"));
         assert!(sql.contains("System.FileName LIKE '%brief%' AND System.FileName LIKE '%qikify%'"));
-        assert!(sql.contains("NOT LIKE '%\\node_modules\\%'"));
+        assert!(sql.contains(" AND NOT CONTAINS(System.ItemFolderPathDisplay, '\"node_modules\"')"));
+        assert!(
+            !sql.contains("NOT LIKE"),
+            "path LIKE exclusions are too slow: {sql}"
+        );
         assert!(sql.ends_with("ORDER BY System.DateModified DESC"));
     }
 

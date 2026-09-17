@@ -33,7 +33,10 @@ const SOURCE_LABEL: Record<FileSearch["source"], string> = {
 };
 
 export function createFilesProvider(native: FilesNative = { search: searchFiles, open: openPath, reveal: revealPath }): SearchProvider {
+  // Rust drops requests older than the newest it has seen. Base the numbers on the clock so a reloaded page
+  // never starts below numbers an earlier page already used.
   let generation = 0;
+  const nextGeneration = () => (generation = Math.max(generation + 1, Date.now()));
   let source: FileSearch["source"] = "off";
   return {
     id: "files",
@@ -45,7 +48,7 @@ export function createFilesProvider(native: FilesNative = { search: searchFiles,
     async search(query, signal) {
       if (query.trim().length < MIN_CHARS) return [];
       await wait(DEBOUNCE_MS, signal);
-      const response = await native.search(query, ++generation);
+      const response = await native.search(query, nextGeneration());
       if (signal.aborted) return [];
       source = response.source;
       if (response.error) {

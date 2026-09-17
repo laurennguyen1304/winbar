@@ -32,7 +32,7 @@ describe("files provider", () => {
     expect(native.search).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     const rows = await pending;
-    expect(native.search).toHaveBeenCalledWith("brief", 1);
+    expect(native.search).toHaveBeenCalledWith("brief", expect.any(Number));
     expect(rows.map((r) => [r.title, r.subtitle, r.icon, r.verb])).toEqual([
       ["brief.docx", "Documents", "file", "Mở"],
       ["Briefs", "Thư mục người dùng", "folder", "Mở"],
@@ -61,15 +61,19 @@ describe("files provider", () => {
     expect(native.search).not.toHaveBeenCalled();
   });
 
-  it("numbers each request so Rust can drop older ones", async () => {
+  it("numbers requests from the clock, always increasing, so a reloaded page is never taken for an old one", async () => {
+    vi.setSystemTime(new Date("2026-09-17T07:00:00Z"));
     const native = fakeNative();
     const provider = createFilesProvider(native);
-    for (const q of ["br", "bri"]) {
+    for (const q of ["br", "bri", "brie"]) {
       const p = provider.search(q, new AbortController().signal);
       await vi.advanceTimersByTimeAsync(DEBOUNCE_MS);
       await p;
     }
-    expect(native.search.mock.calls.map((c) => c[1])).toEqual([1, 2]);
+    const numbers = native.search.mock.calls.map((c) => c[1]);
+    expect(numbers[0]).toBeGreaterThanOrEqual(Date.parse("2026-09-17T07:00:00Z"));
+    expect(numbers[1]).toBeGreaterThan(numbers[0]);
+    expect(numbers[2]).toBeGreaterThan(numbers[1]);
   });
 
   it("shows one dimmed row when the index fails", async () => {
