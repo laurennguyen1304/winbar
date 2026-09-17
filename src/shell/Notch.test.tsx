@@ -7,13 +7,18 @@ import { FLASH_MS, createShell, type Shell } from "./shell";
 import { ShellProvider } from "./shell-context";
 import type { PillAlert } from "./widget-contract";
 
-const { requestNotchLayout, blurHandlers } = vi.hoisted(() => ({
+const { requestNotchLayout, blurHandlers, trayOpenHandlers } = vi.hoisted(() => ({
   requestNotchLayout: vi.fn(() => Promise.resolve()),
   blurHandlers: [] as Array<() => void>,
+  trayOpenHandlers: [] as Array<() => void>,
 }));
 vi.mock("./native", () => ({
   requestNotchLayout,
   openSettings: () => Promise.resolve(),
+  onOpenNotchRequested: (cb: () => void) => {
+    trayOpenHandlers.push(cb);
+    return () => trayOpenHandlers.splice(trayOpenHandlers.indexOf(cb), 1);
+  },
   onWindowBlur: (cb: () => void) => {
     blurHandlers.push(cb);
     return () => blurHandlers.splice(blurHandlers.indexOf(cb), 1);
@@ -96,6 +101,13 @@ describe("Notch", () => {
     tick(500);
     expect(notch()).toHaveAttribute("data-state", "always");
     expect(notch()).toHaveStyle({ width: "620px", height: "64px", borderRadius: "32px" });
+  });
+
+  it("opens the panel when the tray asks for it, in any mode", () => {
+    render(<Notch mode="click" />);
+    expect(trayOpenHandlers).toHaveLength(1);
+    act(() => trayOpenHandlers[0]());
+    expect(notch()).toHaveAttribute("data-state", "expanded");
   });
 
   it("uses the requested pill size and gap", () => {

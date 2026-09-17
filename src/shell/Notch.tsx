@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "./Icon";
-import { onWindowBlur, openSettings, requestNotchLayout } from "./native";
+import { onOpenNotchRequested, onWindowBlur, openSettings, requestNotchLayout } from "./native";
 import type { OpenMode } from "./notch-machine";
 import {
   ALWAYS_SIZES,
@@ -99,6 +99,9 @@ export function Notch({
     });
     return () => shell.bindNotch(undefined);
   }, [shell, dispatch]);
+
+  // Tray › "Mở notch".
+  useEffect(() => onOpenNotchRequested(() => dispatch({ type: "clickPill" })), [dispatch]);
 
   // Alerts from widgets that are no longer enabled go away.
   const enabledIds = widgets.map((w) => w.id).join("\n");

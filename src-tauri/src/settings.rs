@@ -301,12 +301,22 @@ pub fn update_settings<R: Runtime>(
     state: tauri::State<'_, SettingsState>,
     settings: Value,
 ) -> Result<Settings, String> {
-    let (next, warnings) = from_value(&settings);
+    apply(&app, &state, &settings)
+}
+
+/// Shared by the command and native callers (tray): validate, save, update state, broadcast, sync the tray.
+pub fn apply<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &SettingsState,
+    settings: &Value,
+) -> Result<Settings, String> {
+    let (next, warnings) = from_value(settings);
     for w in &warnings {
         eprintln!("winbar settings: {w}");
     }
     save(&state.path, &next)?;
     *state.current.lock().map_err(|e| e.to_string())? = next.clone();
+    crate::tray::sync_settings(app, &next);
     app.emit(SETTINGS_CHANGED, &next)
         .map_err(|e| e.to_string())?;
     Ok(next)

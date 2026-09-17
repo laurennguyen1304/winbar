@@ -4,6 +4,7 @@
 //! resize/place the native window through [`notch_layout`]. The native window always matches the
 //! notch block, so everything outside it stays click-through.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -63,6 +64,8 @@ pub struct LayoutRequest {
 #[derive(Default)]
 pub struct NotchState {
     pub layout: Mutex<Option<LayoutRequest>>,
+    /// "Ẩn notch tạm thời" from the tray: layout calls keep sizing the window but never show it.
+    pub hidden: AtomicBool,
 }
 
 fn primary_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
@@ -121,10 +124,29 @@ pub fn notch_layout<R: Runtime>(
     };
     apply(&window, req)?;
     *state.layout.lock().map_err(|e| e.to_string())? = Some(req);
-    if !window.is_visible().map_err(|e| e.to_string())? {
+    if !state.hidden.load(Ordering::Relaxed) && !window.is_visible().map_err(|e| e.to_string())? {
         window.show().map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// Hides or shows the notch window (tray "Ẩn notch tạm thời"). The frontend keeps running, so alerts still queue.
+pub fn set_hidden<R: Runtime>(app: &AppHandle<R>, hidden: bool) -> tauri::Result<()> {
+    app.state::<NotchState>()
+        .hidden
+        .store(hidden, Ordering::Relaxed);
+    if let Some(window) = app.get_webview_window(NOTCH_LABEL) {
+        if hidden {
+            window.hide()?;
+        } else {
+            window.show()?;
+        }
+    }
+    Ok(())
+}
+
+pub fn is_hidden<R: Runtime>(app: &AppHandle<R>) -> bool {
+    app.state::<NotchState>().hidden.load(Ordering::Relaxed)
 }
 
 /// Creates the hidden notch window. It becomes visible on the frontend's first `notch_layout` call.

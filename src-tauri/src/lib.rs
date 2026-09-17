@@ -1,5 +1,6 @@
 mod settings;
 mod settings_window;
+mod tray;
 mod window;
 
 use tauri::Manager;
@@ -19,6 +20,7 @@ pub fn run() {
             let settings = settings::SettingsState::load(app.handle())?;
             app.manage(settings);
             window::create(app.handle())?;
+            tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());
             Ok(())
         })

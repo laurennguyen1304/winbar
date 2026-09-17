@@ -65,3 +65,19 @@ export async function quitApp(): Promise<void> {
   if (!isTauri()) return;
   await invoke("quit_app");
 }
+
+// ---------------------------------------------------------------- tray (src-tauri/src/tray.rs)
+
+/** The tray asked to open the notch panel. */
+export function onOpenNotchRequested(handler: () => void): () => void {
+  if (!isTauri()) return () => {};
+  let unlisten: (() => void) | undefined;
+  let disposed = false;
+  listen("notch-open-requested", () => handler())
+    .then((fn) => (disposed ? fn() : (unlisten = fn)))
+    .catch((err: unknown) => console.error("listen notch-open-requested failed", err));
+  return () => {
+    disposed = true;
+    unlisten?.();
+  };
+}

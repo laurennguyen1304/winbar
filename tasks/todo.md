@@ -243,12 +243,22 @@ Cài đặt… · Khởi động cùng Windows ✓ · Thoát winbar. "Command ba
 "Ẩn notch tạm thời" ẩn tới khi bấm lại; alert vẫn xếp hàng. "Thoát winbar" gỡ phím tắt và đóng hẳn app.
 
 **Tiêu chí chấp nhận:**
-- [ ] Mỗi mục menu chạy đúng; dấu ✓ khớp trạng thái autostart
-- [ ] Ẩn rồi hiện lại: alert đẩy trong lúc ẩn vẫn hiện
-- [ ] Thoát không để lại tiến trình
+- [x] Mỗi mục menu chạy đúng; dấu ✓ khớp trạng thái autostart
+- [~] Ẩn rồi hiện lại: alert đẩy trong lúc ẩn vẫn hiện — cửa sổ chỉ bị ẩn, frontend và hàng đợi alert vẫn chạy; chưa đẩy alert thật trong lúc ẩn
+- [x] Thoát không để lại tiến trình
 
-**Kiểm tra:**
-- [ ] Thủ công: bấm từng mục; kiểm tra Task Manager sau khi thoát
+**Kiểm tra:** (2026-09-17, bấm menu khay thật qua UI Automation + tọa độ, trả chuột về chỗ cũ)
+- [x] `cargo test` 16 (tray 3) · clippy sạch · `npm test` 98 · lint sạch
+- [x] Icon `sparks` (Iconoir) hiện trong khay; menu đủ 6 mục đúng thứ tự
+- [x] Ẩn notch tạm thời → cửa sổ notch ẩn, nhãn có ✓ · Mở notch → hiện lại và mở panel · Cài đặt… → mở cửa sổ Cài đặt
+- [x] Khởi động cùng Windows → `launchAtStartup` true→false→true trong file, nhãn đổi theo · Thoát winbar → 0 tiến trình
+
+**Ghi chú:**
+- Icon app/khay tạo bằng `tauri icon` từ `design/icons/app-icon.svg` (sparks trên nền kính tối); bỏ icon Android/iOS.
+- Trạng thái bật/tắt hiện bằng "✓" ở cuối nhãn, không dùng check item của muda: check item tạo sẵn trạng thái bật không được vẽ trong popup khay (muda vẫn báo `is_checked = true`).
+- Không gắn phím tắt vào mục menu (chuỗi phím người dùng sửa được, chuỗi sai sẽ làm tạo menu lỗi); hiện "(Ctrl+Space)" trong nhãn.
+- Chuột trái vào icon khay = Mở notch; chuột phải = menu.
+- Phím tắt chưa được gỡ khi Thoát vì chưa đăng ký (Task 11). Autostart thật (đăng ký với Windows) ở Task 12; hiện mới lưu cờ.
 
 **Phụ thuộc:** Checkpoint 3
 **File dự kiến:** `src-tauri/src/tray.rs`, `src-tauri/src/main.rs`, `src-tauri/icons/*`

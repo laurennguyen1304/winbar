@@ -50,7 +50,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 ### Checkpoint 3 — Cài đặt đổi là notch đổi, khởi động lại vẫn nhớ
 
 ### Giai đoạn 4 — Tích hợp hệ thống
-- [ ] Task 10: Icon khay và menu
+- [x] Task 10: Icon khay và menu
 - [ ] Task 11: Phím tắt toàn cục + phát hiện trùng
 - [ ] Task 12: Chạy một bản + khởi động cùng Windows
 - [ ] Task 13: Đo hiệu năng, checklist thủ công, soát lại với mockup
