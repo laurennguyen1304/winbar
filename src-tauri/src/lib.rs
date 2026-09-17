@@ -24,6 +24,7 @@ pub fn run() {
             command_bar::command_bar_save_position,
             command_bar::files::search_files,
             command_bar::launch::open_path,
+            command_bar::launch::open_url,
             command_bar::launch::reveal_path,
             settings::get_settings,
             settings::update_settings,

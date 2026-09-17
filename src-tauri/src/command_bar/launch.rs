@@ -31,6 +31,28 @@ fn shell_open(target: &Path) -> Result<(), String> {
     }
 }
 
+/// A web address the command bar may hand to the browser: `http`/`https` only, no spaces or control characters.
+pub fn web_url(url: &str) -> Result<&str, String> {
+    let lower = url.to_ascii_lowercase();
+    let has_host = ["https://", "http://"]
+        .iter()
+        .any(|scheme| lower.starts_with(scheme) && url.len() > scheme.len());
+    if !has_host || url.len() > 2048 || url.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return Err(format!("not an http(s) address: {url:?}"));
+    }
+    Ok(url)
+}
+
+/// Opens an http(s) address in the default browser (web search rows).
+#[tauri::command]
+pub fn open_url(url: String) -> Result<(), String> {
+    let url = web_url(&url)?;
+    #[cfg(windows)]
+    return shell_open(Path::new(url));
+    #[cfg(not(windows))]
+    return Err(format!("unsupported platform for {url}"));
+}
+
 /// Opens a file with its default app, or a folder in Explorer.
 #[tauri::command]
 pub fn open_path(path: String) -> Result<(), String> {
@@ -71,6 +93,25 @@ mod tests {
         assert_eq!(existing_path(file.to_str().unwrap()), Ok(file.clone()));
         assert_eq!(existing_path(dir.to_str().unwrap()), Ok(dir.clone()));
         std::fs::remove_file(file).unwrap();
+    }
+
+    #[test]
+    fn only_http_and_https_addresses_reach_the_browser() {
+        assert!(web_url("https://www.google.com/search?q=tauri%20window").is_ok());
+        assert!(web_url("HTTP://example.com").is_ok());
+        for bad in [
+            "",
+            "https://",
+            "file:///C:/Windows/System32/cmd.exe",
+            "javascript:alert(1)",
+            "ms-settings:display",
+            r"C:\Windows\notepad.exe",
+            "https://example.com/a b",
+            "https://example.com/\n",
+            "httpsx://example.com",
+        ] {
+            assert!(web_url(bad).is_err(), "{bad:?}");
+        }
     }
 
     #[test]

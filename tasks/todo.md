@@ -216,13 +216,21 @@
   - Thoát winbar.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test Rust: `launch` từ chối `file:`, `javascript:`, `ms-settings:`; nhận `https://…`.
-- [ ] Test TS: mã hóa URL cho cả 3 công cụ tìm.
-- [ ] `? tauri` mở trình duyệt. "Mở notch · tab Claude" mở notch đúng tab. Ẩn/Hiện notch khớp với menu khay.
+- [x] (phần web) Test Rust: `open_url` từ chối `file:`, `javascript:`, `ms-settings:`, đường dẫn, có dấu cách; nhận `https://…`.
+- [x] (phần web) Test TS: mã hóa URL cho mọi công cụ tìm.
+- [x] (phần web) `? tauri` ra danh sách công cụ tìm, Google đứng đầu (theo yasb). `open_url` từ chối `javascript:` khi chạy thật.
+- [ ] (phần hành động) "Mở notch · tab Claude" mở notch đúng tab. Ẩn/Hiện notch khớp với menu khay → làm sau Task 8 theo thứ tự bạn chốt.
 
-**Kiểm tra:**
-- [ ] `cargo test`, clippy, `npm test`, lint qua.
-- [ ] Thủ công: từng hành động, và từ chối URL lạ.
+**Kiểm tra (phần web):** (2026-09-17)
+- [x] `cargo test` 53 · clippy sạch · `npm test` 230 (web 5, command bar +1, sources đổi) · lint sạch.
+- [x] Thủ công qua trang (app dev):
+  - `? tauri tray` → nhóm Web 10 dòng: Google, Bing, DuckDuckGo, Brave…;
+  - `?` → dòng gợi ý "Tìm trên Google…";
+  - `zzqqxxnothing` → "Không tìm thấy kết quả" + dòng tìm Google.
+
+**Ghi chú — lấy mẫu từ Quick Launch của yasb fork (bạn yêu cầu 2026-09-17):**
+- Web: `?` liệt kê mọi công cụ (Google, Bing, DuckDuckGo, Brave, YouTube, GitHub, Wikipedia, Reddit, Stack Overflow, X), công cụ chọn trong cài đặt đứng đầu; `?` một mình hiện dòng gợi ý. Không có tiền tố: chỉ 1 dòng của công cụ ưu tiên, khi không có kết quả nào khác.
+- File: `f` một mình hiện dòng gợi ý; `*` và `?` là ký tự đại diện như yasb (`f *.pdf`). Tiền tố vẫn là `f` theo spec (yasb dùng `/`).
 
 **Phụ thuộc:** Task 4
 **File dự kiến:** `src-tauri/src/command_bar/launch.rs`, `src-tauri/src/window.rs` (lệnh `open_notch`), `src/command-bar/providers/{web,winbar-actions}.ts`

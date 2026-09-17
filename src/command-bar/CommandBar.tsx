@@ -57,7 +57,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
   const dragging = useRef(false);
 
   const { settings } = useSettings(registered);
-  const slots = useMemo(() => allSlots(settings.widgets, registered), [settings.widgets, registered]);
+  const slots = useMemo(() => allSlots(settings, registered), [settings, registered]);
   const instant = useMemo(() => instantAnswer(query), [query]);
   const { groups, settled } = useCommandSearch(calculatorOnly(query) ? "" : query, slots);
 
@@ -79,6 +79,16 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
     return [...instantRow, ...flattenRows(groups)];
   }, [instant, groups]);
   const selected = Math.max(0, rows.findIndex((r) => r.key === selectedKey));
+
+  // Nothing matched except the web fallback row: say so above it (SPEC-command-bar §5.1).
+  const onlyWebFallback =
+    !instant && !query.trimStart().startsWith("?") && groups.length > 0 && groups.every((g) => g.id === "web");
+  const noResults = (
+    <>
+      Không tìm thấy kết quả. Thử <b className={styles.hint}>f</b> để tìm file hoặc <b className={styles.hint}>=</b> để
+      tính.
+    </>
+  );
 
   const changeQuery = (next: string) => {
     setQuery(next);
@@ -240,6 +250,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
       {query && (instant || groups.length > 0) && (
         <>
           <div className={styles.body} role="listbox" aria-label="Kết quả">
+            {onlyWebFallback && <div className={styles.empty}>{noResults}</div>}
             {instant && (
               <InstantBlock
                 instant={instant}
@@ -257,10 +268,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
       )}
       {query && !instant && groups.length === 0 && settled && (
         <>
-          <div className={`${styles.body} ${styles.empty}`}>
-            Không tìm thấy kết quả. Thử <b className={styles.hint}>f</b> để tìm file hoặc <b className={styles.hint}>=</b>{" "}
-            để tính.
-          </div>
+          <div className={`${styles.body} ${styles.empty}`}>{noResults}</div>
           <div className={styles.sep} />
         </>
       )}

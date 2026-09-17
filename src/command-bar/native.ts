@@ -69,6 +69,12 @@ export async function openPath(path: string): Promise<void> {
   await invoke("open_path", { path });
 }
 
+/** Default browser; Rust accepts http(s) addresses only. */
+export async function openUrl(url: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("open_url", { url });
+}
+
 /** Explorer on the containing folder with the item selected. */
 export async function revealPath(path: string): Promise<void> {
   if (!isTauri()) return;

@@ -33,6 +33,17 @@ pub fn escape_like(text: &str) -> String {
     out
 }
 
+/// `LIKE` pattern for one word. As in yasb Quick Launch, `*` and `?` are wildcards (any text / one character) and
+/// then the word must match the whole name; without them the word may appear anywhere in the name.
+pub fn like_pattern(term: &str) -> String {
+    let escaped = escape_like(term);
+    if term.contains(['*', '?']) {
+        escaped.replace('*', "%").replace('?', "_")
+    } else {
+        format!("%{escaped}%")
+    }
+}
+
 /// Every whitespace-separated word must appear in the file name. Control characters are dropped.
 pub fn terms(query: &str) -> Vec<String> {
     query
@@ -61,8 +72,8 @@ pub fn build_sql(query: &str, scope: &str, limit: u32) -> Option<String> {
     );
     for term in &terms {
         sql.push_str(&format!(
-            " AND System.FileName LIKE '%{}%'",
-            escape_like(term)
+            " AND System.FileName LIKE '{}'",
+            like_pattern(term)
         ));
     }
     for dir in EXCLUDED_DIRS {
@@ -244,6 +255,19 @@ mod tests {
         assert_eq!(escape_like("it's"), "it''s");
         assert_eq!(escape_like("100%_[x]"), "100[%][_][[]x]");
         assert_eq!(escape_like("tiếng việt"), "tiếng việt");
+    }
+
+    #[test]
+    fn star_and_question_mark_are_wildcards_over_the_whole_name() {
+        assert_eq!(like_pattern("brief"), "%brief%");
+        assert_eq!(like_pattern("*.pdf"), "%.pdf");
+        assert_eq!(like_pattern("invoice-2026-0?.pdf"), "invoice-2026-0_.pdf");
+        assert_eq!(like_pattern("50%*"), "50[%]%");
+        let sql = build_sql("brief *.md", r"C:\Users\x", 20).unwrap();
+        assert!(
+            sql.contains("System.FileName LIKE '%brief%' AND System.FileName LIKE '%.md'"),
+            "{sql}"
+        );
     }
 
     #[test]

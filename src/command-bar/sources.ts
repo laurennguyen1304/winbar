@@ -1,7 +1,8 @@
 // Which providers the command bar asks, in group order (SPEC-command-bar §5.4). Built-in sources join in later tasks.
-import { mergeWidgets, type WidgetSetting } from "../shell/settings";
+import { mergeWidgets, type Settings, type WidgetSetting } from "../shell/settings";
 import type { WidgetDefinition } from "../shell/widget-contract";
 import { createFilesProvider } from "./providers/files";
+import { createWebProvider, type PreferredEngine } from "./providers/web";
 import type { Slot } from "./search";
 
 /** Rows per group without a prefix (SPEC-command-bar §5.4). */
@@ -24,7 +25,12 @@ export function widgetSlots(stored: readonly WidgetSetting[], registered: readon
     });
 }
 
-/** Every slot in group order: built-in sources, then widgets. */
-export function allSlots(stored: readonly WidgetSetting[], registered: readonly WidgetDefinition[]): Slot[] {
-  return [files, ...widgetSlots(stored, registered)];
+let preferredEngine: PreferredEngine = "google";
+/** Web rows: every engine with "?", otherwise one row for the preferred engine when nothing else matched. */
+const web: Slot = { provider: createWebProvider(() => preferredEngine), limit: 1, fallback: true };
+
+/** Every slot in group order: built-in sources, widgets, then the web fallback. */
+export function allSlots(settings: Settings, registered: readonly WidgetDefinition[]): Slot[] {
+  preferredEngine = settings.commandBar.webSearch;
+  return [files, ...widgetSlots(settings.widgets, registered), web];
 }

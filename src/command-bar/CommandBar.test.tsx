@@ -38,6 +38,7 @@ vi.mock("./native", () => ({
   startDragging: native.drag,
   searchFiles: (_q: string, generation: number) => Promise.resolve({ generation, source: "off", hits: [], error: null }),
   openPath: () => Promise.resolve(),
+  openUrl: () => Promise.resolve(),
   revealPath: () => Promise.resolve(),
   saveCommandBarPosition: native.save,
   onMoved: (h: () => void) => {
@@ -351,6 +352,20 @@ describe("CommandBar", () => {
     expect(screen.getByText(/Không tìm thấy kết quả/)).toBeInTheDocument();
     await type("=7");
     expect(screen.getByRole("option", { name: /= 7/ })).toBeInTheDocument();
+  });
+
+  it("offers a web search under the no-results note, and lists every engine after ?", async () => {
+    render(<CommandBar registered={[]} />);
+    openBar();
+    await type("tauri tray");
+    expect(screen.getByText(/Không tìm thấy kết quả/)).toBeInTheDocument();
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([expect.stringContaining('Tìm "tauri tray" trên Google')]);
+    expect(screen.getByRole("option")).toHaveAttribute("aria-selected", "true");
+
+    await type("? tauri tray");
+    expect(screen.queryByText(/Không tìm thấy kết quả/)).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Web" })).toBeInTheDocument();
+    expect(screen.getAllByRole("option").length).toBeGreaterThan(5);
   });
 
   it("clears with the Xóa button and keeps typing focus", async () => {

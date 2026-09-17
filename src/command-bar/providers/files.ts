@@ -46,6 +46,19 @@ export function createFilesProvider(native: FilesNative = { search: searchFiles,
     },
     prefix: "f",
     async search(query, signal) {
+      // Only reachable as "f" alone: without the prefix an empty query never reaches providers.
+      if (!query.trim()) {
+        const hint: SearchResult = {
+          id: "files-hint",
+          title: "Tìm file và thư mục",
+          subtitle: "Gõ tên sau f · * và ? để khớp mẫu, ví dụ f *.pdf",
+          icon: "file",
+          verb: "",
+          remember: false,
+          run: () => {},
+        };
+        return [hint];
+      }
       if (query.trim().length < MIN_CHARS) return [];
       await wait(DEBOUNCE_MS, signal);
       const response = await native.search(query, nextGeneration());
