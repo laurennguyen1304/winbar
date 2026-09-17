@@ -48,7 +48,7 @@ describe("SettingsApp", () => {
     await renderLoaded();
     expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "340px", height: "40px" });
     expect(screen.getByTestId("preview-always")).toHaveStyle({ width: "620px", height: "64px" });
-    for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
+    for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt", "Chung"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
   });
 
   it("saves the pill size and updates the preview", async () => {
@@ -85,6 +85,14 @@ describe("SettingsApp", () => {
     await renderLoaded();
     fireEvent.keyDown(screen.getByRole("slider", { name: "Cỡ chữ" }), { key: "ArrowRight" });
     await waitFor(() => expect(lastSaved().fontScale).toBe(105));
+  });
+
+  it("toggles start with Windows", async () => {
+    await renderLoaded();
+    const toggle = screen.getByRole("switch", { name: "Khởi động cùng Windows" });
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
+    await waitFor(() => expect(lastSaved().launchAtStartup).toBe(false));
   });
 
   it("quits the app", async () => {

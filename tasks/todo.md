@@ -295,11 +295,20 @@ vì app khác giữ: ghi trạng thái lỗi, Cài đặt hiện "phím tắt đ
 nối với `launchAtStartup` trong cài đặt, menu khay và Cài đặt.
 
 **Tiêu chí chấp nhận:**
-- [ ] Chạy file exe hai lần chỉ còn một tiến trình
-- [ ] Bật autostart, đăng xuất/đăng nhập lại thì app tự chạy; tắt thì không
+- [x] Chạy file exe hai lần chỉ còn một tiến trình
+- [~] Bật autostart, đăng xuất/đăng nhập lại thì app tự chạy; tắt thì không — đã kiểm tra mục registry `Run` được thêm/xóa đúng; chưa đăng xuất thật (sẽ đăng xuất phiên của bạn)
 
-**Kiểm tra:**
-- [ ] Thủ công trên bản `npm run tauri build`
+**Kiểm tra:** (2026-09-17, bản `tauri build --no-bundle`)
+- [x] `cargo test` 22 (startup 2) · clippy sạch · `npm test` 109 · lint sạch
+- [x] Lần mở đầu (cờ mặc định bật) → thêm `HKCU\...\Run\winbar` = `targetelease\winbar.exe`
+- [x] Lần mở thứ hai → thoát mã 0, vẫn 1 tiến trình, bản đang chạy mở cửa sổ Cài đặt (và hiện lại notch nếu đang ẩn)
+- [x] `launchAtStartup` false → xóa mục `Run`; true → thêm lại; false → xóa · Thoát → 0 tiến trình
+- [x] Sau kiểm tra: danh sách `Run` giống hệt lúc đầu, đã xóa file cài đặt thử
+
+**Ghi chú:**
+- Chỉ bản release đăng ký autostart; bản dev chỉ ghi log để `target\debug\winbar.exe` không bị thêm vào danh sách tự chạy.
+- Cài đặt có thêm mục **Chung** › Khởi động cùng Windows (cùng cờ với menu khay).
+- Mục `Run` trỏ vào đường dẫn exe đang chạy; khi đóng gói bản cài đặt thật (sau v1) mục này sẽ trỏ vào thư mục cài.
 
 **Phụ thuộc:** Task 11
 **File dự kiến:** `src-tauri/src/main.rs`, `src-tauri/Cargo.toml`, `src-tauri/src/settings.rs`

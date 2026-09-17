@@ -52,7 +52,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 ### Giai đoạn 4 — Tích hợp hệ thống
 - [x] Task 10: Icon khay và menu
 - [x] Task 11: Phím tắt toàn cục + phát hiện trùng
-- [ ] Task 12: Chạy một bản + khởi động cùng Windows
+- [x] Task 12: Chạy một bản + khởi động cùng Windows
 - [ ] Task 13: Đo hiệu năng, checklist thủ công, soát lại với mockup
 
 ### Checkpoint cuối — Đạt 11 tiêu chí ở mục 11 của spec

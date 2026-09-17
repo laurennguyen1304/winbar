@@ -18,6 +18,7 @@ const SECTIONS = [
   { id: "widget", label: "Widget" },
   { id: "font", label: "Cỡ chữ" },
   { id: "hotkey", label: "Phím tắt" },
+  { id: "general", label: "Chung" },
 ] as const;
 
 const TAB_LABEL: Record<TabId, string> = { core: "Tab Core", claude: "Tab Claude" };
@@ -263,6 +264,18 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
             accelerator={view.hotkeys.commandBar}
             onChange={(commandBar) => save({ ...view, hotkeys: { ...view.hotkeys, commandBar } })}
           />
+
+          <section id="set-general">
+            <h2 className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Chung</h2>
+            <Row title="Khởi động cùng Windows" description="Tự mở winbar khi đăng nhập (chỉ bản cài đặt, không áp dụng khi chạy dev)">
+              <Switch
+                aria-label="Khởi động cùng Windows"
+                checked={view.launchAtStartup}
+                className="data-[state=checked]:bg-[var(--switch-on)]"
+                onCheckedChange={(launchAtStartup) => save({ ...view, launchAtStartup })}
+              />
+            </Row>
+          </section>
         </main>
       </ScrollArea>
     </div>

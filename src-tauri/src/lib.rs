@@ -1,6 +1,7 @@
 mod hotkeys;
 mod settings;
 mod settings_window;
+mod startup;
 mod tray;
 mod window;
 
@@ -9,6 +10,8 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(startup::single_instance_plugin())
+        .plugin(startup::autostart_plugin())
         .plugin(hotkeys::plugin())
         .manage(window::NotchState::default())
         .manage(hotkeys::HotkeyState::default())
@@ -23,9 +26,10 @@ pub fn run() {
         ])
         .setup(|app| {
             let settings = settings::SettingsState::load(app.handle())?;
-            let command_bar_hotkey = settings.get().hotkeys.command_bar;
+            let initial = settings.get();
             app.manage(settings);
-            hotkeys::apply(app.handle(), &command_bar_hotkey);
+            hotkeys::apply(app.handle(), &initial.hotkeys.command_bar);
+            startup::sync_autostart(app.handle(), initial.launch_at_startup);
             window::create(app.handle())?;
             tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());

@@ -195,7 +195,7 @@ fn run<R: Runtime>(app: &AppHandle<R>, action: TrayAction) {
     }
 }
 
-fn sync_hidden<R: Runtime>(app: &AppHandle<R>, hidden: bool) {
+pub fn sync_hidden<R: Runtime>(app: &AppHandle<R>, hidden: bool) {
     if let Some(checks) = app.try_state::<TrayChecks<R>>() {
         let _ = checks
             .hidden
