@@ -28,6 +28,11 @@ tauri-plugin-autostart = "2"
 [target.'cfg(windows)'.dependencies]
 # Same major as Tauri's own copy. Command bar: Windows Search (OLE DB), shell launch (SPEC-command-bar §3).
 windows = { version = "0.61", features = [
+  # Media widget: Windows media sessions (SPEC-media §3).
+  "Foundation",
+  "Foundation_Collections",
+  "Media_Control",
+  "Storage_Streams",
   "Win32_Foundation",
   "Win32_Graphics_Gdi",
   "Win32_Graphics_Imaging",

@@ -13,12 +13,13 @@
 - **Nguồn test:** script PowerShell phát WAV im lặng qua `MediaPlayer`, tên bài giả.
 
 **Tiêu chí chấp nhận:**
-- [ ] Chạy script test: trong 1 giây có `media-changed` với đúng tên bài/nghệ sĩ, trạng thái `playing`.
-- [ ] Tạm dừng / tắt script: trạng thái đổi `paused` / `current: null` trong 1 giây.
-- [ ] App không crash khi không có phiên nào, và khi phiên biến mất giữa chừng.
-- [ ] Test Rust cho toàn bộ `model.rs`.
+- [x] Chạy script test: trong 1 giây có `media-changed` với đúng tên bài/nghệ sĩ, trạng thái `playing`.
+- [x] Tạm dừng / tắt script: trạng thái đổi `paused` / `current: null` trong 1 giây.
+- [x] App không crash khi không có phiên nào, và khi phiên biến mất giữa chừng.
+- [x] Test Rust cho toàn bộ `model.rs`.
 
 **Kiểm tra:** `cargo test`, clippy; thủ công bằng script + CDP nghe sự kiện.
+- 2026-09-17: nguồn thử `tests/tools/media-source.ps1` (WAV im lặng, tắt tiếng). Sự kiện `playing` đúng tên bài/nghệ sĩ/album, độ dài 120s; tạm dừng qua `media-toggle.ps1` → `paused` sau 1.2s (gồm ~1s khởi động PowerShell); tắt nguồn → `current: null` sau 112ms. Tên app: "Windows PowerShell" (bỏ web app, ưu tiên tên chứa tên exe).
 
 **Phụ thuộc:** không
 **File dự kiến:** `src-tauri/Cargo.toml`, `src-tauri/src/media/{mod,model,session}.rs`, `src-tauri/src/lib.rs`

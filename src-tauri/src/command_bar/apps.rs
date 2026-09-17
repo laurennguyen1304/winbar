@@ -52,7 +52,7 @@ pub struct AppsState {
 }
 
 impl AppsState {
-    fn current(&self) -> Arc<Vec<AppEntry>> {
+    pub fn current(&self) -> Arc<Vec<AppEntry>> {
         self.apps.read().map(|a| a.clone()).unwrap_or_default()
     }
 
