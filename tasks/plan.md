@@ -1,7 +1,7 @@
 # Implementation Plan: command-bar
 
 > Spec: `SPEC-command-bar.md` (đã duyệt 2026-09-17) · Mockup: phần Command bar trong `design/winbar-mockup.html`
-> Danh sách task chi tiết: `tasks/todo.md`. Trạng thái plan: **chờ duyệt**. Module trước: `tasks/notch-shell/` (xong).
+> Danh sách task chi tiết: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**. Module trước: `tasks/notch-shell/` (xong).
 
 ## Tổng quan
 
@@ -34,7 +34,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 ## Danh sách task
 
 ### Giai đoạn 0 — Spike
-- [ ] Task 1: Spike cửa sổ thứ hai: focus, thời gian mở, RAM, Everything ARM64, COM
+- [x] Task 1: Spike cửa sổ thứ hai: focus, thời gian mở, RAM, Everything ARM64, COM
 
 ### Checkpoint 0 — Bạn xem `docs/spikes/command-bar.md`
 

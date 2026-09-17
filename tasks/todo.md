@@ -21,16 +21,17 @@
    - chạy 1 truy vấn Windows Search qua OLE DB, đo thời gian.
 
 **Tiêu chí chấp nhận:**
-- [ ] `docs/spikes/command-bar.md` có:
-  - bảng focus theo từng app,
-  - thời gian mở (ms),
-  - RAM trước/sau khi có cửa sổ thứ hai,
-  - kết luận về Everything,
-  - kết quả 3 phép thử COM.
-- [ ] Mỗi rủi ro R1–R4 có kết luận: đạt, hoặc cách khác kèm đề xuất.
+- [x] `docs/spikes/command-bar.md` có:
+  - bảng focus theo 4 app,
+  - thời gian mở (28–62ms),
+  - RAM trước/sau (+17 đến +22 MB, cả app 103–108 MB),
+  - kết luận về Everything (MIT, có ARM64),
+  - 3 phép thử COM.
+- [x] Mỗi rủi ro R1–R4 có kết luận: cả 4 đều đạt, không cần đổi spec.
 
-**Kiểm tra:**
-- [ ] Thủ công: số đo lấy trên bản release. Không đổi cài đặt máy của bạn. Trả lại Run key và file cài đặt như cũ.
+**Kiểm tra:** (2026-09-17)
+- [x] Thủ công: số đo lấy trên bản release; không đổi cài đặt máy; đã xóa file cài đặt thử và log; Run key không có `winbar`; code spike đã gỡ.
+- [ ] Chưa thử: app quyền admin ở trước (cần UAC) → checklist Task 13; truy vấn Everything thật (cần cài Everything) → Task 11.
 
 **Phụ thuộc:** notch-shell xong
 **File dự kiến:** `docs/spikes/command-bar.md`, code spike tạm trong `src-tauri/src/`
