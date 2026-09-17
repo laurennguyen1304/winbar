@@ -301,6 +301,54 @@ describe("CommandBar", () => {
     expect(screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["APPS"]);
   });
 
+  it("shows a calculation as a selected block and copies the plain number on Enter", async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<CommandBar registered={[]} />);
+    openBar();
+    await type("1000*2^10");
+    const block = screen.getByRole("option", { name: /= 1,024,000/ });
+    expect(block).toHaveAttribute("aria-selected", "true");
+    expect(block).toHaveTextContent("1000*2^10");
+    key("Enter");
+    await flush();
+    expect(writeText).toHaveBeenCalledWith("1024000");
+    expect(screen.getByRole("status")).toHaveTextContent("Đã copy 1024000");
+    expect(bar()).toHaveAttribute("data-open", "true");
+    act(() => vi.advanceTimersByTime(2000));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("shows conversions, keeps other groups below the answer, and arrows reach them", async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    ran.length = 0;
+    render(<CommandBar registered={[searchWidget("notes", [item("5 km to mi notes")])]} />);
+    openBar();
+    await type("5 km to mi");
+    expect(screen.getByRole("option", { name: /3\.10686 mi/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("group", { name: "NOTES" })).toBeInTheDocument();
+    key("ArrowDown");
+    expect(selectedTitle()).toBe("5 km to mi notes");
+    key("ArrowUp");
+    fireEvent.click(screen.getByRole("option", { name: /3\.10686 mi/ }));
+    await flush();
+    expect(writeText).toHaveBeenCalledWith("3.10686");
+    expect(ran).toEqual([]);
+  });
+
+  it("with = asks no other provider and shows the empty state for an invalid expression", async () => {
+    const search = vi.fn(() => Promise.resolve([item("x")]));
+    const widget: WidgetDefinition = { ...searchWidget("apps", []), searchProvider: { id: "apps", title: "APPS", search } };
+    render(<CommandBar registered={[widget]} />);
+    openBar();
+    await type("= 2+");
+    expect(search).not.toHaveBeenCalled();
+    expect(screen.getByText(/Không tìm thấy kết quả/)).toBeInTheDocument();
+    await type("=7");
+    expect(screen.getByRole("option", { name: /= 7/ })).toBeInTheDocument();
+  });
+
   it("clears with the Xóa button and keeps typing focus", async () => {
     render(<CommandBar registered={[]} />);
     openBar();

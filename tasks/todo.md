@@ -180,13 +180,22 @@
 - **Enter:** copy số (không có dấu phân cách) bằng `navigator.clipboard`, hiện toast "✓ Đã copy …", không đóng.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test: ưu tiên toán tử, ngoặc lồng, hàm, chia 0 (không hiện), "code" không phải biểu thức, mọi nhóm đơn vị, sai/khác nhóm đơn vị.
-- [ ] `12*7+3` → `= 87`, `2^10` → `= 1,024`, `sqrt(144)` → `= 12`, `5 km to mi` → `3.10686 mi`, `30 c to f` → `86 °F`.
-- [ ] Không có `eval`/`Function` trong code (kiểm bằng grep trong test lint hoặc test).
+- [x] Test: ưu tiên toán tử, ngoặc lồng, hàm, chia 0 (không hiện), "code" không phải biểu thức, mọi nhóm đơn vị, sai/khác nhóm đơn vị.
+- [x] `12*7+3` → `= 87`, `2^10` → `= 1,024`, `sqrt(144)` → `= 12`, `5 km to mi` → `3.10686 mi`, `30 c to f` → `86 °F`.
+- [x] Không có `eval`/`Function` trong code (test đọc mã nguồn `calculator.ts`).
 
-**Kiểm tra:**
-- [ ] `npm test`, lint qua.
-- [ ] Thủ công: Enter rồi dán vào Notepad đúng số.
+**Kiểm tra:** (2026-09-17)
+- [x] `npm test` 217 · lint sạch:
+  - `calculator` 43: biểu thức, nhân ngầm `2pi`, -2^2, lỗi, `=`, định dạng, an toàn;
+  - `units` 29;
+  - `instant` 3;
+  - command bar +3: khối chọn sẵn + Enter copy số trơn + toast; đổi đơn vị + nhóm khác bên dưới + ↑↓ + bấm copy; `=` không hỏi provider khác.
+- [ ] Thủ công: bạn đang chạy bản dev nên thử trực tiếp (Enter rồi dán vào app khác).
+
+**Ghi chú (lệch spec, lý do):**
+- Tốc độ m/s gõ là `m/s` hoặc `mps`, vì `ms` là mili giây. Có thêm `km/h`, `kph`, `°c`, `°f`.
+- Khối máy tính/đổi đơn vị không đi qua `SearchProvider`: nó là một khối riêng ở trên các nhóm. Tiền tố `=` được xử lý trực tiếp: không hỏi provider nào khác.
+- Có nhân ngầm: `2pi`, `2(3+1)`.
 
 **Phụ thuộc:** Task 4
 **File dự kiến:** `src/command-bar/calculator.ts` (+ test), `src/command-bar/units.ts` (+ test), `src/command-bar/providers/{calculator,units}.ts`, `src/command-bar/ResultBlock.tsx`, `src/command-bar/Toast.tsx`

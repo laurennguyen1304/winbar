@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Icon, isIconName } from "../shell/Icon";
 import type { SearchResult } from "../shell/widget-contract";
+import type { Instant } from "./instant";
 import type { Group } from "./search";
 import styles from "./CommandBar.module.css";
 
@@ -8,6 +9,9 @@ export interface Row {
   key: string;
   result: SearchResult;
 }
+
+/** Key of the calculator / conversion block, which sits above the groups. */
+export const INSTANT_KEY = "instant";
 
 /** Group ids are kebab-case, so "::" cannot appear inside one. */
 const rowKey = (groupId: string, resultId: string) => `${groupId}::${resultId}`;
@@ -36,6 +40,42 @@ interface Props {
   onRun(result: SearchResult, alt: boolean): void;
 }
 
+/** Large answer block (mockup `.calc`); Enter copies the value. */
+export function InstantBlock({
+  instant,
+  selected,
+  onSelect,
+  onCopy,
+}: {
+  instant: Instant;
+  selected: boolean;
+  onSelect(): void;
+  onCopy(): void;
+}) {
+  return (
+    <div
+      role="option"
+      aria-selected={selected}
+      aria-label={`${instant.display}, ${instant.expression}`}
+      className={styles.instant}
+      data-selected={selected}
+      onMouseMove={() => !selected && onSelect()}
+      onClick={onCopy}
+    >
+      <span className={`${styles.tile} ${styles.tileLarge}`} aria-hidden>
+        <Icon name="calculator" size={20} />
+      </span>
+      <div className={styles.text}>
+        <span className={styles.instantValue}>{instant.display}</span>
+        <span className={styles.instantExpression}>{instant.expression}</span>
+      </div>
+      <span className={styles.verb}>
+        Copy <kbd className={styles.kbd}>↵</kbd>
+      </span>
+    </div>
+  );
+}
+
 /** Grouped results (mockup `.results`). The selected row shows its verb; M12 v1 changes the background at once. */
 export function ResultList({ groups, selectedKey, onSelect, onRun }: Props) {
   const selectedRef = useRef<HTMLDivElement>(null);
@@ -45,7 +85,7 @@ export function ResultList({ groups, selectedKey, onSelect, onRun }: Props) {
   }, [selectedKey]);
 
   return (
-    <div className={`${styles.body} ${styles.results}`} role="listbox" aria-label="Kết quả">
+    <div className={styles.results}>
       {groups.map((group) => (
         <div key={group.id} role="group" aria-label={group.title}>
           <div className={styles.group} aria-hidden>

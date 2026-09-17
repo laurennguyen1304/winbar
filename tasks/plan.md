@@ -46,7 +46,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 ### Checkpoint 1 — Mở, gõ, chọn, chạy được với provider demo; kéo và nhớ vị trí
 
 ### Giai đoạn 2 — Nguồn không cần native
-- [ ] Task 5: Máy tính + đổi đơn vị + copy + toast
+- [x] Task 5: Máy tính + đổi đơn vị + copy + toast
 - [ ] Task 6: Tìm web + hành động winbar + lệnh `launch` an toàn
 
 ### Giai đoạn 3 — App và lịch sử
@@ -54,7 +54,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 - [ ] Task 8: Icon app (PNG cache, tải dần)
 - [ ] Task 9: Lịch sử + nhóm "Gần đây"
 
-### Checkpoint 2 — Thay được Quick Launch của yasb cho app + máy tính
+### Checkpoint 2 — (dời lên sau Task 11, xem "Thứ tự làm")
 
 ### Giai đoạn 4 — File và cài đặt
 - [ ] Task 10: Tìm file bằng Windows Search + Ctrl+Enter mở thư mục chứa
@@ -63,6 +63,23 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 - [ ] Task 13: Đo hiệu năng, checklist thủ công, so mockup, 15 tiêu chí
 
 ### Checkpoint cuối — Đạt 15 tiêu chí ở mục 11 của spec
+
+## Thứ tự làm sau Checkpoint 1 (bạn chốt 2026-09-17)
+
+Bạn cần máy tính và tìm file sớm nhất, nên thứ tự thực hiện đổi (số task giữ nguyên):
+
+1. Task 5 — máy tính + đổi đơn vị
+2. Task 10 — tìm file bằng Windows Search. Làm luôn phần `launch.rs` cho file (mở file, Ctrl+Enter mở thư mục chứa). Icon file tạm theo loại (icon có sẵn), icon thật ở Task 8.
+3. Task 11 — Everything + tự chọn nguồn
+
+   **Checkpoint 2** — máy tính + tìm file dùng được hằng ngày
+4. Task 6 (phần web) — tìm web; thêm kiểm tra URL `http`/`https` vào `launch.rs`
+5. Task 7 — tìm app
+6. Task 8 — icon thật cho app và file
+7. Task 6 (phần hành động) — hành động của winbar
+8. Task 9 — lịch sử + "Gần đây"
+9. Task 12 — mục Command bar trong Cài đặt
+10. Task 13 — đo và checklist
 
 ## Rủi ro và cách xử lý
 

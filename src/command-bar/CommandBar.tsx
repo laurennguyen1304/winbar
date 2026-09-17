@@ -3,7 +3,9 @@ import { Icon } from "../shell/Icon";
 import { useSettings } from "../shell/use-settings";
 import type { SearchResult, WidgetDefinition } from "../shell/widget-contract";
 import { hideCommandBar, onCommandBarOpened, onMoved, resizeCommandBar, saveCommandBarPosition, startDragging } from "./native";
-import { flattenRows, ResultList } from "./ResultList";
+import { copyText } from "./clipboard";
+import { calculatorOnly, instantAnswer, type Instant } from "./instant";
+import { flattenRows, INSTANT_KEY, InstantBlock, ResultList, type Row } from "./ResultList";
 import { widgetSlots } from "./sources";
 import { useCommandSearch } from "./use-command-search";
 import styles from "./CommandBar.module.css";
@@ -18,6 +20,9 @@ const DRAG_START_TIMEOUT_MS = 1500;
 
 const prefersReducedMotion = () =>
   typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Toast on screen (mockup wbToast), then gone. */
+const TOAST_MS = 1600;
 
 /** Keys typed while an IME (UniKey, Windows Vietnamese keyboard) is still composing belong to the IME. */
 const composing = (e: KeyboardEvent) => e.isComposing || e.keyCode === 229;
@@ -43,6 +48,8 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(true);
   const [maxHeight, setMaxHeight] = useState<number | undefined>();
+  const [toast, setToast] = useState<{ id: number; text: string } | undefined>();
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -51,8 +58,26 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
 
   const { settings } = useSettings(registered);
   const slots = useMemo(() => widgetSlots(settings.widgets, registered), [settings.widgets, registered]);
-  const { groups, settled } = useCommandSearch(query, slots);
-  const rows = useMemo(() => flattenRows(groups), [groups]);
+  const instant = useMemo(() => instantAnswer(query), [query]);
+  const { groups, settled } = useCommandSearch(calculatorOnly(query) ? "" : query, slots);
+
+  const copyInstant = useCallback((answer: Instant) => {
+    copyText(answer.copy)
+      .then(() => {
+        clearTimeout(toastTimer.current);
+        setToast((t) => ({ id: (t?.id ?? 0) + 1, text: `Đã copy ${answer.copy}` }));
+        toastTimer.current = setTimeout(() => setToast(undefined), TOAST_MS);
+      })
+      .catch((err: unknown) => console.error("copy failed", err));
+  }, []);
+
+  // The answer block is the first row; running it copies (handled where rows are run, see onKeyDown).
+  const rows = useMemo<Row[]>(() => {
+    const instantRow: Row[] = instant
+      ? [{ key: INSTANT_KEY, result: { id: INSTANT_KEY, title: instant.display, verb: "Copy", remember: false, run: () => {} } }]
+      : [];
+    return [...instantRow, ...flattenRows(groups)];
+  }, [instant, groups]);
   const selected = Math.max(0, rows.findIndex((r) => r.key === selectedKey));
 
   const changeQuery = (next: string) => {
@@ -93,6 +118,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
     () => () => {
       clearTimeout(hideTimer.current);
       clearTimeout(dragTimer.current);
+      clearTimeout(toastTimer.current);
     },
     [],
   );
@@ -165,12 +191,13 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
         const row = rows[selected];
         if (!row) return;
         e.preventDefault();
-        runResult(row.result, e.ctrlKey);
+        if (row.key === INSTANT_KEY && instant) copyInstant(instant);
+        else runResult(row.result, e.ctrlKey);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [query, close, rows, selected]);
+  }, [query, close, rows, selected, instant, copyInstant]);
 
   const clear = () => {
     changeQuery("");
@@ -210,18 +237,25 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
         )}
       </div>
       <div className={styles.sep} />
-      {query && groups.length > 0 && (
+      {query && (instant || groups.length > 0) && (
         <>
-          <ResultList
-            groups={groups}
-            selectedKey={rows[selected]?.key}
-            onSelect={setSelectedKey}
-            onRun={runResult}
-          />
+          <div className={styles.body} role="listbox" aria-label="Kết quả">
+            {instant && (
+              <InstantBlock
+                instant={instant}
+                selected={rows[selected]?.key === INSTANT_KEY}
+                onSelect={() => setSelectedKey(INSTANT_KEY)}
+                onCopy={() => copyInstant(instant)}
+              />
+            )}
+            {groups.length > 0 && (
+              <ResultList groups={groups} selectedKey={rows[selected]?.key} onSelect={setSelectedKey} onRun={runResult} />
+            )}
+          </div>
           <div className={styles.sep} />
         </>
       )}
-      {query && groups.length === 0 && settled && (
+      {query && !instant && groups.length === 0 && settled && (
         <>
           <div className={`${styles.body} ${styles.empty}`}>
             Không tìm thấy kết quả. Thử <b className={styles.hint}>f</b> để tìm file hoặc <b className={styles.hint}>=</b>{" "}
@@ -247,6 +281,12 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
           <b className={styles.hint}>?</b> web
         </span>
       </div>
+      {toast && (
+        <div key={toast.id} className={styles.toast} role="status">
+          <Icon name="check" size={14} />
+          {toast.text}
+        </div>
+      )}
     </div>
   );
 }
