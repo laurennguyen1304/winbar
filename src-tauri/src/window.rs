@@ -36,12 +36,14 @@ pub struct NotchPlacement {
 
 /// Places a notch of `width`×`height` logical px on `monitor`, `top_gap` logical px below its top edge and
 /// `offset_x` logical px right of the centre (SPEC §15 V3), kept inside the monitor.
+/// `top` (physical px) replaces the monitor's top edge while sticky mode reserves a strip: the notch sits in it.
 pub fn place_notch(
     monitor: MonitorGeometry,
     width: f64,
     height: f64,
     top_gap: f64,
     offset_x: f64,
+    top: Option<i32>,
 ) -> NotchPlacement {
     let pw = (width * monitor.scale).round().max(1.0) as u32;
     let ph = (height * monitor.scale).round().max(1.0) as u32;
@@ -51,7 +53,7 @@ pub fn place_notch(
     let x = monitor.x + (free / 2 + shift).clamp(0, free);
     NotchPlacement {
         x,
-        y: monitor.y + gap,
+        y: top.unwrap_or(monitor.y) + gap,
         width: pw,
         height: ph,
     }
@@ -90,13 +92,16 @@ pub fn primary_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<Monitor
 }
 
 fn apply<R: Runtime>(window: &WebviewWindow<R>, req: LayoutRequest) -> Result<(), String> {
+    let strip_top = crate::sticky::strip_top(window.app_handle());
     let p = place_notch(
         primary_geometry(window)?,
         req.width,
         req.height,
         req.top_gap,
         req.offset_x,
+        strip_top,
     );
+    crate::sticky::pin(window, strip_top.map(|_| (p.x, p.y)));
     window
         .set_size(PhysicalSize::new(p.width, p.height))
         .map_err(|e| e.to_string())?;
@@ -104,6 +109,20 @@ fn apply<R: Runtime>(window: &WebviewWindow<R>, req: LayoutRequest) -> Result<()
         .set_position(PhysicalPosition::new(p.x, p.y))
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// Places the notch again from the last layout request, e.g. after sticky mode moved the top edge. Windows also moves
+/// the notch window below a newly reserved strip, so this puts it back.
+pub fn reapply<R: Runtime>(window: &WebviewWindow<R>) -> Result<(), String> {
+    let req = *window
+        .state::<NotchState>()
+        .layout
+        .lock()
+        .map_err(|e| e.to_string())?;
+    match req {
+        Some(req) => apply(window, req),
+        None => Ok(()),
+    }
 }
 
 /// Resizes and places the notch window, then shows it without taking focus.
@@ -222,7 +241,7 @@ mod tests {
 
     #[test]
     fn centres_pill_at_100_percent() {
-        let p = place_notch(monitor(1920, 1080, 1.0), 340.0, 40.0, 8.0, 0.0);
+        let p = place_notch(monitor(1920, 1080, 1.0), 340.0, 40.0, 8.0, 0.0, None);
         assert_eq!(
             p,
             NotchPlacement {
@@ -236,7 +255,7 @@ mod tests {
 
     #[test]
     fn scales_size_and_gap_at_125_percent() {
-        let p = place_notch(monitor(2400, 1500, 1.25), 340.0, 40.0, 8.0, 0.0);
+        let p = place_notch(monitor(2400, 1500, 1.25), 340.0, 40.0, 8.0, 0.0, None);
         assert_eq!(
             p,
             NotchPlacement {
@@ -250,7 +269,7 @@ mod tests {
 
     #[test]
     fn scales_size_and_gap_at_150_percent() {
-        let p = place_notch(monitor(2880, 1800, 1.5), 340.0, 40.0, 8.0, 0.0);
+        let p = place_notch(monitor(2880, 1800, 1.5), 340.0, 40.0, 8.0, 0.0, None);
         assert_eq!(
             p,
             NotchPlacement {
@@ -265,10 +284,10 @@ mod tests {
     #[test]
     fn shifts_by_the_offset_in_logical_px() {
         let m = monitor(2400, 1500, 1.25);
-        assert_eq!(place_notch(m, 368.0, 40.0, 0.0, -400.0).x, 470);
-        assert_eq!(place_notch(m, 368.0, 40.0, 0.0, 400.0).x, 1470);
+        assert_eq!(place_notch(m, 368.0, 40.0, 0.0, -400.0, None).x, 470);
+        assert_eq!(place_notch(m, 368.0, 40.0, 0.0, 400.0, None).x, 1470);
         assert_eq!(
-            place_notch(monitor(2880, 1800, 1.5), 368.0, 40.0, 0.0, 300.0).x,
+            place_notch(monitor(2880, 1800, 1.5), 368.0, 40.0, 0.0, 300.0, None).x,
             1164 + 450
         );
     }
@@ -277,12 +296,12 @@ mod tests {
     fn keeps_the_notch_inside_the_monitor() {
         for scale in [1.0, 1.25, 1.5] {
             let m = monitor((1920.0 * scale) as u32, (1200.0 * scale) as u32, scale);
-            let left = place_notch(m, 368.0, 40.0, 0.0, -4000.0);
-            let right = place_notch(m, 368.0, 40.0, 0.0, 4000.0);
+            let left = place_notch(m, 368.0, 40.0, 0.0, -4000.0, None);
+            let right = place_notch(m, 368.0, 40.0, 0.0, 4000.0, None);
             assert_eq!(left.x, 0, "{scale}");
             assert_eq!(right.x + right.width as i32, m.width as i32, "{scale}");
         }
-        let wide = place_notch(monitor(800, 600, 1.0), 900.0, 40.0, 0.0, 200.0);
+        let wide = place_notch(monitor(800, 600, 1.0), 900.0, 40.0, 0.0, 200.0, None);
         assert_eq!(wide.x, 0);
         let offset = MonitorGeometry {
             x: -1920,
@@ -291,7 +310,20 @@ mod tests {
             height: 1080,
             scale: 1.0,
         };
-        assert_eq!(place_notch(offset, 340.0, 40.0, 0.0, -4000.0).x, -1920);
+        assert_eq!(
+            place_notch(offset, 340.0, 40.0, 0.0, -4000.0, None).x,
+            -1920
+        );
+    }
+
+    #[test]
+    fn sits_in_the_sticky_strip_when_one_is_reserved() {
+        let m = monitor(2400, 1500, 1.25);
+        // Attached: flush with the top of the strip (below a 47px top bar such as YASB).
+        assert_eq!(place_notch(m, 368.0, 40.0, 0.0, 0.0, Some(47)).y, 47);
+        // Floating: the gap is counted from the strip's top.
+        assert_eq!(place_notch(m, 340.0, 40.0, 8.0, 0.0, Some(47)).y, 57);
+        assert_eq!(place_notch(m, 340.0, 40.0, 8.0, 0.0, None).y, 10);
     }
 
     #[test]
@@ -303,7 +335,7 @@ mod tests {
             height: 1080,
             scale: 1.0,
         };
-        let p = place_notch(m, 780.0, 486.0, 0.0, 0.0);
+        let p = place_notch(m, 780.0, 486.0, 0.0, 0.0, None);
         assert_eq!(
             p,
             NotchPlacement {

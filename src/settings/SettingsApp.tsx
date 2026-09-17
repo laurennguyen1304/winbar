@@ -187,7 +187,7 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
             </Row>
             <Row
               title="Sticky"
-              description="Giữ chỗ phía trên: cửa sổ phóng to bắt đầu dưới notch. Nếu YASB cũng giữ chỗ ở cạnh trên, dải này nằm ngay dưới YASB"
+              description="Notch nằm trong dải giữ chỗ phía trên, cửa sổ phóng to bắt đầu dưới dải. Có YASB ở cạnh trên thì dải và notch nằm ngay dưới YASB"
             >
               <Switch
                 aria-label="Sticky"

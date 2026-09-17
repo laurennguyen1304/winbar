@@ -208,8 +208,20 @@ Kiểm trên app dev bằng sự kiện con trỏ giả lập trong webview (kh�
 | Mở lại khi sticky đang lưu là bật | 97 | ✅ tự giữ chỗ lại |
 | Tắt ngang tiến trình (`Stop-Process -Force`) | 47 | ✅ Windows tự gỡ ngay |
 
+**Sửa sau phản hồi của bạn (2026-09-17):** lần đo trên chỉ xem vùng làm việc, bỏ sót vị trí notch. Bật sticky thì Windows dời cửa sổ notch xuống **dưới** dải giữ chỗ, sau ABM_SETPOS một lúc. Giờ notch được ghim bằng `WM_WINDOWPOSCHANGING` và nằm ở đỉnh dải.
+
+Đo lại trên app dev (YASB không chạy, dải bắt đầu từ 0):
+
+| Bước | Vùng làm việc | Notch |
+|---|---|---|
+| Bật, pill | mép trên 50 | ✅ y=0 suốt 3 giây (trước khi sửa: y=50) |
+| Mở panel rồi thu gọn | 50 | ✅ y=0 |
+| Chế độ always | 80 | ✅ y=0 (trước khi sửa: y=80) |
+| Kéo +160 khi đang sticky, rồi tải lại | 50 | ✅ x dời 200px vật lý, y=0 |
+| Tắt | 0 | ✅ y=0 |
+
 - [x] ✅ Test Rust: chiều cao dải theo DPI và gốc màn hình (`sticky.rs`). Test TS: theo layout, always, khoảng cách mép (`notch-shape.test.ts`, `Notch.test.tsx`).
-- [x] ⚠️ Có YASB: Windows xếp dải của winbar **dưới** YASB (47→97), còn notch vẫn ở mép trên, đè lên YASB. Giữa YASB và cửa sổ phóng to có khoảng trống cao bằng notch. Hết khi gỡ YASB. Đã ghi trong Cài đặt.
+- [x] ⚠️ Có YASB: Windows xếp dải của winbar **dưới** YASB (47→97). Notch nằm trong dải đó, tức ngay dưới YASB (test Rust `sits_in_the_sticky_strip_when_one_is_reserved`). Chưa đo lại trên máy khi YASB chạy.
 - [ ] 👤 Bật Sticky, mở trình duyệt phóng to: trang bắt đầu dưới dải, panel mở vẫn nổi đè lên.
 
 ## V5. Chiều cao pill
