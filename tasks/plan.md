@@ -59,7 +59,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 ### Giai đoạn 4 — File và cài đặt
 - [x] Task 10: Tìm file bằng Windows Search + Ctrl+Enter mở thư mục chứa
 - [x] Task 11: Tìm file bằng Everything + tự chọn nguồn
-- [ ] Task 12: Mục Command bar trong Cài đặt
+- [x] Task 12: Mục Command bar trong Cài đặt
 - [ ] Task 13: Đo hiệu năng, checklist thủ công, so mockup, 15 tiêu chí
 
 ### Checkpoint cuối — Đạt 15 tiêu chí ở mục 11 của spec

@@ -413,12 +413,15 @@
 Mọi thay đổi áp dụng ngay cho command bar đang mở.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test component: đổi từng mục gọi `update_settings` đúng; dòng trạng thái theo lệnh Rust.
-- [ ] Đổi nguồn file / công cụ tìm web khi command bar đang mở thì lần gõ kế tiếp dùng giá trị mới. "Đặt lại vị trí" hoạt động (tiêu chí 12).
+- [x] Test component: đổi từng mục gọi `update_settings` đúng; dòng trạng thái theo lệnh Rust.
+- [x] Đổi nguồn file / công cụ tìm web khi command bar đang mở thì lần gõ kế tiếp dùng giá trị mới (chạy thật: chọn YouTube → `? lofi` ra YouTube trước; tắt tìm file → `/f spec` không ra file). "Đặt lại vị trí" tắt khi chưa kéo, bấm thì `position` về `null`.
 
-**Kiểm tra:**
-- [ ] `npm test`, `cargo test`, lint qua.
-- [ ] Thủ công: so với phong cách các mục Cài đặt có sẵn.
+**Kiểm tra:** (2026-09-17)
+- [x] `cargo test` 72 (nguồn đang dùng theo thứ tự chế độ) · clippy sạch.
+- [x] `npm test` 279 (CommandBarSection 4: câu trạng thái, đổi nguồn + hỏi lại trạng thái, đổi trang web, đặt lại vị trí; SettingsApp +1 và mục mới trong menu) · lint sạch.
+- [x] Thủ công qua trang: `file_search_status` → Everything không chạy, Windows Search có, đang dùng Windows Search (223ms); đổi sang `off` → không nguồn nào được dùng. Cài đặt của bạn đã trả về như cũ sau khi thử.
+
+**Ghi chú:** trang tìm web chọn trong 4 trang Google/YouTube/Reddit/X (theo lệnh `/g /y /r /x` bạn chốt), không phải Google/Bing/DuckDuckGo như spec cũ.
 
 **Phụ thuộc:** Task 11
 **File dự kiến:** `src/settings/CommandBarSection.tsx` (+ test), `src/settings/SettingsApp.tsx`, `src-tauri/src/command_bar/files/mod.rs`

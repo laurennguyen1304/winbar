@@ -5,6 +5,7 @@ import { PillPreview } from "../shell/PillPreview";
 import { registry } from "../shell/registry";
 import { mergeWidgets, moveWidget, type Settings } from "../shell/settings";
 import { useSettings } from "../shell/use-settings";
+import { CommandBarSection } from "./CommandBarSection";
 import { HotkeySection } from "./HotkeySection";
 import type { TabId, WidgetDefinition } from "../shell/widget-contract";
 import { Button } from "@/settings/components/ui/button";
@@ -18,6 +19,7 @@ const SECTIONS = [
   { id: "widget", label: "Widget" },
   { id: "font", label: "Cỡ chữ" },
   { id: "hotkey", label: "Phím tắt" },
+  { id: "command-bar", label: "Command bar" },
   { id: "general", label: "Chung" },
 ] as const;
 
@@ -264,6 +266,8 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
             accelerator={view.hotkeys.commandBar}
             onChange={(commandBar) => save({ ...view, hotkeys: { ...view.hotkeys, commandBar } })}
           />
+
+          <CommandBarSection value={view.commandBar} onChange={(commandBar) => save({ ...view, commandBar })} />
 
           <section id="set-general">
             <h2 className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Chung</h2>

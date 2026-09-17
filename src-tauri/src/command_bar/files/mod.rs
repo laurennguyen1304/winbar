@@ -89,6 +89,60 @@ pub fn sources_for(mode: &str) -> &'static [Source] {
     }
 }
 
+/// The source a search would use right now: the first one in `mode`'s order that is available.
+pub fn active_source(mode: &str, everything: bool, windows: bool) -> Option<Source> {
+    sources_for(mode).iter().copied().find(|s| match s {
+        Source::Everything => everything,
+        Source::Windows => windows,
+    })
+}
+
+/// For Settings › Command bar: which file sources answer right now, and which one searches would use.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileSearchStatus {
+    pub everything: bool,
+    pub windows: bool,
+    /// "everything", "windows", or null when nothing would answer (or the mode is "off").
+    pub active: Option<&'static str>,
+}
+
+#[tauri::command]
+pub async fn file_search_status<R: Runtime>(
+    app: AppHandle<R>,
+    state: tauri::State<'_, FileSearchState>,
+) -> Result<FileSearchStatus, String> {
+    let mode = app
+        .try_state::<SettingsState>()
+        .map(|s| s.get().command_bar.file_search)
+        .unwrap_or_default();
+    let dll = app
+        .path()
+        .resolve(
+            format!("everything/{}", everything::DLL_NAME),
+            BaseDirectory::Resource,
+        )
+        .map_err(|e| e.to_string())?;
+    let everything = run_everything(dll, "winbar-status-probe".into())
+        .await
+        .is_ok();
+    let home = app.path().home_dir().map_err(|e| e.to_string())?;
+    let sql = windows_search::build_sql("winbar-status-probe", &home.to_string_lossy(), 1)
+        .ok_or("no probe query")?;
+    // Probe with the newest generation so a probe never cancels or is cancelled by typing.
+    let windows = run_windows_search(sql, state.latest.clone(), u64::MAX)
+        .await
+        .is_ok();
+    Ok(FileSearchStatus {
+        everything,
+        windows,
+        active: active_source(&mode, everything, windows).map(|s| match s {
+            Source::Everything => "everything",
+            Source::Windows => "windows",
+        }),
+    })
+}
+
 pub fn hit(path: String, folder: bool, home: &Path) -> FileHit {
     let p = Path::new(&path);
     FileHit {
@@ -311,6 +365,16 @@ mod tests {
             everything_message(&EverythingError::Unavailable("x".into())),
             "Không dùng được Everything"
         );
+    }
+
+    #[test]
+    fn active_source_is_the_first_available_in_mode_order() {
+        assert_eq!(active_source("auto", true, true), Some(Source::Everything));
+        assert_eq!(active_source("auto", false, true), Some(Source::Windows));
+        assert_eq!(active_source("auto", false, false), None);
+        assert_eq!(active_source("everything", false, true), None);
+        assert_eq!(active_source("windows", true, true), Some(Source::Windows));
+        assert_eq!(active_source("off", true, true), None);
     }
 
     #[test]

@@ -31,6 +31,7 @@ pub fn run() {
             command_bar::apps::launch_app,
             command_bar::apps::reveal_app,
             command_bar::files::search_files,
+            command_bar::files::file_search_status,
             command_bar::icons::shell_icons,
             command_bar::history::history_record,
             command_bar::history::history_list,

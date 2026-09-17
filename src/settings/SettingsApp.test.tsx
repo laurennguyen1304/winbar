@@ -44,11 +44,19 @@ describe("SettingsApp", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("shows both previews and the three sections", async () => {
+  it("shows both previews and every section", async () => {
     await renderLoaded();
     expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "340px", height: "40px" });
     expect(screen.getByTestId("preview-always")).toHaveStyle({ width: "620px", height: "64px" });
-    for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt", "Chung"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
+    for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt", "Command bar", "Chung"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
+  });
+
+  it("saves the command bar options with the rest of the settings", async () => {
+    await renderLoaded();
+    const group = screen.getByRole("radiogroup", { name: "Trang tìm web ưu tiên" });
+    fireEvent.click(within(group).getByRole("radio", { name: "Reddit" }));
+    await waitFor(() => expect(lastSaved().commandBar.webSearch).toBe("reddit"));
+    expect(lastSaved().pill).toEqual(DEFAULT_SETTINGS.pill);
   });
 
   it("saves the pill size and updates the preview", async () => {

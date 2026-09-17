@@ -151,6 +151,18 @@ export async function searchFiles(query: string, generation: number): Promise<Fi
   return invoke<FileSearch>("search_files", { query, generation });
 }
 
+/** Settings › Command bar: which file sources answer now and which one searches would use. */
+export interface FileSearchStatus {
+  everything: boolean;
+  windows: boolean;
+  active: "everything" | "windows" | null;
+}
+
+export async function getFileSearchStatus(): Promise<FileSearchStatus | undefined> {
+  if (!isTauri()) return undefined;
+  return invoke<FileSearchStatus>("file_search_status");
+}
+
 export async function openPath(path: string): Promise<void> {
   if (!isTauri()) return;
   await invoke("open_path", { path });
