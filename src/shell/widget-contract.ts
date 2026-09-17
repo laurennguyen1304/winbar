@@ -47,15 +47,33 @@ export interface ShellApi {
 
 export interface SearchProvider {
   id: string;
-  /** e.g. "cb" */
+  /** Group heading in the command bar, e.g. "Clipboard". */
+  title: string;
+  /** e.g. "cb"; typing it (alone or followed by a space) searches only this provider. */
   prefix?: string;
+  /** Shown in results without a prefix; false = only reachable through the prefix. Default true. */
+  inDefaultResults?: boolean;
+  /**
+   * Called on every query change (SPEC-command-bar §6). Runs in the command bar window, so read data through Rust
+   * commands or events, never from notch React state. Must honour `signal`; slower than 1.5 s counts as failed.
+   */
   search(query: string, signal: AbortSignal): Promise<SearchResult[]>;
 }
 
 export interface SearchResult {
+  /** Stable across searches; used for history and selection. */
   id: string;
   title: string;
   subtitle?: string;
+  /** Data URL, image URL, or an icon name from src/shell/Icon.tsx. Without it the row shows the title's first letter. */
   icon?: string;
+  /** Verb shown on the selected row: "Mở", "Copy", "Chạy". */
+  verb: string;
+  /** Higher sorts first inside the provider's group; the command bar does not re-rank across providers. */
+  score?: number;
   run(): void | Promise<void>;
+  /** Ctrl+Enter; omit when there is no secondary action. */
+  runAlt?(): void | Promise<void>;
+  /** false = never recorded in "Gần đây" (e.g. clipboard secrets). Default true. */
+  remember?: boolean;
 }

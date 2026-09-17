@@ -4,7 +4,7 @@ import claudeWorking from "../../assets/claude/claude-fu-transparent.gif";
 import { Icon } from "../../shell/Icon";
 import { Card, CardLabel } from "../../shell/ui";
 import { useShell } from "../../shell/shell-context";
-import type { WidgetDefinition } from "../../shell/widget-contract";
+import type { SearchProvider, WidgetDefinition } from "../../shell/widget-contract";
 
 function DemoCard() {
   const [count, setCount] = useState(0);
@@ -147,12 +147,43 @@ function DemoAlerts() {
   );
 }
 
+const DEMO_ITEMS = [
+  { id: "one", title: "Demo một" },
+  { id: "two", title: "Demo hai" },
+  { id: "three", title: "Demo ba" },
+];
+
+/** Command bar source for manual checks: each run is recorded on window.__winbarDemoRuns. */
+export const demoSearch: SearchProvider = {
+  id: "demo",
+  title: "Demo",
+  prefix: "demo",
+  search: (query) => {
+    const record = (entry: string) => {
+      const w = window as unknown as { __winbarDemoRuns?: string[] };
+      (w.__winbarDemoRuns ??= []).push(entry);
+    };
+    const q = query.toLowerCase();
+    return Promise.resolve(
+      DEMO_ITEMS.filter((item) => item.title.toLowerCase().includes(q)).map((item) => ({
+        id: item.id,
+        title: item.title,
+        subtitle: "Nguồn thử của widget demo",
+        icon: "sparks",
+        verb: "Chạy",
+        run: () => record(item.id),
+        runAlt: () => record(`${item.id} (Ctrl)`),
+      })),
+    );
+  },
+};
+
 function DemoBroken(): never {
   throw new Error("demo widget failure");
 }
 
 export const demoWidgets: WidgetDefinition[] = [
-  { id: "demo-card", tab: "core", title: "Demo card", description: "Card thường", Card: DemoCard, Pill: DemoPill, MidPill: DemoMidPill },
+  { id: "demo-card", tab: "core", title: "Demo card", description: "Card thường", Card: DemoCard, Pill: DemoPill, MidPill: DemoMidPill, searchProvider: demoSearch },
   { id: "demo-alerts", tab: "core", title: "Demo cảnh báo", description: "Đẩy cảnh báo và flash pill", Card: DemoAlerts },
   { id: "demo-broken", tab: "core", title: "Demo lỗi", description: "Luôn lỗi khi render", Card: DemoBroken },
   { id: "demo-tall", tab: "core", title: "Demo tall", description: "Chiếm một cột", Card: DemoTall, layout: { tall: true } },

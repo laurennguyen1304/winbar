@@ -133,13 +133,26 @@
 - **M12:** đổi nền dòng chọn ngay.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test thuần: tách tiền tố, trùng tiền tố, thứ tự nhóm, giới hạn dòng, timeout, provider lỗi, hủy lần tìm cũ.
-- [ ] Test component: ↑↓ biên, Enter chạy đúng dòng, Ctrl+Enter gọi `runAlt`, rê chuột đổi dòng chọn, không có kết quả.
-- [ ] Tắt widget demo trong Cài đặt thì nhóm `demo` biến mất ngay (tiêu chí 11).
+- [x] Test thuần: tách tiền tố, trùng tiền tố, thứ tự nhóm, giới hạn dòng, timeout, provider lỗi, hủy lần tìm cũ.
+- [x] Test component: ↑↓ biên, Enter chạy đúng dòng, Ctrl+Enter gọi `runAlt`, rê chuột đổi dòng chọn, không có kết quả.
+- [x] Tắt widget demo trong Cài đặt thì nhóm `demo` biến mất ngay (tiêu chí 11).
 
-**Kiểm tra:**
-- [ ] `npm test`, lint qua.
-- [ ] Thủ công: gõ `demo`, chọn, Enter; tắt/bật widget demo khi command bar đang mở.
+**Kiểm tra:** (2026-09-17)
+- [x] `npm test` 139:
+  - `search` 12: tiền tố, trùng tiền tố, điểm, giới hạn, provider chỉ có tiền tố, fallback, timeout/lỗi, báo dần, hủy;
+  - `sources` 2;
+  - command bar +6: nhóm + dòng chọn + động từ, ↑↓ không vòng + Enter + bỏ qua khi IME ghép chữ, Ctrl+Enter, rê chuột/bấm, đổi chữ về dòng đầu, tiền tố + tắt widget.
+- [x] `npm run lint` sạch. Rust không đổi.
+- [x] Thủ công (bản dev; mở bằng phím tắt toàn cục, còn lại điều khiển qua trang, không gửi phím hệ thống):
+  - `demo` → nhóm Demo 3 dòng, dòng đầu được chọn;
+  - ↓×3 dừng ở dòng cuối;
+  - Enter chạy "three", ↑ rồi Ctrl+Enter chạy "two (Ctrl)";
+  - `hai` (không tiền tố) → 1 dòng;
+  - `zzz` → "Không tìm thấy kết quả";
+  - tắt `demo-card` trong cài đặt → nhóm biến mất, bật lại → quay lại;
+  - chiều cao cửa sổ đổi theo (158 → 202 → 303 logic).
+
+**Ghi chú:** Hợp đồng `SearchProvider`/`SearchResult` đã đổi đúng mục 6 của spec. Ô trống chưa hiện gì ("Gần đây" ở Task 9).
 
 **Phụ thuộc:** Task 2
 **File dự kiến:** `src/shell/widget-contract.ts`, `src/command-bar/use-command-search.ts` (+ test), `src/command-bar/ResultList.tsx`, `src/command-bar/CommandBar.tsx`, `src/widgets/demo/index.tsx`

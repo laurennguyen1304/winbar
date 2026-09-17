@@ -1,6 +1,21 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_SETTINGS, type Settings } from "../shell/settings";
+import type { SearchResult, WidgetDefinition } from "../shell/widget-contract";
 import { CommandBar } from "./CommandBar";
+
+const { shellNative } = vi.hoisted(() => ({
+  shellNative: { changed: [] as Array<(s: Settings) => void> },
+}));
+
+vi.mock("../shell/native", () => ({
+  loadSettings: () => Promise.resolve(undefined),
+  saveSettings: (s: Settings) => Promise.resolve(s),
+  onSettingsChanged: (h: (s: Settings) => void) => {
+    shellNative.changed.push(h);
+    return () => shellNative.changed.splice(shellNative.changed.indexOf(h), 1);
+  },
+}));
 
 const { native } = vi.hoisted(() => ({
   native: {
@@ -32,6 +47,36 @@ const input = () => screen.getByRole("textbox", { name: "Tìm kiếm" });
 const bar = () => screen.getByTestId("command-bar");
 const openBar = (maxHeight = 800) => act(() => native.opened.forEach((h) => h({ maxHeight })));
 const move = () => act(() => native.moved.forEach((h) => h()));
+const flush = () => act(async () => void (await vi.advanceTimersByTimeAsync(0)));
+const type = async (value: string) => {
+  fireEvent.change(input(), { target: { value } });
+  await flush();
+};
+const key = (k: string, extra: object = {}) => fireEvent.keyDown(input(), { key: k, ...extra });
+const selectedTitle = () => screen.getByRole("option", { selected: true }).querySelector(":scope > div > span")?.textContent;
+
+const ran: string[] = [];
+const item = (id: string, extra: Partial<SearchResult> = {}): SearchResult => ({
+  id,
+  title: id,
+  subtitle: `sub ${id}`,
+  verb: "Chạy",
+  run: () => void ran.push(id),
+  ...extra,
+});
+const searchWidget = (id: string, items: SearchResult[], prefix?: string): WidgetDefinition => ({
+  id,
+  tab: "core",
+  title: id,
+  description: "",
+  Card: () => null,
+  searchProvider: {
+    id,
+    title: id.toUpperCase(),
+    prefix,
+    search: (q) => Promise.resolve(items.filter((i) => i.title.includes(q))),
+  },
+});
 const windowFocus = (focused: boolean) => act(() => void window.dispatchEvent(new Event(focused ? "focus" : "blur")));
 
 describe("CommandBar", () => {
@@ -42,11 +87,12 @@ describe("CommandBar", () => {
     native.save.mockClear();
     native.opened.length = 0;
     native.moved.length = 0;
+    shellNative.changed.length = 0;
   });
   afterEach(() => vi.useRealTimers());
 
   it("focuses the input and selects the previous text when opened", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     fireEvent.change(input(), { target: { value: "code" } });
     input().blur();
     openBar();
@@ -57,7 +103,7 @@ describe("CommandBar", () => {
   });
 
   it("clears the text on the first Esc and hides after the fade on the second", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar();
     fireEvent.change(input(), { target: { value: "code" } });
     fireEvent.keyDown(input(), { key: "Escape" });
@@ -72,7 +118,7 @@ describe("CommandBar", () => {
   });
 
   it("ignores Esc while an IME is composing Vietnamese text", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar();
     fireEvent.change(input(), { target: { value: "vie" } });
     fireEvent.keyDown(input(), { key: "Escape", isComposing: true });
@@ -85,7 +131,7 @@ describe("CommandBar", () => {
   });
 
   it("stays open and dims when another app takes focus", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar();
     windowFocus(false);
     act(() => vi.advanceTimersByTime(1000));
@@ -100,7 +146,7 @@ describe("CommandBar", () => {
   });
 
   it("puts the cursor back in the input when the window regains focus, and Esc works from anywhere", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar();
     fireEvent.change(input(), { target: { value: "code" } });
     windowFocus(false);
@@ -115,7 +161,7 @@ describe("CommandBar", () => {
   });
 
   it("opening again during the fade-out cancels the hide", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar();
     fireEvent.keyDown(input(), { key: "Escape" });
     act(() => vi.advanceTimersByTime(50));
@@ -126,7 +172,7 @@ describe("CommandBar", () => {
   });
 
   it("drags from the grip and saves the position once the window stops moving", async () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar();
     fireEvent.pointerDown(screen.getByTestId("grip"), { button: 0 });
     expect(native.drag).toHaveBeenCalledTimes(1);
@@ -146,7 +192,7 @@ describe("CommandBar", () => {
   });
 
   it("does not save when the grip is pressed without moving, or with another mouse button", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar();
     fireEvent.pointerDown(screen.getByTestId("grip"), { button: 2 });
     expect(native.drag).not.toHaveBeenCalled();
@@ -158,16 +204,109 @@ describe("CommandBar", () => {
   });
 
   it("caps its height to the room left on the screen", () => {
-    render(<CommandBar />);
+    render(<CommandBar registered={[]} />);
     openBar(240);
     expect(bar().style.maxHeight).toBe("240px");
   });
 
-  it("clears with the Xóa button and keeps typing focus", () => {
-    render(<CommandBar />);
+  it("shows provider results in groups, first row selected with its verb", async () => {
+    const widgets = [searchWidget("apps", [item("alpha"), item("beta")]), searchWidget("acts", [item("alpine")])];
+    render(<CommandBar registered={widgets} />);
+    openBar();
+    await type("al");
+    const groups = screen.getAllByRole("group");
+    expect(groups.map((g) => g.getAttribute("aria-label"))).toEqual(["APPS", "ACTS"]);
+    expect(screen.getAllByRole("option")).toHaveLength(2);
+    expect(selectedTitle()).toBe("alpha");
+    expect(screen.getByRole("option", { selected: true })).toHaveTextContent("Chạy");
+    expect(screen.getByText("sub alpha")).toBeInTheDocument();
+    expect(screen.queryByText(/Không tìm thấy kết quả/)).not.toBeInTheDocument();
+  });
+
+  it("moves the selection with the arrows without wrapping, and Enter runs the selected row", async () => {
+    ran.length = 0;
+    render(<CommandBar registered={[searchWidget("apps", [item("a1"), item("a2"), item("a3")])]} />);
+    openBar();
+    await type("a");
+    key("ArrowUp");
+    expect(selectedTitle()).toBe("a1");
+    key("ArrowDown");
+    key("ArrowDown");
+    key("ArrowDown");
+    expect(selectedTitle()).toBe("a3");
+    key("Enter");
+    await flush();
+    expect(ran).toEqual(["a3"]);
+    expect(bar()).toHaveAttribute("data-open", "true");
+
+    key("Enter", { isComposing: true });
+    await flush();
+    expect(ran).toEqual(["a3"]);
+  });
+
+  it("Ctrl+Enter runs the secondary action only when there is one", async () => {
+    ran.length = 0;
+    const withAlt = item("file", { runAlt: () => void ran.push("file (folder)") });
+    render(<CommandBar registered={[searchWidget("files", [withAlt, item("plain")])]} />);
+    openBar();
+    await type("");
+    await type("l");
+    key("Enter", { ctrlKey: true });
+    key("ArrowDown");
+    key("Enter", { ctrlKey: true });
+    await flush();
+    expect(ran).toEqual(["file (folder)"]);
+  });
+
+  it("selects on mouse move and runs on click", async () => {
+    ran.length = 0;
+    render(<CommandBar registered={[searchWidget("apps", [item("a1"), item("a2")])]} />);
+    openBar();
+    await type("a");
+    const second = screen.getAllByRole("option")[1];
+    fireEvent.mouseMove(second);
+    expect(selectedTitle()).toBe("a2");
+    fireEvent.click(screen.getAllByRole("option")[0]);
+    await flush();
+    expect(ran).toEqual(["a1"]);
+  });
+
+  it("goes back to the first row when the text changes", async () => {
+    render(<CommandBar registered={[searchWidget("apps", [item("a1"), item("a2")])]} />);
+    openBar();
+    await type("a");
+    key("ArrowDown");
+    expect(selectedTitle()).toBe("a2");
+    await type("a2");
+    await type("a");
+    expect(selectedTitle()).toBe("a1");
+  });
+
+  it("searches one widget through its prefix, and drops its group when the widget is turned off", async () => {
+    const widgets = [searchWidget("apps", [item("demo app")]), searchWidget("demo", [item("demo one"), item("two")], "demo")];
+    render(<CommandBar registered={widgets} />);
+    openBar();
+    await type("demo");
+    expect(screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["DEMO"]);
+    expect(screen.getAllByRole("option")).toHaveLength(2);
+
+    act(() =>
+      shellNative.changed.forEach((h) =>
+        h({ ...DEFAULT_SETTINGS, widgets: [{ id: "apps", enabled: true }, { id: "demo", enabled: false }] }),
+      ),
+    );
+    await flush();
+    await flush();
+    expect(screen.queryByRole("group", { name: "DEMO" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["APPS"]);
+  });
+
+  it("clears with the Xóa button and keeps typing focus", async () => {
+    render(<CommandBar registered={[]} />);
     openBar();
     expect(screen.queryByRole("button", { name: "Xóa" })).not.toBeInTheDocument();
     fireEvent.change(input(), { target: { value: "abc" } });
+    await flush();
     expect(screen.getByText(/Không tìm thấy kết quả/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Xóa" }));
     expect(input()).toHaveValue("");

@@ -21,6 +21,8 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS;
 
+export const isIconName = (name: string): name is IconName => Object.hasOwn(ICONS, name);
+
 export function Icon({ name, size = 16, label }: { name: IconName; size?: number; label?: string }) {
   const Glyph = ICONS[name];
   return (

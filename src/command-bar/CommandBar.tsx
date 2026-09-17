@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Icon } from "../shell/Icon";
+import { useSettings } from "../shell/use-settings";
+import type { SearchResult, WidgetDefinition } from "../shell/widget-contract";
 import { hideCommandBar, onCommandBarOpened, onMoved, resizeCommandBar, saveCommandBarPosition, startDragging } from "./native";
+import { flattenRows, ResultList } from "./ResultList";
+import { widgetSlots } from "./sources";
+import { useCommandSearch } from "./use-command-search";
 import styles from "./CommandBar.module.css";
 
 /** M11 (SPEC-command-bar §5.5); matches --motion-quick-fade. */
@@ -21,9 +26,20 @@ function Kbd({ children }: { children: string }) {
   return <kbd className={styles.kbd}>{children}</kbd>;
 }
 
+/** Runs a result's action; errors are logged, and the command bar stays open (SPEC-command-bar §5.2). */
+function runResult(result: SearchResult, alt: boolean) {
+  const action = alt ? result.runAlt : result.run;
+  if (!action) return;
+  Promise.resolve()
+    .then(() => action.call(result))
+    .catch((err: unknown) => console.error(`command bar: running "${result.id}" failed`, err));
+}
+
 /** Command bar window (SPEC-command-bar §5). Closes only on Esc with an empty input while it has focus. */
-export function CommandBar() {
+export function CommandBar({ registered }: { registered: readonly WidgetDefinition[] }) {
   const [query, setQuery] = useState("");
+  // undefined = the first row, until the user picks another one.
+  const [selectedKey, setSelectedKey] = useState<string | undefined>();
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(true);
   const [maxHeight, setMaxHeight] = useState<number | undefined>();
@@ -32,6 +48,17 @@ export function CommandBar() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dragTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dragging = useRef(false);
+
+  const { settings } = useSettings(registered);
+  const slots = useMemo(() => widgetSlots(settings.widgets, registered), [settings.widgets, registered]);
+  const { groups, settled } = useCommandSearch(query, slots);
+  const rows = useMemo(() => flattenRows(groups), [groups]);
+  const selected = Math.max(0, rows.findIndex((r) => r.key === selectedKey));
+
+  const changeQuery = (next: string) => {
+    setQuery(next);
+    setSelectedKey(undefined);
+  };
 
   useEffect(
     () =>
@@ -124,17 +151,29 @@ export function CommandBar() {
       if (composing(e)) return;
       if (e.key === "Escape") {
         e.preventDefault();
-        if (query) setQuery("");
-        else close();
+        if (query) {
+          setQuery("");
+          setSelectedKey(undefined);
+        } else close();
         inputRef.current?.focus();
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (rows.length === 0) return;
+        e.preventDefault();
+        const next = Math.min(rows.length - 1, Math.max(0, selected + (e.key === "ArrowDown" ? 1 : -1)));
+        setSelectedKey(rows[next].key);
+      } else if (e.key === "Enter") {
+        const row = rows[selected];
+        if (!row) return;
+        e.preventDefault();
+        runResult(row.result, e.ctrlKey);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [query, close]);
+  }, [query, close, rows, selected]);
 
   const clear = () => {
-    setQuery("");
+    changeQuery("");
     inputRef.current?.focus();
   };
 
@@ -162,7 +201,7 @@ export function CommandBar() {
           autoComplete="off"
           spellCheck={false}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => changeQuery(e.target.value)}
         />
         {query && (
           <button type="button" className={styles.clear} onClick={clear}>
@@ -171,7 +210,18 @@ export function CommandBar() {
         )}
       </div>
       <div className={styles.sep} />
-      {query && (
+      {query && groups.length > 0 && (
+        <>
+          <ResultList
+            groups={groups}
+            selectedKey={rows[selected]?.key}
+            onSelect={setSelectedKey}
+            onRun={runResult}
+          />
+          <div className={styles.sep} />
+        </>
+      )}
+      {query && groups.length === 0 && settled && (
         <>
           <div className={`${styles.body} ${styles.empty}`}>
             Không tìm thấy kết quả. Thử <b className={styles.hint}>f</b> để tìm file hoặc <b className={styles.hint}>=</b>{" "}
