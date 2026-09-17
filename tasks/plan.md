@@ -57,8 +57,8 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 ### Checkpoint 2 — (dời lên sau Task 11, xem "Thứ tự làm")
 
 ### Giai đoạn 4 — File và cài đặt
-- [ ] Task 10: Tìm file bằng Windows Search + Ctrl+Enter mở thư mục chứa
-- [ ] Task 11: Tìm file bằng Everything + tự chọn nguồn
+- [x] Task 10: Tìm file bằng Windows Search + Ctrl+Enter mở thư mục chứa
+- [x] Task 11: Tìm file bằng Everything + tự chọn nguồn
 - [ ] Task 12: Mục Command bar trong Cài đặt
 - [ ] Task 13: Đo hiệu năng, checklist thủ công, so mockup, 15 tiêu chí
 

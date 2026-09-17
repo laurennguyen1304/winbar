@@ -1,4 +1,4 @@
-// "File" group of the command bar (SPEC-command-bar §5.4): Windows Search today, Everything in Task 11.
+// "File" group of the command bar (SPEC-command-bar §5.4): a running Everything, else the Windows Search index.
 import type { SearchProvider, SearchResult } from "../../shell/widget-contract";
 import { openPath, revealPath, searchFiles, type FileSearch } from "../native";
 
@@ -26,17 +26,28 @@ const wait = (ms: number, signal: AbortSignal) =>
     );
   });
 
+const SOURCE_LABEL: Record<FileSearch["source"], string> = {
+  everything: "File · Everything",
+  windows: "File · Windows Search",
+  off: "File",
+};
+
 export function createFilesProvider(native: FilesNative = { search: searchFiles, open: openPath, reveal: revealPath }): SearchProvider {
   let generation = 0;
+  let source: FileSearch["source"] = "off";
   return {
     id: "files",
-    title: "File",
+    // The group heading names the source that answered last (read when the group is built).
+    get title() {
+      return SOURCE_LABEL[source];
+    },
     prefix: "f",
     async search(query, signal) {
       if (query.trim().length < MIN_CHARS) return [];
       await wait(DEBOUNCE_MS, signal);
       const response = await native.search(query, ++generation);
       if (signal.aborted) return [];
+      source = response.source;
       if (response.error) {
         const failure: SearchResult = {
           id: "files-error",

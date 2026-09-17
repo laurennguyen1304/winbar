@@ -80,4 +80,21 @@ describe("files provider", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ title: "Không tìm được file", subtitle: "Windows Search không phản hồi", icon: "warning", remember: false });
   });
+
+  it("names the source that answered in the group heading", async () => {
+    let source: FileSearch["source"] = "everything";
+    const native = fakeNative((generation) => ({ ...hits(generation), source }));
+    const provider = createFilesProvider(native);
+    expect(provider.title).toBe("File");
+    const ask = async () => {
+      const p = provider.search("brief", new AbortController().signal);
+      await vi.advanceTimersByTimeAsync(DEBOUNCE_MS);
+      await p;
+    };
+    await ask();
+    expect(provider.title).toBe("File · Everything");
+    source = "windows";
+    await ask();
+    expect(provider.title).toBe("File · Windows Search");
+  });
 });

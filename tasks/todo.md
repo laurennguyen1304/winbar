@@ -352,12 +352,22 @@
 - **Nhãn nguồn:** nhóm File ghi rõ nguồn đang dùng.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test Rust: logic chọn nguồn (4 trường hợp: auto có/không Everything, ép `everything` khi không chạy, `off`).
-- [ ] Có Everything: tìm được file ngoài `%USERPROFILE%`. Tắt Everything: tự về Windows Search.
+- [x] Test Rust: logic chọn nguồn (auto → Everything rồi Windows Search, `everything`, `windows`, `off`) + câu báo lỗi.
+- [ ] Có Everything: tìm được file ngoài `%USERPROFILE%` → cần cài Everything (chờ bạn quyết). Tắt Everything: tự về Windows Search ✓ (máy chưa có Everything, `auto` đang dùng Windows Search).
 
-**Kiểm tra:**
-- [ ] `cargo test`, clippy, `npm test`, lint qua.
-- [ ] Thủ công: cần Everything. **Hỏi bạn trước khi cài**, hoặc bạn tự cài rồi báo.
+**Kiểm tra:** (2026-09-17)
+- [x] `cargo test` 51:
+  - everything 5: chuỗi tìm + loại thư mục rác, dấu ngoặc kép không nuốt phần loại trừ, chọn DLL theo CPU, **DLL ARM64 kèm app nạp được và báo "Everything không chạy"**;
+  - files +2.
+- [x] clippy sạch.
+- [x] `npm test` 224 (files provider +1: tiêu đề nhóm theo nguồn) · lint sạch.
+- [x] Build dev chép `everything/EverythingARM64.dll` vào `target/debug` (tài nguyên đúng chỗ khi chạy).
+
+**Ghi chú:**
+- DLL `EverythingARM64.dll` và `Everything64.dll` của SDK (MIT) nằm ở `src-tauri/resources/everything/`, kèm `LICENSE.txt`, khai báo trong `bundle.resources`.
+- Nạp bằng `LoadLibraryW` (không thêm crate); gọi SDK có khóa vì SDK dùng biến toàn cục.
+- `auto`: DLL lỗi hoặc Everything không chạy thì dùng Windows Search. Chọn `everything` mà không chạy thì hiện dòng "Everything đang không chạy".
+- Tiêu đề nhóm ghi nguồn: "File · Everything" / "File · Windows Search".
 
 **Phụ thuộc:** Task 10, Checkpoint 0
 **File dự kiến:** `src-tauri/src/command_bar/files/{mod,everything}.rs`, `src-tauri/resources/everything/` (nếu kèm DLL), `src-tauri/tauri.conf.json`

@@ -1,12 +1,17 @@
-//! File search for the command bar (SPEC-command-bar §5.4). Task 10: Windows Search; Task 11 adds Everything.
+//! File search for the command bar (SPEC-command-bar §5.4): a running Everything first, else the Windows Search
+//! index, as chosen by `commandBar.fileSearch`.
 
+pub mod everything;
 pub mod windows_search;
 
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::Serialize;
+use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager, Runtime};
+
+use everything::EverythingError;
 
 use crate::settings::SettingsState;
 
@@ -27,7 +32,7 @@ pub struct FileHit {
 #[serde(rename_all = "camelCase")]
 pub struct FileSearch {
     pub generation: u64,
-    /// "windows" or "off".
+    /// Which source answered: "everything", "windows" or "off".
     pub source: &'static str,
     pub hits: Vec<FileHit>,
     /// Shown as a dimmed row instead of results when the source failed.
@@ -64,7 +69,23 @@ pub fn location(path: &Path, home: &Path) -> String {
     parts.join(" › ")
 }
 
-pub fn hit(path: String, item_type: &str, home: &Path) -> FileHit {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Source {
+    Everything,
+    Windows,
+}
+
+/// Sources to try, in order, for a `commandBar.fileSearch` value. `auto` falls back to Windows Search.
+pub fn sources_for(mode: &str) -> &'static [Source] {
+    match mode {
+        "off" => &[],
+        "everything" => &[Source::Everything],
+        "windows" => &[Source::Windows],
+        _ => &[Source::Everything, Source::Windows],
+    }
+}
+
+pub fn hit(path: String, folder: bool, home: &Path) -> FileHit {
     let p = Path::new(&path);
     FileHit {
         name: p
@@ -72,7 +93,7 @@ pub fn hit(path: String, item_type: &str, home: &Path) -> FileHit {
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| path.clone()),
         location: location(p, home),
-        folder: item_type.eq_ignore_ascii_case("Directory"),
+        folder,
         path,
     }
 }
@@ -91,7 +112,7 @@ pub async fn search_files<R: Runtime>(
     state.latest.fetch_max(generation, Ordering::SeqCst);
     let mut response = FileSearch {
         generation,
-        source: "windows",
+        source: "off",
         hits: Vec::new(),
         error: None,
     };
@@ -99,39 +120,115 @@ pub async fn search_files<R: Runtime>(
         .try_state::<SettingsState>()
         .map(|s| s.get().command_bar.file_search)
         .unwrap_or_default();
-    if mode == "off" {
-        response.source = "off";
-        return Ok(response);
-    }
     let home = app.path().home_dir().map_err(|e| e.to_string())?;
-    let Some(sql) = windows_search::build_sql(&query, &home.to_string_lossy(), RESULT_LIMIT) else {
-        return Ok(response);
-    };
-    if superseded(&state, generation) {
-        return Ok(response);
-    }
+    let explicit = mode == "everything";
 
-    #[cfg(windows)]
-    let rows = tauri::async_runtime::spawn_blocking(move || windows_search::query(&sql))
-        .await
-        .map_err(|e| e.to_string())?;
-    #[cfg(not(windows))]
-    let rows: Result<Vec<(String, String)>, String> = Err(format!("no Windows Search for {sql}"));
-
-    match rows {
-        Ok(rows) if !superseded(&state, generation) => {
-            response.hits = rows
-                .into_iter()
-                .map(|(path, kind)| hit(path, &kind, &home))
-                .collect();
+    for source in sources_for(&mode) {
+        if superseded(&state, generation) {
+            return Ok(response);
         }
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("winbar file search: {e}");
-            response.error = Some("Windows Search không phản hồi (dịch vụ có thể đang tắt)".into());
+        match source {
+            Source::Everything => {
+                let Some(text) = everything::search_text(&query) else {
+                    return Ok(response);
+                };
+                let dll = app
+                    .path()
+                    .resolve(
+                        format!("everything/{}", everything::DLL_NAME),
+                        BaseDirectory::Resource,
+                    )
+                    .map_err(|e| e.to_string())?;
+                match run_everything(dll, text).await {
+                    Ok(rows) => {
+                        response.source = "everything";
+                        if !superseded(&state, generation) {
+                            response.hits = rows
+                                .into_iter()
+                                .map(|(p, folder)| hit(p, folder, &home))
+                                .collect();
+                        }
+                        return Ok(response);
+                    }
+                    Err(e) if !explicit => {
+                        if let EverythingError::Unavailable(detail) = &e {
+                            eprintln!("winbar file search: Everything unavailable, using Windows Search: {detail}");
+                        }
+                    }
+                    Err(e) => {
+                        response.source = "everything";
+                        response.error = Some(everything_message(&e).into());
+                        return Ok(response);
+                    }
+                }
+            }
+            Source::Windows => {
+                response.source = "windows";
+                let Some(sql) =
+                    windows_search::build_sql(&query, &home.to_string_lossy(), RESULT_LIMIT)
+                else {
+                    return Ok(response);
+                };
+                match run_windows_search(sql).await {
+                    Ok(rows) if !superseded(&state, generation) => {
+                        response.hits = rows
+                            .into_iter()
+                            .map(|(path, kind)| {
+                                hit(path, kind.eq_ignore_ascii_case("Directory"), &home)
+                            })
+                            .collect();
+                    }
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("winbar file search: {e}");
+                        response.error =
+                            Some("Windows Search không phản hồi (dịch vụ có thể đang tắt)".into());
+                    }
+                }
+                return Ok(response);
+            }
         }
     }
     Ok(response)
+}
+
+pub fn everything_message(error: &EverythingError) -> &'static str {
+    match error {
+        EverythingError::NotRunning => "Everything đang không chạy",
+        EverythingError::Unavailable(_) => "Không dùng được Everything",
+    }
+}
+
+#[cfg(windows)]
+async fn run_everything(
+    dll: std::path::PathBuf,
+    text: String,
+) -> Result<Vec<(String, bool)>, EverythingError> {
+    tauri::async_runtime::spawn_blocking(move || everything::search(&dll, &text, RESULT_LIMIT))
+        .await
+        .map_err(|e| EverythingError::Unavailable(e.to_string()))?
+}
+
+#[cfg(not(windows))]
+async fn run_everything(
+    _dll: std::path::PathBuf,
+    _text: String,
+) -> Result<Vec<(String, bool)>, EverythingError> {
+    Err(EverythingError::Unavailable("Windows only".into()))
+}
+
+#[cfg(windows)]
+async fn run_windows_search(sql: String) -> Result<Vec<(String, String)>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        windows_search::query(&sql).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[cfg(not(windows))]
+async fn run_windows_search(_sql: String) -> Result<Vec<(String, String)>, String> {
+    Err("Windows only".into())
 }
 
 #[cfg(test)]
@@ -163,11 +260,7 @@ mod tests {
 
     #[test]
     fn hits_carry_name_and_folder_flag() {
-        let h = hit(
-            r"C:\Users\Lenovo\Downloads\Qikify".into(),
-            "Directory",
-            &home(),
-        );
+        let h = hit(r"C:\Users\Lenovo\Downloads\Qikify".into(), true, &home());
         assert_eq!(
             h,
             FileHit {
@@ -177,7 +270,28 @@ mod tests {
                 folder: true,
             }
         );
-        assert!(!hit(r"C:\Users\Lenovo\a.pdf".into(), ".pdf", &home()).folder);
+        assert!(!hit(r"C:\Users\Lenovo\a.pdf".into(), false, &home()).folder);
+    }
+
+    #[test]
+    fn auto_tries_everything_then_windows_search() {
+        assert_eq!(sources_for("auto"), &[Source::Everything, Source::Windows]);
+        assert_eq!(sources_for("everything"), &[Source::Everything]);
+        assert_eq!(sources_for("windows"), &[Source::Windows]);
+        assert!(sources_for("off").is_empty());
+        assert_eq!(sources_for("anything else"), sources_for("auto"));
+    }
+
+    #[test]
+    fn explains_everything_failures_in_vietnamese() {
+        assert_eq!(
+            everything_message(&EverythingError::NotRunning),
+            "Everything đang không chạy"
+        );
+        assert_eq!(
+            everything_message(&EverythingError::Unavailable("x".into())),
+            "Không dùng được Everything"
+        );
     }
 
     #[test]
