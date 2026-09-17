@@ -35,6 +35,22 @@ pub struct Hotkeys {
     pub command_bar: String,
 }
 
+/// Top-left corner of the command bar in physical px on the whole desktop (SPEC-command-bar §5.3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Position {
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandBarSettings {
+    /// `None` until the user drags the command bar.
+    pub position: Option<Position>,
+    pub file_search: String,
+    pub web_search: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -45,6 +61,7 @@ pub struct Settings {
     pub widgets: Vec<WidgetSetting>,
     pub hotkeys: Hotkeys,
     pub launch_at_startup: bool,
+    pub command_bar: CommandBarSettings,
 }
 
 impl Default for Settings {
@@ -65,6 +82,11 @@ impl Default for Settings {
                 command_bar: "Ctrl+Space".into(),
             },
             launch_at_startup: true,
+            command_bar: CommandBarSettings {
+                position: None,
+                file_search: "auto".into(),
+                web_search: "google".into(),
+            },
         }
     }
 }
@@ -152,6 +174,9 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
     let hotkeys = root
         .and_then(|r| r.get("hotkeys"))
         .and_then(Value::as_object);
+    let command_bar = root
+        .and_then(|r| r.get("commandBar"))
+        .and_then(Value::as_object);
     let mut r = Reader {
         warnings: &mut warnings,
     };
@@ -196,8 +221,49 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             },
         },
         launch_at_startup: r.boolean(root, "launchAtStartup", d.launch_at_startup),
+        command_bar: CommandBarSettings {
+            position: read_position(command_bar.and_then(|c| c.get("position")), r.warnings),
+            file_search: r.choice(
+                command_bar,
+                "fileSearch",
+                &["auto", "everything", "windows", "off"],
+                &d.command_bar.file_search,
+            ),
+            web_search: r.choice(
+                command_bar,
+                "webSearch",
+                &["google", "bing", "duckduckgo"],
+                &d.command_bar.web_search,
+            ),
+        },
     };
     (settings, warnings)
+}
+
+/// Desktops never reach this far; anything bigger is a corrupt value, not a real screen coordinate.
+const MAX_COORDINATE: i64 = 100_000;
+
+fn read_position(value: Option<&Value>, warnings: &mut Vec<String>) -> Option<Position> {
+    let value = value?;
+    if value.is_null() {
+        return None;
+    }
+    let coord = |key: &str| {
+        value
+            .get(key)
+            .and_then(Value::as_i64)
+            .filter(|n| n.abs() <= MAX_COORDINATE)
+            .map(|n| n as i32)
+    };
+    match (coord("x"), coord("y")) {
+        (Some(x), Some(y)) => Some(Position { x, y }),
+        _ => {
+            warnings.push(format!(
+                "commandBar.position: invalid value {value}, using default"
+            ));
+            None
+        }
+    }
 }
 
 fn read_widgets(value: Option<&Value>, warnings: &mut Vec<String>) -> Vec<WidgetSetting> {
@@ -430,6 +496,57 @@ mod tests {
             .collect();
         assert_eq!(ids, [("clipboard", true), ("media", false)]);
         assert_eq!(w.len(), 3);
+    }
+
+    #[test]
+    fn reads_the_command_bar_section_field_by_field() {
+        let (s, w) = from_value(&json!({
+            "commandBar": { "position": { "x": -1500, "y": 320 }, "fileSearch": "windows", "webSearch": "bing" }
+        }));
+        assert_eq!(s.command_bar.position, Some(Position { x: -1500, y: 320 }));
+        assert_eq!(
+            (
+                s.command_bar.file_search.as_str(),
+                s.command_bar.web_search.as_str()
+            ),
+            ("windows", "bing")
+        );
+        assert!(w.is_empty());
+
+        let (s, w) = from_value(&json!({ "commandBar": { "position": null } }));
+        assert_eq!(s.command_bar, Settings::default().command_bar);
+        assert!(
+            w.is_empty(),
+            "null position is the normal \"never dragged\" value"
+        );
+    }
+
+    #[test]
+    fn resets_only_the_broken_command_bar_fields() {
+        for bad in [
+            json!({ "x": 10 }),
+            json!({ "x": "10", "y": 5 }),
+            json!({ "x": 1.5, "y": 5 }),
+            json!({ "x": 9_000_000, "y": 5 }),
+            json!([1, 2]),
+        ] {
+            let (s, w) = from_value(
+                &json!({ "commandBar": { "position": bad, "webSearch": "duckduckgo" } }),
+            );
+            assert_eq!(s.command_bar.position, None, "{bad}");
+            assert_eq!(s.command_bar.web_search, "duckduckgo");
+            assert_eq!(w.len(), 1, "{bad}");
+        }
+        let (s, w) =
+            from_value(&json!({ "commandBar": { "fileSearch": "spotlight", "webSearch": 3 } }));
+        assert_eq!(
+            (
+                s.command_bar.file_search.as_str(),
+                s.command_bar.web_search.as_str()
+            ),
+            ("auto", "google")
+        );
+        assert_eq!(w.len(), 2);
     }
 
     #[test]

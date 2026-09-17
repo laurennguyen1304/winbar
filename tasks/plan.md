@@ -40,7 +40,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 
 ### Giai đoạn 1 — Khung command bar
 - [x] Task 2: Cửa sổ command bar + giao diện tĩnh + mở/Esc/không đóng khi mất focus
-- [ ] Task 3: Vị trí mặc định, kéo ⠿, nhớ vị trí
+- [x] Task 3: Vị trí mặc định, kéo ⠿, nhớ vị trí
 - [ ] Task 4: Hợp đồng provider, bộ gộp kết quả, bàn phím, provider widget demo
 
 ### Checkpoint 1 — Mở, gõ, chọn, chạy được với provider demo; kéo và nhớ vị trí

@@ -27,8 +27,34 @@ function subscribe(start: () => Promise<UnlistenFn>, what: string): () => void {
   };
 }
 
+/** Sent by Rust when the bar opens or is saved at a new place (src-tauri/src/command_bar/mod.rs `Opened`). */
+export interface Opened {
+  /** Logical px the bar may grow to before it leaves its screen. */
+  maxHeight: number;
+}
+
 /** The hotkey or tray showed the window or brought it forward. */
-export function onCommandBarOpened(handler: () => void): () => void {
+export function onCommandBarOpened(handler: (opened: Opened) => void): () => void {
   if (!isTauri()) return () => {};
-  return subscribe(() => getCurrentWebviewWindow().listen("command-bar-opened", handler), "listen command-bar-opened");
+  return subscribe(
+    () => getCurrentWebviewWindow().listen<Opened>("command-bar-opened", (e) => handler(e.payload)),
+    "listen command-bar-opened",
+  );
+}
+
+/** Native window drag from the grip. */
+export async function startDragging(): Promise<void> {
+  if (!isTauri()) return;
+  await getCurrentWebviewWindow().startDragging();
+}
+
+export function onMoved(handler: () => void): () => void {
+  if (!isTauri()) return () => {};
+  return subscribe(() => getCurrentWebviewWindow().onMoved(() => handler()), "onMoved");
+}
+
+/** Rust stores where the window is now as `commandBar.position`. */
+export async function saveCommandBarPosition(): Promise<Opened | undefined> {
+  if (!isTauri()) return undefined;
+  return invoke<Opened>("command_bar_save_position");
 }

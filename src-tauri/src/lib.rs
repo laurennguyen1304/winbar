@@ -20,6 +20,7 @@ pub fn run() {
             window::notch_layout,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
+            command_bar::command_bar_save_position,
             settings::get_settings,
             settings::update_settings,
             settings_window::open_settings,

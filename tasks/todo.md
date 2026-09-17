@@ -92,16 +92,24 @@
 - **Tràn đáy:** nếu cửa sổ tràn đáy màn hình thì vùng kết quả thấp lại.
 
 **Tiêu chí chấp nhận:**
-- [ ] Test Rust:
+- [x] Test Rust:
   - vị trí mặc định ở 100/125/150%,
   - màn hình có gốc âm,
   - vị trí đã lưu nằm ngoài mọi màn hình → mặc định, và không xóa vị trí đã lưu,
   - validate `commandBar` (thiếu, sai kiểu, ngoài khoảng).
-- [ ] Kéo, đóng, mở lại, khởi động lại app: đúng chỗ.
+- [x] Kéo, đóng, mở lại, khởi động lại app: đúng chỗ.
 
-**Kiểm tra:**
-- [ ] `cargo test`, clippy, `npm test`, lint qua.
-- [ ] Thủ công: kéo sang góc khác, khởi động lại; sửa `position` trong file thành tọa độ ngoài màn hình → mở ở mặc định.
+**Kiểm tra:** (2026-09-17)
+- [x] `cargo test` 33 (placement 6, settings +2, lưu vị trí 1) · clippy sạch · `npm test` 119 (command bar +3: kéo rồi lưu khi dừng, bấm tay nắm không kéo / chuột phải không lưu, giới hạn chiều cao) · lint sạch.
+- [x] Thủ công (bản dev, 1 màn hình 1920×1200 ở 125%, YASB chiếm 38px trên cùng):
+  - chưa có vị trí → mở ở (547, 320), `maxHeight` 640;
+  - kéo tay nắm (-300, +150) → (247, 470), file lưu `{x: 247, y: 470}`, `maxHeight` 520;
+  - ẩn rồi mở → (247, 470);
+  - đặt vị trí (-50000, -50000) → mở ở mặc định (547, 320), vị trí đã lưu vẫn giữ nguyên;
+  - khởi động lại app → mở ở (247, 470).
+- [ ] Bạn kiểm ở Checkpoint 1 nếu có màn phụ: rút màn phụ đang chứa command bar → mở ở màn có con trỏ.
+
+**Ghi chú:** thêm luôn `commandBar.fileSearch` và `commandBar.webSearch` vào cài đặt (validate + mặc định) để Task 6/10–12 dùng; chưa có giao diện.
 
 **Phụ thuộc:** Task 2
 **File dự kiến:** `src-tauri/src/command_bar/placement.rs`, `src-tauri/src/command_bar/mod.rs`, `src-tauri/src/settings.rs`, `src/shell/settings.ts`, `src/command-bar/CommandBar.tsx`

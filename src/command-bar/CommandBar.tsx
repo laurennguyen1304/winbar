@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import { Icon } from "../shell/Icon";
-import { hideCommandBar, onCommandBarOpened, resizeCommandBar } from "./native";
+import { hideCommandBar, onCommandBarOpened, onMoved, resizeCommandBar, saveCommandBarPosition, startDragging } from "./native";
 import styles from "./CommandBar.module.css";
 
 /** M11 (SPEC-command-bar §5.5); matches --motion-quick-fade. */
 const FADE_MS = 150;
 const REDUCED_FADE_MS = 100;
+/** A drag is over once the window has not moved for this long. */
+const DROP_SETTLE_MS = 300;
+/** Pressing the grip without moving never becomes a drag. */
+const DRAG_START_TIMEOUT_MS = 1500;
 
 const prefersReducedMotion = () =>
   typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -22,14 +26,18 @@ export function CommandBar() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(true);
+  const [maxHeight, setMaxHeight] = useState<number | undefined>();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const dragTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const dragging = useRef(false);
 
   useEffect(
     () =>
-      onCommandBarOpened(() => {
+      onCommandBarOpened((opened) => {
         clearTimeout(hideTimer.current);
+        setMaxHeight(opened.maxHeight);
         setOpen(true);
         setFocused(true);
         inputRef.current?.focus();
@@ -54,7 +62,38 @@ export function CommandBar() {
     };
   }, []);
 
-  useEffect(() => () => clearTimeout(hideTimer.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(hideTimer.current);
+      clearTimeout(dragTimer.current);
+    },
+    [],
+  );
+
+  // Only moves that follow a press on the grip are saved: Rust also moves the window when it opens.
+  useEffect(
+    () =>
+      onMoved(() => {
+        if (!dragging.current) return;
+        clearTimeout(dragTimer.current);
+        dragTimer.current = setTimeout(() => {
+          dragging.current = false;
+          saveCommandBarPosition()
+            .then((opened) => opened && setMaxHeight(opened.maxHeight))
+            .catch((err: unknown) => console.error("command_bar_save_position failed", err));
+        }, DROP_SETTLE_MS);
+      }),
+    [],
+  );
+
+  const onGripDown = (e: PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    dragging.current = true;
+    clearTimeout(dragTimer.current);
+    dragTimer.current = setTimeout(() => (dragging.current = false), DRAG_START_TIMEOUT_MS);
+    startDragging().catch((err: unknown) => console.error("startDragging failed", err));
+  };
 
   // The native window follows the bar's height.
   useLayoutEffect(() => {
@@ -106,9 +145,10 @@ export function CommandBar() {
       data-testid="command-bar"
       data-open={open}
       data-focused={focused}
+      style={maxHeight === undefined ? undefined : { maxHeight }}
     >
       <div className={styles.top}>
-        <span className={styles.grip} title="Kéo để di chuyển">
+        <span className={styles.grip} title="Kéo để di chuyển" data-testid="grip" onPointerDown={onGripDown}>
           <Icon name="grip" size={18} />
         </span>
         <span className={styles.searchIcon}>
@@ -133,7 +173,7 @@ export function CommandBar() {
       <div className={styles.sep} />
       {query && (
         <>
-          <div className={styles.empty}>
+          <div className={`${styles.body} ${styles.empty}`}>
             Không tìm thấy kết quả. Thử <b className={styles.hint}>f</b> để tìm file hoặc <b className={styles.hint}>=</b>{" "}
             để tính.
           </div>

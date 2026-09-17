@@ -1,13 +1,21 @@
 //! Command bar window (SPEC-command-bar.md §2, §5.2). Created hidden at startup so opening is only show + focus.
 //! The hotkey and the tray open it or bring it forward; it hides only when its page asks (Esc while focused).
 
+pub mod placement;
+
+use serde::Serialize;
+use serde_json::{json, Value};
 use tauri::{
-    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, Runtime, WebviewUrl, WebviewWindow,
-    WebviewWindowBuilder,
+    AppHandle, Emitter, LogicalSize, Manager, Monitor, PhysicalPosition, Runtime, WebviewUrl,
+    WebviewWindow, WebviewWindowBuilder,
 };
+
+use crate::settings::{self, Position, SettingsState};
+use placement::WorkArea;
 
 pub const LABEL: &str = "command-bar";
 /// Sent to the command-bar page each time it is shown or brought forward, so it focuses and selects the input.
+/// Payload: [`Opened`].
 pub const OPENED_EVENT: &str = "command-bar-opened";
 /// Logical px (mockup `.cmd`).
 pub const WIDTH: f64 = 660.0;
@@ -36,8 +44,15 @@ pub fn valid_height(height: f64) -> Option<f64> {
     (height.is_finite() && (1.0..=MAX_HEIGHT).contains(&height)).then(|| height.ceil())
 }
 
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Opened {
+    /// Logical px the bar may grow to before it would leave its screen.
+    pub max_height: f64,
+}
+
 pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>> {
-    let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("command-bar.html".into()))
+    WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("command-bar.html".into()))
         .title("winbar command bar")
         .decorations(false)
         .transparent(true)
@@ -48,21 +63,62 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>>
         .focused(false)
         .visible(false)
         .inner_size(WIDTH, INITIAL_HEIGHT)
-        .build()?;
-    place_default(&window)?;
-    Ok(window)
+        .build()
 }
 
-/// Centred on the primary monitor, top edge at 25% of its work area. Task 3 adds the cursor monitor and the saved position.
-fn place_default<R: Runtime>(window: &WebviewWindow<R>) -> tauri::Result<()> {
-    let Some(monitor) = window.primary_monitor()? else {
-        return Ok(());
-    };
+fn work_area(monitor: &Monitor) -> WorkArea {
     let area = monitor.work_area();
-    let width = (WIDTH * monitor.scale_factor()).round() as i32;
-    let x = area.position.x + (area.size.width as i32 - width) / 2;
-    let y = area.position.y + (f64::from(area.size.height) * 0.25).round() as i32;
-    window.set_position(PhysicalPosition::new(x, y))
+    WorkArea {
+        x: area.position.x,
+        y: area.position.y,
+        width: area.size.width,
+        height: area.size.height,
+        scale: monitor.scale_factor(),
+    }
+}
+
+fn work_areas<R: Runtime>(app: &AppHandle<R>) -> Vec<WorkArea> {
+    app.available_monitors()
+        .map(|ms| ms.iter().map(work_area).collect())
+        .unwrap_or_default()
+}
+
+/// Monitor under the mouse, else the primary monitor.
+fn cursor_area<R: Runtime>(app: &AppHandle<R>) -> Option<WorkArea> {
+    let under_cursor = app
+        .cursor_position()
+        .ok()
+        .and_then(|p| app.monitor_from_point(p.x, p.y).ok().flatten());
+    under_cursor
+        .or_else(|| app.primary_monitor().ok().flatten())
+        .as_ref()
+        .map(work_area)
+}
+
+fn saved_position<R: Runtime>(app: &AppHandle<R>) -> Option<(i32, i32)> {
+    app.try_state::<SettingsState>()
+        .and_then(|s| s.get().command_bar.position)
+        .map(|p| (p.x, p.y))
+}
+
+/// Room below the bar's top edge on the screen it is on.
+fn max_height_at<R: Runtime>(app: &AppHandle<R>, pos: (i32, i32)) -> f64 {
+    let area = placement::area_for_saved(pos, WIDTH, &work_areas(app)).or_else(|| cursor_area(app));
+    area.map_or(INITIAL_HEIGHT, |a| placement::max_height(pos.1, a))
+}
+
+/// Puts the hidden window where it should open (SPEC-command-bar §5.3).
+fn place_for_opening<R: Runtime>(
+    app: &AppHandle<R>,
+    window: &WebviewWindow<R>,
+) -> tauri::Result<(i32, i32)> {
+    let Some(cursor) = cursor_area(app) else {
+        let p = window.outer_position()?;
+        return Ok((p.x, p.y));
+    };
+    let pos = placement::open_position(saved_position(app), WIDTH, &work_areas(app), cursor);
+    window.set_position(PhysicalPosition::new(pos.0, pos.1))?;
+    Ok(pos)
 }
 
 /// Hotkey and tray entry point.
@@ -76,13 +132,23 @@ pub fn open<R: Runtime>(app: &AppHandle<R>) {
         window.is_focused().unwrap_or(false),
     );
     let result = (|| -> tauri::Result<()> {
-        match action {
+        let pos = match action {
             OpenAction::Nothing => return Ok(()),
-            OpenAction::Show => window.show()?,
-            OpenAction::Focus => {}
-        }
+            OpenAction::Show => {
+                let pos = place_for_opening(app, &window)?;
+                window.show()?;
+                pos
+            }
+            OpenAction::Focus => {
+                let p = window.outer_position()?;
+                (p.x, p.y)
+            }
+        };
         window.set_focus()?;
-        window.emit_to(LABEL, OPENED_EVENT, ())
+        let opened = Opened {
+            max_height: max_height_at(app, pos),
+        };
+        window.emit_to(LABEL, OPENED_EVENT, opened)
     })();
     if let Err(e) = result {
         eprintln!("winbar command bar: {action:?} failed: {e}");
@@ -114,6 +180,35 @@ pub fn command_bar_resize<R: Runtime>(window: WebviewWindow<R>, height: f64) -> 
         .map_err(|e| e.to_string())
 }
 
+/// Returns `settings` (as JSON) with `commandBar.position` replaced.
+pub fn with_position(mut settings: Value, position: Option<Position>) -> Value {
+    if let Some(root) = settings.as_object_mut() {
+        let section = root.entry("commandBar").or_insert_with(|| json!({}));
+        if let Some(section) = section.as_object_mut() {
+            section.insert("position".into(), json!(position));
+        }
+    }
+    settings
+}
+
+/// The user dropped the bar after dragging it by the grip: remember where the window is now.
+/// Rust reads the real window position instead of trusting numbers from the page.
+#[tauri::command]
+pub fn command_bar_save_position<R: Runtime>(
+    app: AppHandle<R>,
+    window: WebviewWindow<R>,
+    state: tauri::State<'_, SettingsState>,
+) -> Result<Opened, String> {
+    ensure_command_bar(&window)?;
+    let p = window.outer_position().map_err(|e| e.to_string())?;
+    let current = serde_json::to_value(state.get()).map_err(|e| e.to_string())?;
+    let next = with_position(current, Some(Position { x: p.x, y: p.y }));
+    settings::apply(&app, &state, &next)?;
+    Ok(Opened {
+        max_height: max_height_at(&app, (p.x, p.y)),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,6 +218,21 @@ mod tests {
         assert_eq!(open_action(false, false), OpenAction::Show);
         assert_eq!(open_action(true, false), OpenAction::Focus);
         assert_eq!(open_action(true, true), OpenAction::Nothing);
+    }
+
+    #[test]
+    fn saving_a_position_changes_only_that_field() {
+        let before = serde_json::to_value(settings::Settings::default()).unwrap();
+        let after = with_position(before, Some(Position { x: -40, y: 300 }));
+        let (parsed, warnings) = settings::from_value(&after);
+        assert!(warnings.is_empty());
+        let mut expected = settings::Settings::default();
+        expected.command_bar.position = Some(Position { x: -40, y: 300 });
+        assert_eq!(parsed, expected);
+        assert_eq!(
+            with_position(json!({}), None),
+            json!({ "commandBar": { "position": null } })
+        );
     }
 
     #[test]

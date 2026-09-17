@@ -22,6 +22,12 @@ export interface Settings {
   widgets: WidgetSetting[];
   hotkeys: { commandBar: string };
   launchAtStartup: boolean;
+  commandBar: {
+    /** Top-left in physical px; null until the user drags the command bar. */
+    position: { x: number; y: number } | null;
+    fileSearch: "auto" | "everything" | "windows" | "off";
+    webSearch: "google" | "bing" | "duckduckgo";
+  };
 }
 
 /** Must match `Settings::default()` in src-tauri/src/settings.rs. */
@@ -32,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   widgets: [],
   hotkeys: { commandBar: "Ctrl+Space" },
   launchAtStartup: true,
+  commandBar: { position: null, fileSearch: "auto", webSearch: "google" },
 };
 
 /** Stored order and flags win; widgets that no longer exist are dropped; new widgets are appended, enabled. */
