@@ -34,17 +34,21 @@ pub struct NotchPlacement {
     pub height: u32,
 }
 
-/// Centres a notch of `width`×`height` logical px horizontally on `monitor`, `top_gap` logical px below its top edge.
+/// Places a notch of `width`×`height` logical px on `monitor`, `top_gap` logical px below its top edge and
+/// `offset_x` logical px right of the centre (SPEC §15 V3), kept inside the monitor.
 pub fn place_notch(
     monitor: MonitorGeometry,
     width: f64,
     height: f64,
     top_gap: f64,
+    offset_x: f64,
 ) -> NotchPlacement {
     let pw = (width * monitor.scale).round().max(1.0) as u32;
     let ph = (height * monitor.scale).round().max(1.0) as u32;
     let gap = (top_gap * monitor.scale).round() as i32;
-    let x = monitor.x + (monitor.width as i32 - pw as i32) / 2;
+    let free = (monitor.width as i32 - pw as i32).max(0);
+    let shift = (offset_x * monitor.scale).round() as i32;
+    let x = monitor.x + (free / 2 + shift).clamp(0, free);
     NotchPlacement {
         x,
         y: monitor.y + gap,
@@ -59,6 +63,7 @@ pub struct LayoutRequest {
     pub width: f64,
     pub height: f64,
     pub top_gap: f64,
+    pub offset_x: f64,
 }
 
 #[derive(Default)]
@@ -90,6 +95,7 @@ fn apply<R: Runtime>(window: &WebviewWindow<R>, req: LayoutRequest) -> Result<()
         req.width,
         req.height,
         req.top_gap,
+        req.offset_x,
     );
     window
         .set_size(PhysicalSize::new(p.width, p.height))
@@ -108,8 +114,9 @@ pub fn notch_layout<R: Runtime>(
     width: f64,
     height: f64,
     top_gap: f64,
+    offset_x: f64,
 ) -> Result<(), String> {
-    if !(width.is_finite() && height.is_finite() && top_gap.is_finite())
+    if !(width.is_finite() && height.is_finite() && top_gap.is_finite() && offset_x.is_finite())
         || width <= 0.0
         || height <= 0.0
     {
@@ -121,6 +128,7 @@ pub fn notch_layout<R: Runtime>(
         width,
         height,
         top_gap,
+        offset_x,
     };
     apply(&window, req)?;
     *state.layout.lock().map_err(|e| e.to_string())? = Some(req);
@@ -212,7 +220,7 @@ mod tests {
 
     #[test]
     fn centres_pill_at_100_percent() {
-        let p = place_notch(monitor(1920, 1080, 1.0), 340.0, 40.0, 8.0);
+        let p = place_notch(monitor(1920, 1080, 1.0), 340.0, 40.0, 8.0, 0.0);
         assert_eq!(
             p,
             NotchPlacement {
@@ -226,7 +234,7 @@ mod tests {
 
     #[test]
     fn scales_size_and_gap_at_125_percent() {
-        let p = place_notch(monitor(2400, 1500, 1.25), 340.0, 40.0, 8.0);
+        let p = place_notch(monitor(2400, 1500, 1.25), 340.0, 40.0, 8.0, 0.0);
         assert_eq!(
             p,
             NotchPlacement {
@@ -240,7 +248,7 @@ mod tests {
 
     #[test]
     fn scales_size_and_gap_at_150_percent() {
-        let p = place_notch(monitor(2880, 1800, 1.5), 340.0, 40.0, 8.0);
+        let p = place_notch(monitor(2880, 1800, 1.5), 340.0, 40.0, 8.0, 0.0);
         assert_eq!(
             p,
             NotchPlacement {
@@ -253,6 +261,38 @@ mod tests {
     }
 
     #[test]
+    fn shifts_by_the_offset_in_logical_px() {
+        let m = monitor(2400, 1500, 1.25);
+        assert_eq!(place_notch(m, 368.0, 40.0, 0.0, -400.0).x, 470);
+        assert_eq!(place_notch(m, 368.0, 40.0, 0.0, 400.0).x, 1470);
+        assert_eq!(
+            place_notch(monitor(2880, 1800, 1.5), 368.0, 40.0, 0.0, 300.0).x,
+            1164 + 450
+        );
+    }
+
+    #[test]
+    fn keeps_the_notch_inside_the_monitor() {
+        for scale in [1.0, 1.25, 1.5] {
+            let m = monitor((1920.0 * scale) as u32, (1200.0 * scale) as u32, scale);
+            let left = place_notch(m, 368.0, 40.0, 0.0, -4000.0);
+            let right = place_notch(m, 368.0, 40.0, 0.0, 4000.0);
+            assert_eq!(left.x, 0, "{scale}");
+            assert_eq!(right.x + right.width as i32, m.width as i32, "{scale}");
+        }
+        let wide = place_notch(monitor(800, 600, 1.0), 900.0, 40.0, 0.0, 200.0);
+        assert_eq!(wide.x, 0);
+        let offset = MonitorGeometry {
+            x: -1920,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+        };
+        assert_eq!(place_notch(offset, 340.0, 40.0, 0.0, -4000.0).x, -1920);
+    }
+
+    #[test]
     fn respects_monitor_origin() {
         let m = MonitorGeometry {
             x: -1920,
@@ -261,7 +301,7 @@ mod tests {
             height: 1080,
             scale: 1.0,
         };
-        let p = place_notch(m, 780.0, 486.0, 0.0);
+        let p = place_notch(m, 780.0, 486.0, 0.0, 0.0);
         assert_eq!(
             p,
             NotchPlacement {

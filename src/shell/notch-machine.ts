@@ -16,6 +16,8 @@ export type CloseReason = "escape" | "collapseButton" | "clickOutside";
 export type NotchEvent =
   | { type: "pointerEnter" }
   | { type: "pointerLeave" }
+  /** A press on the notch: it may become a drag, so hovering must not open the panel under it. */
+  | { type: "pointerDown" }
   | { type: "hoverElapsed" }
   | { type: "clickPill" }
   | { type: "close"; reason: CloseReason }
@@ -52,6 +54,10 @@ export function notchReducer(state: NotchState, event: NotchEvent, mode: OpenMod
         state: { expanded: false, hovering: false },
         effects: state.expanded ? [] : ["cancelHoverTimer"],
       };
+
+    case "pointerDown":
+      if (mode !== "hover" || !state.hovering || state.expanded) return stay(state);
+      return { state, effects: ["cancelHoverTimer"] };
 
     case "hoverElapsed":
       if (mode !== "hover" || !state.hovering || state.expanded || hasAlert) return stay(state);

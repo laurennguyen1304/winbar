@@ -5,10 +5,13 @@ import type { Size } from "./notch-sizes";
 import type { Settings } from "./settings";
 import type { TabId } from "./widget-contract";
 
-/** Asks Rust to size the native notch window to `size` and place it `topGap` px below the top of the primary monitor. */
-export async function requestNotchLayout(size: Size, topGap: number): Promise<void> {
+/**
+ * Asks Rust to size the native notch window to `size` and place it `topGap` px below the top of the primary monitor,
+ * `offsetX` px right of its centre (kept on screen).
+ */
+export async function requestNotchLayout(size: Size, topGap: number, offsetX = 0): Promise<void> {
   if (!isTauri()) return; // plain browser / tests
-  await invoke("notch_layout", { width: size.width, height: size.height, topGap });
+  await invoke("notch_layout", { width: size.width, height: size.height, topGap, offsetX });
 }
 
 /** Calls `onBlur` when the notch window loses focus (the user clicked somewhere else). Returns an unsubscribe. */

@@ -24,6 +24,7 @@ import {
   pillRadius,
   type Size,
 } from "./notch-sizes";
+import { useNotchDrag } from "./notch-drag";
 import { windowSizeFor, type NotchLayout, type NotchMaterial } from "./notch-shape";
 import { NotchShape } from "./NotchShape";
 import { Panel } from "./Panel";
@@ -47,6 +48,10 @@ interface NotchProps {
   topGap?: number;
   layout?: NotchLayout;
   material?: NotchMaterial;
+  /** Logical px right of the screen centre (Settings › pill.offsetX). */
+  offsetX?: number;
+  /** A drag along the top edge ended here; the app saves it as pill.offsetX. */
+  onOffsetChange?: (offsetX: number) => void;
   /** Settings › Cỡ chữ, 0.85–1.3: scales text and icons inside the notch, not the notch size. */
   fontScale?: number;
 }
@@ -84,6 +89,8 @@ export function Notch({
   topGap = DEFAULT_TOP_GAP,
   layout = "attached",
   material = "liquid",
+  offsetX = 0,
+  onOffsetChange,
   fontScale = 1,
 }: NotchProps) {
   const { shell, snapshot } = useShellRuntime();
@@ -147,6 +154,13 @@ export function Notch({
   const block = expanded ? panel : collapsed;
   const radius = expanded ? PANEL_RADIUS : pillRadius(collapsed);
 
+  const drag = useNotchDrag({
+    offsetX,
+    windowWidth: windowSizeFor(block, layout).width,
+    onPress: () => dispatch({ type: "pointerDown" }),
+    onCommit: (x) => onOffsetChange?.(x),
+  });
+
   // Native window: grow to the target before the CSS morph; shrink only after the morph finishes (SPEC R2).
   const firstLayout = useRef(true);
   const lastTarget = useRef<Size | undefined>(undefined);
@@ -161,14 +175,14 @@ export function Notch({
     lastTarget.current = target;
     const timer = setTimeout(() => {
       // Attached: flush with the top edge, window wider by the flares (SPEC §15).
-      requestNotchLayout(windowSizeFor(target, layout), layout === "attached" ? 0 : topGap).catch((err: unknown) =>
-        console.error("notch_layout failed", err),
+      requestNotchLayout(windowSizeFor(target, layout), layout === "attached" ? 0 : topGap, drag.offsetX).catch(
+        (err: unknown) => console.error("notch_layout failed", err),
       );
     }, delay);
     return () => clearTimeout(timer);
     // Depend on the numbers, not the object identities.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, panel.width, panel.height, collapsed.width, collapsed.height, topGap, layout]);
+  }, [expanded, panel.width, panel.height, collapsed.width, collapsed.height, topGap, layout, drag.offsetX]);
 
   // Esc and clicks elsewhere close the panel.
   useEffect(() => {
@@ -241,6 +255,8 @@ export function Notch({
         data-testid="notch"
         data-state={visual}
         data-layout={layout}
+        data-dragging={drag.dragging || undefined}
+        {...drag.handlers}
         style={{ width: block.width, height: block.height }}
         onMouseEnter={() => dispatch({ type: "pointerEnter" })}
         onMouseLeave={() => dispatch({ type: "pointerLeave" })}

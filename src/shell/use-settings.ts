@@ -12,18 +12,26 @@ const sameWidgets = (a: Settings["widgets"], b: Settings["widgets"]) =>
  */
 export function useSettings(registered: readonly WidgetDefinition[]) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  /** True once the stored settings were read (or reading failed and the defaults stand). */
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
     const unlisten = onSettingsChanged((next) => active && setSettings(next));
     loadSettings()
-      .then((loaded) => {
-        if (!active || !loaded) return;
-        const merged = mergeWidgets(loaded.widgets, registered);
-        if (sameWidgets(merged, loaded.widgets)) setSettings(loaded);
-        else return saveSettings({ ...loaded, widgets: merged }).then((saved) => active && saved && setSettings(saved));
+      .then((stored) => {
+        if (!active) return;
+        if (stored) setSettings(stored);
+        setLoaded(true);
+        if (!stored) return;
+        const merged = mergeWidgets(stored.widgets, registered);
+        if (sameWidgets(merged, stored.widgets)) return;
+        return saveSettings({ ...stored, widgets: merged }).then((saved) => active && saved && setSettings(saved));
       })
-      .catch((err: unknown) => console.error("loading settings failed", err));
+      .catch((err: unknown) => {
+        console.error("loading settings failed", err);
+        if (active) setLoaded(true);
+      });
     return () => {
       active = false;
       unlisten();
@@ -40,5 +48,5 @@ export function useSettings(registered: readonly WidgetDefinition[]) {
     [],
   );
 
-  return { settings, update };
+  return { settings, loaded, update };
 }

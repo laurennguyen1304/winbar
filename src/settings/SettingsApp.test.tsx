@@ -48,7 +48,8 @@ describe("SettingsApp", () => {
     await renderLoaded();
     expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "340px", height: "40px" });
     expect(screen.getByTestId("preview-always")).toHaveStyle({ width: "620px", height: "64px" });
-    for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt", "Command bar", "Chung"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
+    for (const name of ["Pill", "Widget", "Cỡ chữ", "Phím tắt", "Command bar", "Chung"])
+      expect(screen.getByRole("link", { name })).toBeInTheDocument();
   });
 
   it("saves the command bar options with the rest of the settings", async () => {
@@ -67,11 +68,32 @@ describe("SettingsApp", () => {
     await waitFor(() => expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "400px", height: "46px" }));
   });
 
+  it("saves the notch layout and material", async () => {
+    await renderLoaded();
+    fireEvent.click(
+      within(screen.getByRole("radiogroup", { name: "Kiểu notch" })).getByRole("radio", { name: "Pill nổi" }),
+    );
+    await waitFor(() => expect(lastSaved().pill.layout).toBe("float"));
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Nền notch" })).getByRole("radio", { name: "Đặc" }));
+    await waitFor(() => expect(lastSaved().pill).toMatchObject({ layout: "float", material: "dense" }));
+  });
+
+  it("puts a dragged notch back in the middle", async () => {
+    native.stored = { ...(native.stored as Settings), pill: { ...DEFAULT_SETTINGS.pill, offsetX: -300 } };
+    await renderLoaded();
+    expect(screen.getByText("-300px")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Về giữa" }));
+    await waitFor(() => expect(lastSaved().pill.offsetX).toBe(0));
+    expect(screen.getByRole("button", { name: "Về giữa" })).toBeDisabled();
+  });
+
   it("saves the open mode and the priority widget", async () => {
     await renderLoaded();
     fireEvent.click(within(screen.getByRole("radiogroup", { name: "Cách mở" })).getByRole("radio", { name: "always" }));
     await waitFor(() => expect(lastSaved().pill.openMode).toBe("always"));
-    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Pill ưu tiên hiện" })).getByRole("radio", { name: "Demo Claude" }));
+    fireEvent.click(
+      within(screen.getByRole("radiogroup", { name: "Pill ưu tiên hiện" })).getByRole("radio", { name: "Demo Claude" }),
+    );
     await waitFor(() => expect(lastSaved().pill.priorityWidget).toBe("demo-claude"));
   });
 
@@ -86,7 +108,13 @@ describe("SettingsApp", () => {
     expect(screen.getByRole("button", { name: "Đưa Demo card lên" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Đưa Demo Claude xuống" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Đưa Demo card xuống" }));
-    await waitFor(() => expect(lastSaved().widgets.map((w) => w.id).slice(0, 2)).toEqual(["demo-alerts", "demo-card"]));
+    await waitFor(() =>
+      expect(
+        lastSaved()
+          .widgets.map((w) => w.id)
+          .slice(0, 2),
+      ).toEqual(["demo-alerts", "demo-card"]),
+    );
   });
 
   it("saves the font scale from the keyboard", async () => {

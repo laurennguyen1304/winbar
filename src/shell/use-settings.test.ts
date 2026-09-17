@@ -25,7 +25,13 @@ vi.mock("./native", () => ({
 }));
 
 const C = () => null;
-const registered: WidgetDefinition[] = ["media", "clipboard"].map((id) => ({ id, tab: "core", title: id, description: "", Card: C }));
+const registered: WidgetDefinition[] = ["media", "clipboard"].map((id) => ({
+  id,
+  tab: "core",
+  title: id,
+  description: "",
+  Card: C,
+}));
 
 describe("useSettings", () => {
   beforeEach(() => {
@@ -38,7 +44,16 @@ describe("useSettings", () => {
     const { result } = renderHook(() => useSettings(registered));
     await act(() => Promise.resolve());
     expect(result.current.settings).toEqual(DEFAULT_SETTINGS);
+    expect(result.current.loaded).toBe(true);
     expect(native.saved).toEqual([]);
+  });
+
+  it("is not loaded until the stored settings arrive, so the notch never lays out with defaults first", async () => {
+    native.stored = { ...DEFAULT_SETTINGS, pill: { ...DEFAULT_SETTINGS.pill, offsetX: -300 } };
+    const { result } = renderHook(() => useSettings(registered));
+    expect(result.current.loaded).toBe(false);
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.settings.pill.offsetX).toBe(-300);
   });
 
   it("loads stored settings without rewriting them when the widget list is current", async () => {
@@ -56,7 +71,13 @@ describe("useSettings", () => {
   });
 
   it("writes back once when widgets were added or removed", async () => {
-    native.stored = { ...DEFAULT_SETTINGS, widgets: [{ id: "gone", enabled: true }, { id: "media", enabled: false }] };
+    native.stored = {
+      ...DEFAULT_SETTINGS,
+      widgets: [
+        { id: "gone", enabled: true },
+        { id: "media", enabled: false },
+      ],
+    };
     const { result } = renderHook(() => useSettings(registered));
     await waitFor(() => expect(native.saved).toHaveLength(1));
     expect(native.saved[0].widgets).toEqual([
@@ -67,7 +88,13 @@ describe("useSettings", () => {
   });
 
   it("follows settings-changed events from any window", async () => {
-    native.stored = { ...DEFAULT_SETTINGS, widgets: [{ id: "media", enabled: true }, { id: "clipboard", enabled: true }] };
+    native.stored = {
+      ...DEFAULT_SETTINGS,
+      widgets: [
+        { id: "media", enabled: true },
+        { id: "clipboard", enabled: true },
+      ],
+    };
     const { result } = renderHook(() => useSettings(registered));
     await waitFor(() => expect(native.listeners).toHaveLength(1));
     const next = { ...native.stored, pill: { ...native.stored.pill, openMode: "always" as const } };

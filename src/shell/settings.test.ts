@@ -41,6 +41,7 @@ describe("notchPropsFrom", () => {
       priorityWidget: "media",
       layout: "float",
       material: "dense",
+      offsetX: -320,
     },
     fontScale: 115,
     widgets: [
@@ -51,7 +52,7 @@ describe("notchPropsFrom", () => {
   };
 
   it("maps layout and material", () => {
-    expect(notchPropsFrom(settings, registered)).toMatchObject({ layout: "float", material: "dense" });
+    expect(notchPropsFrom(settings, registered)).toMatchObject({ layout: "float", material: "dense", offsetX: -320 });
     expect(notchPropsFrom(DEFAULT_SETTINGS, registered)).toMatchObject({ layout: "attached", material: "liquid" });
   });
 

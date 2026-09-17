@@ -25,6 +25,8 @@ pub struct PillSettings {
     pub layout: String,
     /// `liquid` (translucent glass) or `dense` (the original opaque fill).
     pub material: String,
+    /// Logical px from the screen centre, set by dragging the notch along the top edge.
+    pub offset_x: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -81,6 +83,7 @@ impl Default for Settings {
                 priority_widget: Some("claude-sessions".into()),
                 layout: "attached".into(),
                 material: "liquid".into(),
+                offset_x: 0,
             },
             font_scale: 100,
             widgets: Vec::new(),
@@ -152,6 +155,27 @@ impl Reader<'_> {
         }
     }
 
+    fn signed(
+        &mut self,
+        obj: Option<&Map<String, Value>>,
+        key: &str,
+        min: i64,
+        max: i64,
+        default: i32,
+    ) -> i32 {
+        match obj.and_then(|o| o.get(key)) {
+            None => default,
+            Some(v) => match v.as_i64() {
+                Some(n) if (min..=max).contains(&n) => n as i32,
+                _ => {
+                    self.warnings
+                        .push(format!("{key}: invalid value {v}, using {default}"));
+                    default
+                }
+            },
+        }
+    }
+
     fn boolean(&mut self, obj: Option<&Map<String, Value>>, key: &str, default: bool) -> bool {
         match obj.and_then(|o| o.get(key)) {
             None => default,
@@ -214,6 +238,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             priority_widget,
             layout: r.choice(pill, "layout", &["attached", "float"], &d.pill.layout),
             material: r.choice(pill, "material", &["liquid", "dense"], &d.pill.material),
+            offset_x: r.signed(pill, "offsetX", -4000, 4000, d.pill.offset_x),
         },
         font_scale: r.int(root, "fontScale", 85, 130, 5, d.font_scale),
         widgets: read_widgets(root.and_then(|o| o.get("widgets")), r.warnings),
@@ -474,11 +499,29 @@ mod tests {
     #[test]
     fn reads_layout_and_material() {
         let (s, w) = from_value(&json!({ "pill": { "layout": "float", "material": "dense" } }));
-        assert_eq!((s.pill.layout.as_str(), s.pill.material.as_str()), ("float", "dense"));
+        assert_eq!(
+            (s.pill.layout.as_str(), s.pill.material.as_str()),
+            ("float", "dense")
+        );
         assert!(w.is_empty());
         let (s, w) = from_value(&json!({ "pill": { "layout": "drop", "material": 3 } }));
-        assert_eq!((s.pill.layout.as_str(), s.pill.material.as_str()), ("attached", "liquid"));
+        assert_eq!(
+            (s.pill.layout.as_str(), s.pill.material.as_str()),
+            ("attached", "liquid")
+        );
         assert_eq!(w.len(), 2);
+    }
+
+    #[test]
+    fn reads_offset_x() {
+        let (s, w) = from_value(&json!({ "pill": { "offsetX": -640 } }));
+        assert_eq!(s.pill.offset_x, -640);
+        assert!(w.is_empty());
+        for bad in [json!(4001), json!(-4001), json!(1.5), json!("12")] {
+            let (s, w) = from_value(&json!({ "pill": { "offsetX": bad } }));
+            assert_eq!(s.pill.offset_x, 0);
+            assert_eq!(w.len(), 1);
+        }
     }
 
     #[test]

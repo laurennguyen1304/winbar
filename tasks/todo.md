@@ -35,9 +35,11 @@
 - **Cài đặt:** nút "Về giữa".
 
 **Tiêu chí chấp nhận:**
-- [ ] Kéo sang trái/phải, thả, khởi động lại: đúng chỗ. Không hít vào giữa.
-- [ ] Bấm (di < 6px) vẫn mở notch; hover vẫn mở sau 250ms khi không kéo.
-- [ ] Test Rust: vị trí theo offset, kẹp mép màn hình ở 100/125/150%. Test TS: ngưỡng kéo.
+- [x] Kéo sang trái/phải, thả, khởi động lại: đúng chỗ. Không hít vào giữa.
+- [x] Bấm (di < 6px) vẫn mở notch; hover vẫn mở sau 250ms khi không kéo.
+- [x] Test Rust: vị trí theo offset, kẹp mép màn hình ở 100/125/150%. Test TS: ngưỡng kéo.
+
+- 2026-09-17: kiểm tra trên app thật qua CDP: kéo −300 → cửa sổ dời 375px vật lý (125%), lưu `offsetX`, không mở panel; kéo quá mép dừng ở x=0; tải lại trang giữ đúng chỗ. Nhấn giữ hủy hẹn giờ hover; panel đang mở cũng kéo được từ vùng trống. Notch chỉ hiện sau khi đọc xong cài đặt.
 
 **Phụ thuộc:** Task 1
 **Quy mô:** M

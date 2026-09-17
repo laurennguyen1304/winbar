@@ -28,6 +28,8 @@ export interface Settings {
     priorityWidget: string | null;
     layout: NotchLayout;
     material: NotchMaterial;
+    /** Logical px from the screen centre, set by dragging the notch. */
+    offsetX: number;
   };
   fontScale: number;
   widgets: WidgetSetting[];
@@ -53,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
     priorityWidget: "claude-sessions",
     layout: "attached",
     material: "liquid",
+    offsetX: 0,
   },
   fontScale: 100,
   widgets: [],
@@ -82,6 +85,7 @@ export interface NotchSettingsProps {
   topGap: number;
   layout: NotchLayout;
   material: NotchMaterial;
+  offsetX: number;
   fontScale: number;
 }
 
@@ -100,6 +104,7 @@ export function notchPropsFrom(settings: Settings, registered: readonly WidgetDe
     topGap: settings.pill.topGap,
     layout: settings.pill.layout,
     material: settings.pill.material,
+    offsetX: settings.pill.offsetX,
     fontScale: settings.fontScale / 100,
   };
 }

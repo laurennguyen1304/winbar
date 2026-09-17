@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { initialNotchState, notchReducer, visualState, type NotchEvent, type NotchState, type OpenMode } from "./notch-machine";
+import {
+  initialNotchState,
+  notchReducer,
+  visualState,
+  type NotchEvent,
+  type NotchState,
+  type OpenMode,
+} from "./notch-machine";
 
 function run(mode: OpenMode, events: NotchEvent[], from: NotchState = initialNotchState, hasAlert = false) {
   let state = from;
@@ -19,8 +26,20 @@ describe("notch machine — hover mode", () => {
     expect(state.expanded).toBe(true);
   });
 
+  it("a press cancels the hover timer, so a drag does not open the panel", () => {
+    const { state, effects } = run("hover", [{ type: "pointerEnter" }, { type: "pointerDown" }]);
+    expect(effects).toEqual(["startHoverTimer", "cancelHoverTimer"]);
+    expect(state).toEqual({ expanded: false, hovering: true });
+    expect(run("hover", [{ type: "pointerDown" }]).effects).toEqual([]);
+    expect(run("click", [{ type: "pointerEnter" }, { type: "pointerDown" }]).effects).toEqual([]);
+  });
+
   it("does not open if the pointer leaves before the delay", () => {
-    const { state, effects } = run("hover", [{ type: "pointerEnter" }, { type: "pointerLeave" }, { type: "hoverElapsed" }]);
+    const { state, effects } = run("hover", [
+      { type: "pointerEnter" },
+      { type: "pointerLeave" },
+      { type: "hoverElapsed" },
+    ]);
     expect(effects).toEqual(["startHoverTimer", "cancelHoverTimer"]);
     expect(state.expanded).toBe(false);
   });
@@ -77,9 +96,13 @@ describe("notch machine — always mode with an alert", () => {
     expect(state.expanded).toBe(false);
     const opened = run("always", [{ type: "clickPill" }], initialNotchState, true).state;
     expect(visualState(opened, "always", true)).toBe("expanded");
-    expect(visualState(notchReducer(opened, { type: "close", reason: "collapseButton" }, "always", true).state, "always", true)).toBe(
-      "always",
-    );
+    expect(
+      visualState(
+        notchReducer(opened, { type: "close", reason: "collapseButton" }, "always", true).state,
+        "always",
+        true,
+      ),
+    ).toBe("always");
   });
 });
 
@@ -94,7 +117,12 @@ describe("notch machine — mode change", () => {
 
 describe("notch machine — alert on the pill", () => {
   it("does not start the hover timer while an alert is shown", () => {
-    const { state, effects } = run("hover", [{ type: "pointerEnter" }, { type: "hoverElapsed" }], initialNotchState, true);
+    const { state, effects } = run(
+      "hover",
+      [{ type: "pointerEnter" }, { type: "hoverElapsed" }],
+      initialNotchState,
+      true,
+    );
     expect(effects).toEqual([]);
     expect(state.expanded).toBe(false);
   });
@@ -105,7 +133,9 @@ describe("notch machine — alert on the pill", () => {
   });
 
   it("still opens on click", () => {
-    expect(run("hover", [{ type: "pointerEnter" }, { type: "clickPill" }], initialNotchState, true).state.expanded).toBe(true);
+    expect(
+      run("hover", [{ type: "pointerEnter" }, { type: "clickPill" }], initialNotchState, true).state.expanded,
+    ).toBe(true);
   });
 });
 

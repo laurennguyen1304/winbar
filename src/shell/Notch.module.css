@@ -18,6 +18,10 @@
     height var(--motion-resize);
 }
 
+.notch[data-dragging] {
+  cursor: grabbing;
+}
+
 .body {
   position: relative;
   width: 100%;

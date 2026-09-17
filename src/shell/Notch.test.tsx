@@ -28,7 +28,9 @@ vi.mock("./native", () => ({
 const notch = () => screen.getByTestId("notch");
 /** The notch's content box; it carries the corner radius (the shape layer draws the background). */
 const body = () => notch().children[1] as HTMLElement;
-const lastLayout = () => requestNotchLayout.mock.calls.at(-1) as unknown as [{ width: number; height: number }, number];
+const lastCall = () =>
+  requestNotchLayout.mock.calls.at(-1) as unknown as [{ width: number; height: number }, number, number];
+const lastLayout = () => lastCall().slice(0, 2) as [{ width: number; height: number }, number];
 const tick = (ms: number) => act(() => vi.advanceTimersByTime(ms));
 
 describe("Notch", () => {
@@ -67,6 +69,80 @@ describe("Notch", () => {
     expect(notch()).toHaveAttribute("data-state", "expanded");
     tick(0);
     expect(lastLayout()[0].width).toBe(780 + 28);
+  });
+
+  describe("dragging along the top edge", () => {
+    beforeEach(() => {
+      vi.spyOn(window.screen, "width", "get").mockReturnValue(1536);
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    const press = (x: number) =>
+      fireEvent.pointerDown(notch().children[1].firstElementChild as Element, { pointerId: 1, button: 0, screenX: x });
+    const move = (x: number) => fireEvent.pointerMove(notch(), { pointerId: 1, screenX: x });
+    const release = (x: number) => fireEvent.pointerUp(notch(), { pointerId: 1, screenX: x });
+
+    it("starts at the saved offset", () => {
+      render(<Notch offsetX={-200} />);
+      tick(0);
+      expect(lastCall()[2]).toBe(-200);
+    });
+
+    it("moves the window with the pointer, saves on release and does not open", () => {
+      const onOffsetChange = vi.fn();
+      render(<Notch mode="click" onOffsetChange={onOffsetChange} />);
+      tick(0);
+      press(700);
+      move(704);
+      tick(0);
+      expect(lastCall()[2]).toBe(0);
+      move(600);
+      tick(0);
+      expect(lastCall()[2]).toBe(-100);
+      expect(notch()).toHaveAttribute("data-dragging");
+      move(-2000);
+      tick(0);
+      expect(lastCall()[2]).toBe(-584);
+      release(-2000);
+      fireEvent.click(notch().children[1].firstElementChild as Element);
+      expect(onOffsetChange).toHaveBeenCalledWith(-584);
+      expect(notch()).toHaveAttribute("data-state", "pill");
+      tick(0);
+      expect(lastCall()[2]).toBe(-584);
+    });
+
+    it("a press that moves less than 6px is still a click", () => {
+      const onOffsetChange = vi.fn();
+      render(<Notch mode="click" onOffsetChange={onOffsetChange} />);
+      press(700);
+      move(705);
+      release(705);
+      fireEvent.click(notch().children[1].firstElementChild as Element);
+      expect(notch()).toHaveAttribute("data-state", "expanded");
+      expect(onOffsetChange).not.toHaveBeenCalled();
+    });
+
+    it("hover mode: pressing cancels the hover timer so a slow drag does not open the panel", () => {
+      render(<Notch />);
+      fireEvent.mouseEnter(notch());
+      tick(100);
+      press(700);
+      tick(400);
+      expect(notch()).toHaveAttribute("data-state", "pill");
+    });
+
+    it("keeps the dropped spot until the saved setting comes back", () => {
+      const { rerender } = render(<Notch mode="click" offsetX={0} onOffsetChange={() => {}} />);
+      press(700);
+      move(800);
+      release(800);
+      tick(0);
+      expect(lastCall()[2]).toBe(100);
+      rerender(<Notch mode="click" offsetX={100} onOffsetChange={() => {}} />);
+      rerender(<Notch mode="click" offsetX={0} onOffsetChange={() => {}} />);
+      tick(0);
+      expect(lastCall()[2]).toBe(0);
+    });
   });
 
   it("hover mode: closes on leave and shrinks the native window only after the morph", () => {

@@ -175,6 +175,16 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
                 ]}
               />
             </Row>
+            <Row title="Vị trí ngang" description="Nhấn giữ notch rồi kéo sang trái/phải dọc mép trên">
+              <div className="flex items-center gap-3">
+                <output className="font-mono text-xs text-muted-foreground">
+                  {view.pill.offsetX === 0 ? "giữa" : `${view.pill.offsetX > 0 ? "+" : ""}${view.pill.offsetX}px`}
+                </output>
+                <Button variant="outline" disabled={view.pill.offsetX === 0} onClick={() => setPill({ offsetX: 0 })}>
+                  Về giữa
+                </Button>
+              </div>
+            </Row>
             <Row
               title="Cách mép trên màn hình"
               description="Chỉ dùng cho pill nổi. Tăng lên ~40 nếu dùng cùng thanh yasb"
