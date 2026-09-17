@@ -56,9 +56,11 @@
 - **Cài đặt:** công tắc "Sticky", kèm ghi chú về YASB.
 
 **Tiêu chí chấp nhận:**
-- [ ] Bật: cửa sổ phóng to (browser) bắt đầu dưới notch. Tắt hoặc thoát: trả lại toàn màn hình.
+- [x] Bật: cửa sổ phóng to (browser) bắt đầu dưới notch. Tắt hoặc thoát: trả lại toàn màn hình.
 - [ ] Không để lại vùng giữ chỗ sau khi thoát.
-- [ ] Test Rust: tính chiều cao dải giữ chỗ theo layout/kích thước/DPI.
+- [x] Test Rust: tính chiều cao dải giữ chỗ theo layout/kích thước/DPI.
+
+- 2026-09-17: đo vùng làm việc trên máy (125%, YASB giữ 47px): bật → mép trên 97 (+50), always → 127 (+80), tắt → 47. Dải nằm ngay dưới YASB (shell xếp AppBar chồng nhau). Gỡ khi thoát qua RunEvent ExitRequested/Exit; chưa thử thoát thật (sẽ tắt app dev) và chưa kiểm chứng trường hợp app bị tắt ngang.
 
 **Phụ thuộc:** Checkpoint 1
 **Quy mô:** M

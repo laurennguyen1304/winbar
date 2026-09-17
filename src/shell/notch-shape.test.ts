@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FLARE, notchShape, windowSizeFor } from "./notch-shape";
+import { FLARE, notchShape, stickyHeight, windowSizeFor } from "./notch-shape";
 
 /** Commands of a path as [letter, ...numbers]. */
 const commands = (d: string) =>
@@ -62,5 +62,13 @@ describe("windowSizeFor", () => {
   it("adds room for the flares only when attached", () => {
     expect(windowSizeFor({ width: 340, height: 40 }, "attached")).toEqual({ width: 368, height: 40 });
     expect(windowSizeFor({ width: 340, height: 40 }, "float")).toEqual({ width: 340, height: 40 });
+  });
+});
+
+describe("stickyHeight", () => {
+  it("reserves the collapsed notch, plus the gap when it floats", () => {
+    expect(stickyHeight({ width: 340, height: 40 }, "attached", 8)).toBe(40);
+    expect(stickyHeight({ width: 620, height: 64 }, "attached", 8)).toBe(64);
+    expect(stickyHeight({ width: 300, height: 36 }, "float", 8)).toBe(44);
   });
 });

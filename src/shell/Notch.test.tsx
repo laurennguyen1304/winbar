@@ -7,13 +7,15 @@ import { FLASH_MS, createShell, type Shell } from "./shell";
 import { ShellProvider } from "./shell-context";
 import type { PillAlert } from "./widget-contract";
 
-const { requestNotchLayout, blurHandlers, trayOpenHandlers } = vi.hoisted(() => ({
+const { requestNotchLayout, requestSticky, blurHandlers, trayOpenHandlers } = vi.hoisted(() => ({
   requestNotchLayout: vi.fn(() => Promise.resolve()),
+  requestSticky: vi.fn<(height: number | null) => Promise<void>>(() => Promise.resolve()),
   blurHandlers: [] as Array<() => void>,
   trayOpenHandlers: [] as Array<(tab?: "core" | "claude") => void>,
 }));
 vi.mock("./native", () => ({
   requestNotchLayout,
+  requestSticky,
   openSettings: () => Promise.resolve(),
   onOpenNotchRequested: (cb: (tab?: "core" | "claude") => void) => {
     trayOpenHandlers.push(cb);
@@ -69,6 +71,32 @@ describe("Notch", () => {
     expect(notch()).toHaveAttribute("data-state", "expanded");
     tick(0);
     expect(lastLayout()[0].width).toBe(780 + 28);
+  });
+
+  describe("sticky", () => {
+    beforeEach(() => requestSticky.mockClear());
+
+    it("reserves nothing when off", () => {
+      render(<Notch />);
+      expect(requestSticky).toHaveBeenLastCalledWith(null);
+    });
+
+    it("reserves the collapsed notch and keeps it while the panel is open", () => {
+      render(<Notch mode="click" sticky />);
+      expect(requestSticky).toHaveBeenLastCalledWith(40);
+      fireEvent.click(screen.getByRole("button"));
+      expect(notch()).toHaveAttribute("data-state", "expanded");
+      expect(requestSticky).toHaveBeenCalledTimes(1);
+    });
+
+    it("follows the always size and the floating gap", () => {
+      const { rerender } = render(<Notch mode="always" sticky />);
+      expect(requestSticky).toHaveBeenLastCalledWith(64);
+      rerender(<Notch mode="hover" sticky layout="float" topGap={8} />);
+      expect(requestSticky).toHaveBeenLastCalledWith(48);
+      rerender(<Notch mode="hover" layout="float" topGap={8} />);
+      expect(requestSticky).toHaveBeenLastCalledWith(null);
+    });
   });
 
   describe("dragging along the top edge", () => {

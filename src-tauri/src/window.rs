@@ -73,7 +73,7 @@ pub struct NotchState {
     pub hidden: AtomicBool,
 }
 
-fn primary_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
+pub fn primary_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
     let monitor = window
         .primary_monitor()
         .map_err(|e| e.to_string())?
@@ -198,6 +198,8 @@ pub fn watch_displays<R: Runtime>(app: AppHandle<R>) {
                         let _ = apply(&w, req);
                     });
                 }
+                let handle = app.clone();
+                let _ = app.run_on_main_thread(move || crate::sticky::refresh(&handle));
             }
             last = Some(geometry);
         }

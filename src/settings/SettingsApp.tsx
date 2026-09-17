@@ -186,6 +186,17 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
               </div>
             </Row>
             <Row
+              title="Sticky"
+              description="Giữ chỗ phía trên: cửa sổ phóng to bắt đầu dưới notch. Nếu YASB cũng giữ chỗ ở cạnh trên, dải này nằm ngay dưới YASB"
+            >
+              <Switch
+                aria-label="Sticky"
+                checked={view.pill.sticky}
+                className="data-[state=checked]:bg-[var(--switch-on)]"
+                onCheckedChange={(sticky) => setPill({ sticky })}
+              />
+            </Row>
+            <Row
               title="Cách mép trên màn hình"
               description="Chỉ dùng cho pill nổi. Tăng lên ~40 nếu dùng cùng thanh yasb"
             >

@@ -42,6 +42,7 @@ describe("notchPropsFrom", () => {
       layout: "float",
       material: "dense",
       offsetX: -320,
+      sticky: true,
     },
     fontScale: 115,
     widgets: [
@@ -52,7 +53,12 @@ describe("notchPropsFrom", () => {
   };
 
   it("maps layout and material", () => {
-    expect(notchPropsFrom(settings, registered)).toMatchObject({ layout: "float", material: "dense", offsetX: -320 });
+    expect(notchPropsFrom(settings, registered)).toMatchObject({
+      layout: "float",
+      material: "dense",
+      offsetX: -320,
+      sticky: true,
+    });
     expect(notchPropsFrom(DEFAULT_SETTINGS, registered)).toMatchObject({ layout: "attached", material: "liquid" });
   });
 

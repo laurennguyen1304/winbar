@@ -27,6 +27,8 @@ pub struct PillSettings {
     pub material: String,
     /// Logical px from the screen centre, set by dragging the notch along the top edge.
     pub offset_x: i32,
+    /// Reserve the strip above maximised windows with a Windows AppBar (SPEC §15 V4).
+    pub sticky: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -84,6 +86,7 @@ impl Default for Settings {
                 layout: "attached".into(),
                 material: "liquid".into(),
                 offset_x: 0,
+                sticky: false,
             },
             font_scale: 100,
             widgets: Vec::new(),
@@ -239,6 +242,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             layout: r.choice(pill, "layout", &["attached", "float"], &d.pill.layout),
             material: r.choice(pill, "material", &["liquid", "dense"], &d.pill.material),
             offset_x: r.signed(pill, "offsetX", -4000, 4000, d.pill.offset_x),
+            sticky: r.boolean(pill, "sticky", d.pill.sticky),
         },
         font_scale: r.int(root, "fontScale", 85, 130, 5, d.font_scale),
         widgets: read_widgets(root.and_then(|o| o.get("widgets")), r.warnings),
@@ -510,6 +514,16 @@ mod tests {
             ("attached", "liquid")
         );
         assert_eq!(w.len(), 2);
+    }
+
+    #[test]
+    fn reads_sticky() {
+        let (s, w) = from_value(&json!({ "pill": { "sticky": true } }));
+        assert!(s.pill.sticky);
+        assert!(w.is_empty());
+        let (s, w) = from_value(&json!({ "pill": { "sticky": "yes" } }));
+        assert!(!s.pill.sticky);
+        assert_eq!(w.len(), 1);
     }
 
     #[test]

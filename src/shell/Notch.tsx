@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "./Icon";
-import { onOpenNotchRequested, onWindowBlur, openSettings, requestNotchLayout } from "./native";
+import { onOpenNotchRequested, onWindowBlur, openSettings, requestNotchLayout, requestSticky } from "./native";
 import type { OpenMode } from "./notch-machine";
 import {
   ALWAYS_SIZES,
@@ -25,7 +25,7 @@ import {
   type Size,
 } from "./notch-sizes";
 import { useNotchDrag } from "./notch-drag";
-import { windowSizeFor, type NotchLayout, type NotchMaterial } from "./notch-shape";
+import { stickyHeight, windowSizeFor, type NotchLayout, type NotchMaterial } from "./notch-shape";
 import { NotchShape } from "./NotchShape";
 import { Panel } from "./Panel";
 import { pickMidPills, pickPill } from "./pill-content";
@@ -52,6 +52,8 @@ interface NotchProps {
   offsetX?: number;
   /** A drag along the top edge ended here; the app saves it as pill.offsetX. */
   onOffsetChange?: (offsetX: number) => void;
+  /** Reserve the strip above maximised windows (Settings › Sticky). */
+  sticky?: boolean;
   /** Settings › Cỡ chữ, 0.85–1.3: scales text and icons inside the notch, not the notch size. */
   fontScale?: number;
 }
@@ -91,6 +93,7 @@ export function Notch({
   material = "liquid",
   offsetX = 0,
   onOffsetChange,
+  sticky = false,
   fontScale = 1,
 }: NotchProps) {
   const { shell, snapshot } = useShellRuntime();
@@ -183,6 +186,12 @@ export function Notch({
     // Depend on the numbers, not the object identities.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded, panel.width, panel.height, collapsed.width, collapsed.height, topGap, layout, drag.offsetX]);
+
+  // Sticky: reserve the collapsed notch's strip; the shell only re-lays out windows when the height changes.
+  const reserve = sticky ? stickyHeight(mode === "always" ? alwaysSize : pillSize, layout, topGap) : null;
+  useEffect(() => {
+    requestSticky(reserve).catch((err: unknown) => console.error("notch_sticky failed", err));
+  }, [reserve]);
 
   // Esc and clicks elsewhere close the panel.
   useEffect(() => {

@@ -14,6 +14,12 @@ export async function requestNotchLayout(size: Size, topGap: number, offsetX = 0
   await invoke("notch_layout", { width: size.width, height: size.height, topGap, offsetX });
 }
 
+/** Reserves a strip `height` logical px tall across the top of the primary monitor (sticky mode), or frees it. */
+export async function requestSticky(height: number | null): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("notch_sticky", { height });
+}
+
 /** Calls `onBlur` when the notch window loses focus (the user clicked somewhere else). Returns an unsubscribe. */
 export function onWindowBlur(onBlur: () => void): () => void {
   if (!isTauri()) return () => {};

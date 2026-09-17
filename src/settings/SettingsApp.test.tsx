@@ -87,6 +87,14 @@ describe("SettingsApp", () => {
     expect(screen.getByRole("button", { name: "Về giữa" })).toBeDisabled();
   });
 
+  it("turns sticky on, off by default", async () => {
+    await renderLoaded();
+    const toggle = screen.getByRole("switch", { name: "Sticky" });
+    expect(toggle).not.toBeChecked();
+    fireEvent.click(toggle);
+    await waitFor(() => expect(lastSaved().pill.sticky).toBe(true));
+  });
+
   it("saves the open mode and the priority widget", async () => {
     await renderLoaded();
     fireEvent.click(within(screen.getByRole("radiogroup", { name: "Cách mở" })).getByRole("radio", { name: "always" }));

@@ -109,3 +109,11 @@ export function notchShape(
 export function windowSizeFor(block: Size, layout: NotchLayout, flare = FLARE): Size {
   return layout === "attached" ? { width: block.width + 2 * flare, height: block.height } : block;
 }
+
+/**
+ * Height in logical px of the strip sticky mode reserves at the top of the screen (SPEC §15 V4): the collapsed notch,
+ * plus its gap when it floats. Alerts and the open panel still overlap the windows below.
+ */
+export function stickyHeight(collapsed: Size, layout: NotchLayout, topGap: number): number {
+  return layout === "attached" ? collapsed.height : collapsed.height + topGap;
+}

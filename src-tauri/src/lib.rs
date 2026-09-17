@@ -3,10 +3,11 @@ mod hotkeys;
 mod settings;
 mod settings_window;
 mod startup;
+mod sticky;
 mod tray;
 mod window;
 
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,12 +16,14 @@ pub fn run() {
         .plugin(startup::autostart_plugin())
         .plugin(hotkeys::plugin())
         .manage(window::NotchState::default())
+        .manage(sticky::StickyState::default())
         .manage(hotkeys::HotkeyState::default())
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
         .manage(command_bar::icons::IconsState::default())
         .invoke_handler(tauri::generate_handler![
             window::notch_layout,
+            sticky::notch_sticky,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
             command_bar::command_bar_save_position,
@@ -59,6 +62,12 @@ pub fn run() {
             window::watch_displays(app.handle().clone());
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // Give the reserved strip back whichever way the app exits.
+            if matches!(event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
+                sticky::remove(app);
+            }
+        });
 }

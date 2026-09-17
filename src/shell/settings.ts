@@ -30,6 +30,8 @@ export interface Settings {
     material: NotchMaterial;
     /** Logical px from the screen centre, set by dragging the notch. */
     offsetX: number;
+    /** Reserve the strip above maximised windows (Windows AppBar). */
+    sticky: boolean;
   };
   fontScale: number;
   widgets: WidgetSetting[];
@@ -56,6 +58,7 @@ export const DEFAULT_SETTINGS: Settings = {
     layout: "attached",
     material: "liquid",
     offsetX: 0,
+    sticky: false,
   },
   fontScale: 100,
   widgets: [],
@@ -86,6 +89,7 @@ export interface NotchSettingsProps {
   layout: NotchLayout;
   material: NotchMaterial;
   offsetX: number;
+  sticky: boolean;
   fontScale: number;
 }
 
@@ -105,6 +109,7 @@ export function notchPropsFrom(settings: Settings, registered: readonly WidgetDe
     layout: settings.pill.layout,
     material: settings.pill.material,
     offsetX: settings.pill.offsetX,
+    sticky: settings.pill.sticky,
     fontScale: settings.fontScale / 100,
   };
 }
