@@ -300,3 +300,27 @@ Viết test trước cho máy trạng thái, alert queue và validate cài đặ
 - Icon khay/app tạm thời: Iconoir `sparks`.
 
 Không còn câu hỏi chặn việc bắt đầu.
+
+## 15. Nâng cấp v2 (duyệt 2026-09-17)
+
+Mockup: `design/notch-upgrade-mockup.html`. Bạn chốt sau khi xem mockup:
+
+| # | Hạng mục | Quyết định |
+|---|---|---|
+| V1 | **Dạng giọt nước** (`pill.layout = "attached"`) | Cạnh trên dính liền mép màn hình (không có `topGap`). Hai góc trên loe cong 14px vào mép, góc dưới bo tròn (pill: cao/2, panel: 28). Viền vẽ **một nét liền** (SVG path) để không có vệt thẳng chỗ nối. **Mặc định.** `"float"` giữ pill nổi như cũ |
+| V2 | **Nền liquid glass** (`pill.material = "liquid"`) | Windows không làm mờ phía sau (spike), nên giả lập: thân trong hơn có ánh màu, vệt sáng phía trên, viền sáng ở hai đầu, mép trong mờ. **Mặc định.** `"dense"` giữ nền đặc cũ |
+| V3 | **Kéo ngang** | Nhấn giữ notch và kéo; di quá 6px mới tính là kéo (bấm để mở vẫn dùng được). Chỉ trượt dọc mép trên, không hít vào giữa. Lưu `pill.offsetX` (px logic tính từ giữa màn hình). Cài đặt có nút "Về giữa" |
+| V4 | **Sticky** (`pill.sticky`) | Giữ chỗ phía trên bằng Windows AppBar, cao bằng notch thu gọn, hết chiều ngang. Cửa sổ phóng to bắt đầu dưới dải đó; panel mở rộng vẫn nổi đè. **Mặc định tắt** |
+| V5 | Chiều cao | Bạn xem trên máy thật rồi quyết có giảm chiều cao pill không (dùng thử cỡ S/M/L đang có: 36/40/46) |
+| V6 | Emoji trạng thái Claude | Nhận thêm file theo trạng thái; định dạng WebP động (hoặc APNG), gấp đôi cỡ hiển thị, nền trong suốt |
+
+Cài đặt thêm (validate từng trường như §7):
+
+| Trường | Giá trị | Mặc định |
+|---|---|---|
+| `pill.layout` | `attached` · `float` | `attached` |
+| `pill.material` | `liquid` · `dense` | `liquid` |
+| `pill.offsetX` | số nguyên −4000…4000 (px logic từ giữa màn hình) | `0` |
+| `pill.sticky` | `true` · `false` | `false` |
+
+`pill.topGap` chỉ áp dụng cho `float`. Cửa sổ native rộng thêm 2×14px khi `attached` để chứa phần loe; phần trong suốt ở hai góc loe vẫn thuộc cửa sổ (vài px).

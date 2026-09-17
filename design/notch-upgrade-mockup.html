@@ -60,17 +60,39 @@
   .notch { position: absolute; top: 8px; left: 640px; transform: translateX(-50%); color: var(--text);
     transition: width var(--resize), height var(--resize), border-radius .42s ease, top .3s ease; cursor: grab; }
   .notch.dragging { cursor: grabbing; transition: width var(--resize), height var(--resize), border-radius .42s ease; }
-  .notch .body { position: absolute; inset: 0; background: var(--notch-bg); border: 1px solid var(--notch-line); box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 18px 50px rgba(0,0,0,.35); border-radius: inherit; }
-  /* Floating pill */
-  .notch.float { border-radius: 20px; }
-  /* Attached ("giọt nước"): flush with the top edge, round at the bottom, concave flares into the edge */
+  /* Attached ("giọt nước"): flush with the top edge, concave flares into the edge, round at the bottom */
   .notch.attached { top: 0; }
-  .notch.attached .body { border-top: none; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
-  .ear { position: absolute; top: 0; width: var(--flare); height: var(--flare); display: none; pointer-events: none; }
-  .notch.attached .ear { display: block; }
-  .ear.l { right: 100%; background: radial-gradient(circle at 0 100%, transparent calc(var(--flare) - 1px), var(--notch-line) calc(var(--flare) - 1px), var(--notch-line) var(--flare), var(--notch-bg) var(--flare)); }
-  .ear.r { left: 100%; background: radial-gradient(circle at 100% 100%, transparent calc(var(--flare) - 1px), var(--notch-line) calc(var(--flare) - 1px), var(--notch-line) var(--flare), var(--notch-bg) var(--flare)); }
+  /* The whole outline (flares + sides + bottom) is ONE path: no seams where a flare meets a side. */
+  .shape { position: absolute; top: 0; pointer-events: none; filter: drop-shadow(0 14px 28px rgba(0,0,0,.34)); }
+  .fill { position: absolute; inset: 0; overflow: hidden; }
+  .rim { position: absolute; inset: 0; overflow: visible; }
+  .rim path { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; }
   .content { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+
+  /* Materials */
+  .notch[data-material="dense"] .fill { background: rgba(20,24,32,.90); }
+  .notch[data-material="dense"] .rim .outer { stroke: rgba(255,255,255,.14); }
+  .notch[data-material="dense"] .rim .inner { display: none; }
+
+  /* Liquid glass that Windows CAN draw: no real blur, lighter tinted body, top sheen, bright rim, inner edge. */
+  .notch[data-material="liquid"] .fill {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.13) 0%, rgba(255,255,255,.04) 34%, rgba(255,255,255,0) 58%),
+      radial-gradient(120% 140% at 50% 130%, rgba(140,170,255,.16), transparent 62%),
+      linear-gradient(180deg, rgba(30,36,48,.74), rgba(14,18,26,.80));
+  }
+  .notch[data-material="liquid"] .fill::before { content: ''; position: absolute; left: 8%; right: 8%; top: 0; height: 46%;
+    background: radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,.16), transparent 70%); }
+  .notch[data-material="liquid"] .fill::after { content: ''; position: absolute; left: 6%; bottom: 10%; width: 36%; height: 30%;
+    background: radial-gradient(closest-side, rgba(160,200,255,.10), transparent); filter: blur(4px); }
+  .notch[data-material="liquid"] .rim .outer { stroke: url(#rimGrad); }
+  .notch[data-material="liquid"] .rim .inner { stroke: rgba(255,255,255,.07); }
+
+  /* Real blur, for comparison only: Windows does not blur behind an unfocused transparent window. */
+  .notch[data-material="blur"] .fill { background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.02) 50%), rgba(22,26,36,.46);
+    backdrop-filter: blur(22px) saturate(1.7); -webkit-backdrop-filter: blur(22px) saturate(1.7); }
+  .notch[data-material="blur"] .rim .outer { stroke: url(#rimGrad); }
+  .notch[data-material="blur"] .rim .inner { stroke: rgba(255,255,255,.07); }
 
   .pill { height: 100%; display: flex; align-items: center; gap: 10px; padding: 0 16px; font-size: 13px; white-space: nowrap; }
   .pill .faint { color: var(--faint); font-size: 12px; }
@@ -93,9 +115,7 @@
   .bar-track { height: 6px; border-radius: 6px; background: var(--track); }
   .bar-track > i { display: block; height: 100%; border-radius: 6px; }
 
-  /* ---------- drag hint + guide ---------- */
-  .guide { position: absolute; top: 0; bottom: 0; width: 1px; left: 640px; background: rgba(255,255,255,.35); opacity: 0; transition: opacity .15s; pointer-events: none; }
-  .guide.on { opacity: 1; }
+  /* ---------- drag hint ---------- */
   .pos { position: absolute; font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.6); color: #fff; opacity: 0; transition: opacity .15s; pointer-events: none; white-space: nowrap; }
   .pos.on { opacity: 1; }
 
@@ -116,6 +136,12 @@
   </label>
   <label class="ctl">Độ loe
     <span class="seg" data-opt="flare"><button data-v="0">0</button><button data-v="8">8</button><button data-v="14" class="on">14</button><button data-v="22">22</button></span>
+  </label>
+  <label class="ctl">Nền
+    <span class="seg" data-opt="material"><button data-v="dense">Đặc (hiện tại)</button><button data-v="liquid" class="on">Liquid glass</button><button data-v="blur">Kính blur thật *</button></span>
+  </label>
+  <label class="ctl">Cao pill
+    <span class="seg" data-opt="pillH"><button data-v="32">32</button><button data-v="36">36</button><button data-v="40" class="on">40</button></span>
   </label>
   <label class="ctl">Trạng thái
     <span class="seg" data-opt="state"><button data-v="pill" class="on">Thu gọn</button><button data-v="alert">Cảnh báo</button><button data-v="always">Always</button><button data-v="open">Mở rộng</button></span>
@@ -141,10 +167,21 @@
     <div class="page"><i class="h"></i><i style="width:82%"></i><i style="width:74%"></i><i style="width:88%"></i><i style="width:61%"></i><i style="width:79%"></i></div>
   </div>
   <div class="strip" id="strip"><span id="stripLabel"></span></div>
-  <div class="guide" id="guide"></div>
-  <div class="notch attached" id="notch" style="--flare:14px">
-    <span class="ear l"></span><span class="ear r"></span>
-    <div class="body"></div>
+  <div class="notch attached" id="notch" data-material="liquid">
+    <div class="shape" id="shape">
+      <div class="fill" id="fill"></div>
+      <svg class="rim" id="rim">
+        <defs>
+          <linearGradient id="rimGrad" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="rgba(255,255,255,.34)"/>
+            <stop offset=".45" stop-color="rgba(255,255,255,.10)"/>
+            <stop offset="1" stop-color="rgba(255,255,255,.30)"/>
+          </linearGradient>
+        </defs>
+        <path class="outer" id="outer"/>
+        <path class="inner" id="inner"/>
+      </svg>
+    </div>
     <div class="content" id="content"></div>
   </div>
   <div class="pos" id="pos"></div>
@@ -155,14 +192,16 @@
 const CLAUDE_WORKING = 'assets/claude-fu-transparent.gif';
 const SIZES = { pill: [340, 40], alert: [490, 44], always: [620, 64], open: [780, 330] };
 const STAGE_W = 1280;
-const opts = { layout: 'attached', flare: 14, state: 'pill', sticky: 'off', theme: 'light', x: 640 };
+const opts = { layout: 'attached', flare: 14, state: 'pill', sticky: 'off', theme: 'light', material: 'liquid', pillH: 40, x: 640 };
 
 const stage = document.getElementById('stage');
 const notch = document.getElementById('notch');
 const content = document.getElementById('content');
 const browser = document.getElementById('browser');
 const strip = document.getElementById('strip');
-const guide = document.getElementById('guide');
+const shape = document.getElementById('shape');
+const fill = document.getElementById('fill');
+const rim = document.getElementById('rim');
 const pos = document.getElementById('pos');
 
 function fit() {
@@ -197,12 +236,50 @@ function openHTML() {
   </div>`;
 }
 
+/**
+ * Outline in shape coordinates (the shape box starts `f` px left of the notch).
+ * Fill: closed. Rim: open along the top edge when attached, so nothing is drawn against the screen edge.
+ */
+function paths(w, h, f, r, attached) {
+  r = Math.max(0, Math.min(r, h / 2, w / 2));
+  if (!attached) {
+    const d = `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    return { fill: d, rim: d, inset: 0 };
+  }
+  const L = f, R = w + f;
+  const fillD = `M 0 0 H ${R + f} A ${f} ${f} 0 0 0 ${R} ${f} V ${h - r} A ${r} ${r} 0 0 1 ${R - r} ${h} H ${L + r} A ${r} ${r} 0 0 1 ${L} ${h - r} V ${f} A ${f} ${f} 0 0 0 0 0 Z`;
+  const rimD = `M 0 0 A ${f} ${f} 0 0 1 ${L} ${f} V ${h - r} A ${r} ${r} 0 0 0 ${L + r} ${h} H ${R - r} A ${r} ${r} 0 0 0 ${R} ${h - r} V ${f} A ${f} ${f} 0 0 1 ${R + f} 0`;
+  return { fill: fillD, rim: rimD, inset: f };
+}
+
+/** Redraws the outline for the notch's current (possibly animating) size. */
+function drawShape() {
+  const attached = opts.layout === 'attached';
+  const w = notch.offsetWidth, h = notch.offsetHeight;
+  const f = attached ? opts.flare : 0;
+  const targetR = opts.state === 'open' ? 28 : h / 2;
+  const { fill: fd, rim: rd, inset } = paths(w, h, f, Math.min(targetR, h / 2), attached);
+  shape.style.left = `${-inset}px`;
+  shape.style.width = `${w + 2 * inset}px`;
+  shape.style.height = `${h}px`;
+  fill.style.clipPath = `path('${fd}')`;
+  rim.setAttribute('viewBox', `0 0 ${w + 2 * inset} ${h}`);
+  document.getElementById('outer').setAttribute('d', rd);
+  // Inner edge: the same outline drawn 1.5 px inside gives the glass some thickness.
+  const inner = paths(w - 3, h - 1.5, f, Math.min(targetR, h / 2) - 1.5, attached).rim;
+  const innerEl = document.getElementById('inner');
+  innerEl.setAttribute('d', inner);
+  innerEl.setAttribute('transform', `translate(${attached ? 1.5 : 1.5} ${attached ? 0 : 0.75})`);
+}
+new ResizeObserver(drawShape).observe(notch);
+
 function render() {
-  const [w, h] = SIZES[opts.state];
+  const w = SIZES[opts.state][0];
+  const h = opts.state === 'pill' ? opts.pillH : opts.state === 'alert' ? opts.pillH + 4 : SIZES[opts.state][1];
   const attached = opts.layout === 'attached';
   notch.classList.toggle('attached', attached);
   notch.classList.toggle('float', !attached);
-  notch.style.setProperty('--flare', `${opts.flare}px`);
+  notch.dataset.material = opts.material;
   notch.style.width = `${w}px`;
   notch.style.height = `${h}px`;
   const bottom = opts.state === 'open' ? 28 : h / 2;
@@ -215,7 +292,7 @@ function render() {
   notch.style.left = `${opts.x}px`;
 
   // Sticky reserves the collapsed notch's height (plus the gap for the floating pill), full width.
-  const collapsedH = opts.state === 'always' ? SIZES.always[1] : SIZES.pill[1];
+  const collapsedH = opts.state === 'always' ? SIZES.always[1] : opts.pillH;
   const reserve = opts.sticky === 'on' ? (attached ? collapsedH : collapsedH + 16) : 0;
   strip.style.height = `${reserve}px`;
   document.getElementById('stripLabel').textContent = reserve ? `Vùng giữ chỗ (AppBar) · ${reserve}px · cả chiều ngang` : '';
@@ -224,6 +301,7 @@ function render() {
 
   document.querySelectorAll('[data-opt="flare"] button').forEach((b) => (b.disabled = !attached));
   notes();
+  drawShape();
 }
 
 function notes() {
@@ -233,9 +311,10 @@ function notes() {
     <b>${attached ? 'Giọt nước · dính mép trên' : 'Pill nổi · cách mép 8px'}</b>
     <ul>
       ${attached ? `<li>Cạnh trên dính liền mép màn hình, hai góc trên loe cong <span class="k">${opts.flare}px</span> vào mép; góc dưới bo tròn.</li>` : '<li>Giữ như hiện tại: cách mép trên 8px, bo tròn đều.</li>'}
-      <li><b>Kéo:</b> nhấn giữ notch rồi kéo ngang, notch trượt dọc mép trên (không kéo xuống được). Kéo quá 6px mới tính là kéo, nên bấm để mở vẫn dùng được. Gần giữa màn hình thì hiện vạch dóng.</li>
+      <li><b>Nền ${ {dense: 'đặc', liquid: 'liquid glass', blur: 'kính blur thật'}[opts.material] }:</b> ${ {dense: 'như hiện tại.', liquid: 'làm được trên Windows: thân trong hơn, vệt sáng phía trên, viền sáng ở hai đầu, mép trong mờ. Không làm mờ nội dung phía sau.', blur: '<b>chỉ để so sánh</b>, Windows không làm mờ phía sau cửa sổ trong suốt khi không có focus (spike Task 2).'}[opts.material] }</li>
+      <li><b>Kéo:</b> nhấn giữ notch rồi kéo ngang, notch trượt dọc mép trên (không kéo xuống được). Kéo quá 6px mới tính là kéo, nên bấm để mở vẫn dùng được.</li>
       <li><b>Sticky ${sticky ? 'bật' : 'tắt'}:</b> ${sticky ? 'cửa sổ phóng to (browser) bắt đầu dưới dải giữ chỗ. Windows chỉ giữ được cả dải ngang. Panel mở rộng vẫn nổi đè lên.' : 'browser phóng to lấp tới mép trên, notch nổi đè lên phần đầu browser.'}</li>
-      <li>Vị trí ngang và sticky lưu trong Cài đặt, có nút <span class="k">Về giữa</span>.</li>
+      <li>Mặc định: giọt nước, sticky tắt. Vị trí ngang và sticky lưu trong Cài đặt, có nút <span class="k">Về giữa</span>.</li>
     </ul>`;
 }
 
@@ -251,7 +330,7 @@ document.querySelectorAll('.seg[data-opt]').forEach((seg) => {
       return;
     }
     seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
-    opts[key] = key === 'flare' ? Number(b.dataset.v) : b.dataset.v;
+    opts[key] = key === 'flare' || key === 'pillH' ? Number(b.dataset.v) : b.dataset.v;
     render();
   });
 });
@@ -271,16 +350,11 @@ notch.addEventListener('pointermove', (e) => {
   if (!drag.moved && Math.abs(dx) < 6) return;
   drag.moved = true;
   notch.classList.add('dragging');
-  let x = drag.fromX + dx;
-  const nearCenter = Math.abs(x - 640) < 12;
-  if (nearCenter) x = 640;
-  opts.x = x;
+  opts.x = drag.fromX + dx;
   render();
-  guide.classList.toggle('on', nearCenter);
-  const [w] = SIZES[opts.state];
-  pos.textContent = nearCenter ? 'giữa màn hình' : `cách trái ${Math.round(opts.x - w / 2)}px`;
+  pos.textContent = `cách trái ${Math.round(opts.x - notch.offsetWidth / 2)}px`;
   pos.style.left = `${opts.x - 40}px`;
-  pos.style.top = `${SIZES[opts.state][1] + 14}px`;
+  pos.style.top = `${notch.offsetHeight + 14}px`;
   pos.classList.add('on');
 });
 const endDrag = () => {
@@ -293,7 +367,6 @@ const endDrag = () => {
   }
   drag = null;
   notch.classList.remove('dragging');
-  guide.classList.remove('on');
   pos.classList.remove('on');
 };
 notch.addEventListener('pointerup', endDrag);
