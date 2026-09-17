@@ -32,6 +32,8 @@ pub fn run() {
             command_bar::apps::reveal_app,
             command_bar::files::search_files,
             command_bar::icons::shell_icons,
+            command_bar::history::history_record,
+            command_bar::history::history_list,
             command_bar::launch::open_path,
             command_bar::launch::open_url,
             command_bar::launch::reveal_path,
@@ -46,6 +48,7 @@ pub fn run() {
             let settings = settings::SettingsState::load(app.handle())?;
             let initial = settings.get();
             app.manage(settings);
+            app.manage(command_bar::history::HistoryState::load(app.handle())?);
             hotkeys::apply(app.handle(), &initial.hotkeys.command_bar);
             startup::sync_autostart(app.handle(), initial.launch_at_startup);
             window::create(app.handle())?;

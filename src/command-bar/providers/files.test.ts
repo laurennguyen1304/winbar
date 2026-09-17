@@ -101,4 +101,19 @@ describe("files provider", () => {
     await ask();
     expect(provider.title).toBe("File · Windows Search");
   });
+
+  it("records opened files and folders, not Ctrl+Enter", async () => {
+    const record = vi.fn();
+    const provider = createFilesProvider(fakeNative(), { record });
+    const pending = provider.search("brief", new AbortController().signal);
+    await vi.advanceTimersByTimeAsync(DEBOUNCE_MS);
+    const [file, folder] = await pending;
+    await file.run();
+    await folder.run();
+    await file.runAlt?.();
+    expect(record.mock.calls.map((c) => [c[0].kind, c[0].title, c[0].subtitle])).toEqual([
+      ["file", "brief.docx", "Documents"],
+      ["folder", "Briefs", "Thư mục người dùng"],
+    ]);
+  });
 });

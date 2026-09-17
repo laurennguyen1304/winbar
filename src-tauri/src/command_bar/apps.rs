@@ -56,6 +56,10 @@ impl AppsState {
         self.apps.read().map(|a| a.clone()).unwrap_or_default()
     }
 
+    pub fn is_loaded(&self) -> bool {
+        self.loaded_at.read().map(|t| t.is_some()).unwrap_or(false)
+    }
+
     fn needs_refresh(&self) -> bool {
         match self.loaded_at.read().ok().and_then(|t| *t) {
             None => true,

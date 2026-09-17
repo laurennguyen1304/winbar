@@ -2,8 +2,21 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { Icon } from "../shell/Icon";
 import { useSettings } from "../shell/use-settings";
 import type { SearchResult, WidgetDefinition } from "../shell/widget-contract";
-import { hideCommandBar, onCommandBarOpened, onMoved, resizeCommandBar, saveCommandBarPosition, startDragging } from "./native";
+import {
+  hideCommandBar,
+  launchApp,
+  onCommandBarOpened,
+  onMoved,
+  openPath,
+  resizeCommandBar,
+  revealPath,
+  saveCommandBarPosition,
+  startDragging,
+} from "./native";
+import { runActionById } from "./providers/actions";
+import type { Group } from "./search";
 import { copyText } from "./clipboard";
+import { history, recentResults, useHistoryEntries } from "./history";
 import { calculatorOnly, instantAnswer, type Instant } from "./instant";
 import { flattenRows, INSTANT_KEY, InstantBlock, ResultList, type Row } from "./ResultList";
 import { allSlots } from "./sources";
@@ -59,7 +72,15 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
   const { settings } = useSettings(registered);
   const slots = useMemo(() => allSlots(settings, registered), [settings, registered]);
   const instant = useMemo(() => instantAnswer(query), [query]);
-  const { groups, settled } = useCommandSearch(calculatorOnly(query) ? "" : query, slots);
+  const { groups: searchGroups, settled } = useCommandSearch(calculatorOnly(query) ? "" : query, slots);
+
+  // Empty input: "Gần đây" from history (SPEC-command-bar §5.4).
+  const historyEntries = useHistoryEntries();
+  const groups = useMemo<Group[]>(() => {
+    if (query) return searchGroups;
+    const results = recentResults(historyEntries, { launchApp, openPath, revealPath, runAction: (id) => runActionById(id) });
+    return results.length > 0 ? [{ id: "recent", title: "Gần đây", results }] : [];
+  }, [query, searchGroups, historyEntries]);
 
   const copyInstant = useCallback((answer: Instant) => {
     copyText(answer.copy)
@@ -99,6 +120,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
     () =>
       onCommandBarOpened((opened) => {
         clearTimeout(hideTimer.current);
+        void history.refresh();
         setMaxHeight(opened.maxHeight);
         setOpen(true);
         setFocused(true);
@@ -247,7 +269,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
         )}
       </div>
       <div className={styles.sep} />
-      {query && (instant || groups.length > 0) && (
+      {(instant || groups.length > 0) && (
         <>
           <div className={styles.body} role="listbox" aria-label="Kết quả">
             {onlyWebFallback && <div className={styles.empty}>{noResults}</div>}

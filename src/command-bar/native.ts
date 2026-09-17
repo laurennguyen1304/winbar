@@ -42,6 +42,35 @@ export function onCommandBarOpened(handler: (opened: Opened) => void): () => voi
   );
 }
 
+// ---------------------------------------------------------------- history (src-tauri/src/command_bar/history.rs)
+
+export type HistoryKind = "app" | "file" | "folder" | "action";
+
+/** One run to remember. Never includes the typed text. */
+export interface HistoryRun {
+  kind: HistoryKind;
+  /** App id, absolute path, or winbar action id. */
+  target: string;
+  title: string;
+  subtitle: string | null;
+}
+
+export interface HistoryEntry extends HistoryRun {
+  count: number;
+  lastUsed: number;
+}
+
+export async function recordRun(run: HistoryRun): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("history_record", { run });
+}
+
+/** Entries that can still run, most useful first, with their frecency. */
+export async function historyList(): Promise<Array<[HistoryEntry, number]>> {
+  if (!isTauri()) return [];
+  return invoke<Array<[HistoryEntry, number]>>("history_list");
+}
+
 // ---------------------------------------------------------------- winbar actions (src-tauri/src/command_bar/actions.rs)
 
 export async function openNotch(tab?: "core" | "claude"): Promise<void> {

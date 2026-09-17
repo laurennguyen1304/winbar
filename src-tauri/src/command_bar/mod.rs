@@ -4,6 +4,7 @@
 pub mod actions;
 pub mod apps;
 pub mod files;
+pub mod history;
 pub mod icons;
 pub mod launch;
 pub mod placement;

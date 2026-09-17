@@ -17,6 +17,10 @@ vi.mock("../shell/native", () => ({
   },
 }));
 
+const { historyNative } = vi.hoisted(() => ({
+  historyNative: { list: vi.fn(() => Promise.resolve([] as unknown[])) },
+}));
+
 const { native } = vi.hoisted(() => ({
   native: {
     hide: vi.fn(() => Promise.resolve()),
@@ -40,6 +44,8 @@ vi.mock("./native", () => ({
   openPath: () => Promise.resolve(),
   openUrl: () => Promise.resolve(),
   listApps: () => Promise.resolve([]),
+  recordRun: () => Promise.resolve(),
+  historyList: () => historyNative.list(),
   openNotch: () => Promise.resolve(),
   notchHidden: () => Promise.resolve(false),
   setNotchHidden: () => Promise.resolve(),
@@ -102,6 +108,7 @@ describe("CommandBar", () => {
     native.opened.length = 0;
     native.moved.length = 0;
     shellNative.changed.length = 0;
+    historyNative.list.mockImplementation(() => Promise.resolve([]));
   });
   afterEach(() => vi.useRealTimers());
 
@@ -379,6 +386,27 @@ describe("CommandBar", () => {
     await type("/y lofi");
     expect(screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"))).toEqual(["YouTube"]);
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([expect.stringContaining('Tìm "lofi" trên YouTube')]);
+  });
+
+  it("shows Gần đây when the input is empty, and hides it while typing", async () => {
+    historyNative.list.mockImplementation(() =>
+      Promise.resolve([
+        [{ kind: "action", target: "open-notch", title: "Mở notch", subtitle: "winbar", count: 3, lastUsed: 0 }, 3],
+        [{ kind: "file", target: "C:/a.pdf", title: "a.pdf", subtitle: "Downloads", count: 1, lastUsed: 0 }, 1],
+      ]),
+    );
+    render(<CommandBar registered={[]} />);
+    openBar();
+    await flush();
+    expect(screen.getByRole("group", { name: "Gần đây" })).toBeInTheDocument();
+    expect(screen.getAllByRole("option").map((o) => o.querySelector(":scope > div > span")?.textContent)).toEqual([
+      "Mở notch",
+      "a.pdf",
+    ]);
+    expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
+
+    await type("zz");
+    expect(screen.queryByRole("group", { name: "Gần đây" })).not.toBeInTheDocument();
   });
 
   it("clears with the Xóa button and keeps typing focus", async () => {

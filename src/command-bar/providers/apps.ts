@@ -1,5 +1,6 @@
 // "Ứng dụng" group (SPEC-command-bar §5.4): Start menu apps listed by Rust, ranked here by name.
 import type { SearchProvider } from "../../shell/widget-contract";
+import { history as defaultHistory, type History } from "../history";
 import { appIcon } from "../icons";
 import { launchApp, listApps, revealApp, type AppEntry } from "../native";
 import { rankNames } from "../rank";
@@ -16,6 +17,7 @@ export interface AppsNative {
 export function createAppsProvider(
   native: AppsNative = { list: listApps, launch: launchApp, reveal: revealApp },
   now: () => number = Date.now,
+  history: Pick<History, "record" | "bonus"> = defaultHistory,
 ): SearchProvider {
   let cache: { at: number; apps: Promise<AppEntry[]> } | undefined;
   const apps = () => {
@@ -40,8 +42,12 @@ export function createAppsProvider(
         subtitle: "Ứng dụng",
         icon: appIcon(item.id),
         verb: "Mở",
-        score,
-        run: () => native.launch(item.id),
+        // Often-used apps first among equally good name matches.
+        score: score + history.bonus("app", item.id),
+        run: () => {
+          history.record({ kind: "app", target: item.id, title: item.name, subtitle: "Ứng dụng" });
+          return native.launch(item.id);
+        },
         ...(item.path ? { runAlt: () => native.reveal(item.id) } : {}),
       }));
     },

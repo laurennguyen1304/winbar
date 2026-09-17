@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createActionsProvider } from "./actions";
+import { createActionsProvider, runActionById } from "./actions";
 
 function fakeNative(hidden = false) {
   return {
@@ -56,5 +56,24 @@ describe("winbar actions", () => {
     expect(await titles("a")).toEqual([]);
     expect(await titles("al")).toEqual([]);
     expect(await titles("ot")).toEqual([]);
+  });
+
+  it("records actions it runs, except quitting", async () => {
+    const record = vi.fn();
+    const provider = createActionsProvider(fakeNative(), { record, bonus: () => 0 });
+    const [settings] = await provider.search("settings", signal());
+    await settings.run();
+    const [quit] = await provider.search("quit", signal());
+    await quit.run();
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith({ kind: "action", target: "settings", title: "Cài đặt winbar", subtitle: "winbar" });
+  });
+
+  it("runs a remembered action by id, whatever the notch state is now", async () => {
+    const native = fakeNative(true);
+    await runActionById("hide-notch", native);
+    expect(native.setNotchHidden).toHaveBeenCalledWith(true);
+    await runActionById("open-notch-claude", native);
+    expect(native.openNotch).toHaveBeenCalledWith("claude");
   });
 });

@@ -3,6 +3,7 @@
 import type { IconName } from "../../shell/Icon";
 import type { SearchProvider, SearchResult } from "../../shell/widget-contract";
 import { notchHidden, openNotch, openWinbarSettings, quitWinbar, setNotchHidden } from "../native";
+import { history as defaultHistory, type History } from "../history";
 import { scoreName, Tier } from "../rank";
 
 export interface ActionsNative {
@@ -52,14 +53,24 @@ function actions(native: ActionsNative, hidden: boolean): Action[] {
   ];
 }
 
+const defaultNative: ActionsNative = {
+  openNotch,
+  notchHidden,
+  setNotchHidden,
+  openSettings: openWinbarSettings,
+  quit: quitWinbar,
+};
+
+/** Runs a remembered action from "Gần đây" by id. */
+export async function runActionById(id: string, native: ActionsNative = defaultNative): Promise<void> {
+  const hidden = await native.notchHidden();
+  const all = [...actions(native, hidden), ...actions(native, !hidden)];
+  await all.find((a) => a.id === id)?.run();
+}
+
 export function createActionsProvider(
-  native: ActionsNative = {
-    openNotch,
-    notchHidden,
-    setNotchHidden,
-    openSettings: openWinbarSettings,
-    quit: quitWinbar,
-  },
+  native: ActionsNative = defaultNative,
+  history: Pick<History, "record" | "bonus"> = defaultHistory,
 ): SearchProvider {
   return {
     id: "winbar-actions",
@@ -80,9 +91,14 @@ export function createActionsProvider(
             subtitle: "winbar",
             icon: action.icon,
             verb: "Chạy",
-            score: best,
+            score: best + history.bonus("action", action.id),
             remember: action.remember,
-            run: () => action.run(),
+            run: () => {
+              if (action.remember !== false) {
+                history.record({ kind: "action", target: action.id, title: action.title, subtitle: "winbar" });
+              }
+              return action.run();
+            },
           },
         ];
       });

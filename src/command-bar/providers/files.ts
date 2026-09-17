@@ -1,5 +1,6 @@
 // "File" group of the command bar (SPEC-command-bar §5.4): a running Everything, else the Windows Search index.
 import type { SearchProvider, SearchResult } from "../../shell/widget-contract";
+import { history as defaultHistory, type History } from "../history";
 import { fileIcon } from "../icons";
 import { openPath, revealPath, searchFiles, type FileSearch } from "../native";
 
@@ -33,7 +34,10 @@ const SOURCE_LABEL: Record<FileSearch["source"], string> = {
   off: "File",
 };
 
-export function createFilesProvider(native: FilesNative = { search: searchFiles, open: openPath, reveal: revealPath }): SearchProvider {
+export function createFilesProvider(
+  native: FilesNative = { search: searchFiles, open: openPath, reveal: revealPath },
+  history: Pick<History, "record"> = defaultHistory,
+): SearchProvider {
   // Rust drops requests older than the newest it has seen. Base the numbers on the clock so a reloaded page
   // never starts below numbers an earlier page already used.
   let generation = 0;
@@ -83,7 +87,10 @@ export function createFilesProvider(native: FilesNative = { search: searchFiles,
         subtitle: hit.location,
         icon: fileIcon(hit.path, hit.folder),
         verb: "Mở",
-        run: () => native.open(hit.path),
+        run: () => {
+          history.record({ kind: hit.folder ? "folder" : "file", target: hit.path, title: hit.name, subtitle: hit.location });
+          return native.open(hit.path);
+        },
         runAlt: () => native.reveal(hit.path),
       }));
     },
