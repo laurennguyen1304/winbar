@@ -17,8 +17,40 @@
   pointer-events: none;
 }
 
-.card > header {
+/* Content wrapper: takes wheel events for switching apps without adding a layout box. */
+.wheelArea {
+  display: contents;
+}
+
+.card header {
   position: relative;
+}
+
+.switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.switchButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-sub);
+}
+
+.switchButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.switchButton:focus-visible {
+  outline: 2px solid var(--media);
 }
 
 .body {
@@ -89,6 +121,21 @@
   border-radius: 4px;
   background: var(--track);
   overflow: hidden;
+}
+
+.seekable {
+  box-sizing: content-box;
+  cursor: pointer;
+  /* Taller hit area without a thicker bar. */
+  padding-block: 6px;
+  margin-block: -6px;
+  background-clip: content-box;
+  touch-action: none;
+}
+
+.seekable:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
 }
 
 .track > i {

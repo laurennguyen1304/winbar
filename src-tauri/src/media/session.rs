@@ -17,7 +17,7 @@ use windows::Storage::Streams::IRandomAccessStreamReference;
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
 
 use super::art;
-use super::model::{self, Controls, MediaSession, MediaState, Track};
+use super::model::{self, Action, Controls, MediaSession, MediaState, Track};
 use super::{publish, MediaStore, Wake};
 use crate::command_bar::apps::AppsState;
 
@@ -90,14 +90,100 @@ fn run<R: Runtime>(app: AppHandle<R>) {
             return;
         };
         let store = app.state::<MediaStore>();
-        if wakes.contains(&Wake::SystemPickChanged) {
+        let mut requests = Vec::new();
+        let (mut system_changed, mut sessions_changed) = (false, false);
+        for wake in wakes {
+            match wake {
+                Wake::Changed => {}
+                Wake::SessionsChanged => sessions_changed = true,
+                Wake::SystemPickChanged => system_changed = true,
+                Wake::Control(action, reply) => requests.push((action, reply)),
+            }
+        }
+        if system_changed {
             store.set_manual(None);
         }
-        if wakes.contains(&Wake::SessionsChanged) {
+        if sessions_changed {
             watched = watch_all(&manager, &tx);
+        }
+        // Commands after the pick is settled, so a selection in this batch wins over Windows' change.
+        for (action, reply) in requests {
+            let _ = reply.send(control(&app, &manager, &watched, action));
         }
         publish(&app, snapshot(&app, &manager, &watched));
     }
+}
+
+/// Runs a widget command on the shown session (SPEC-media §5.3, §5.4).
+fn control<R: Runtime>(
+    app: &AppHandle<R>,
+    manager: &SessionManager,
+    watched: &[Watched],
+    action: Action,
+) -> Result<(), String> {
+    let (_, ids) = session_ids(watched);
+    if let Action::Select(id) = action {
+        if let Some(id) = &id {
+            if !ids.contains(id) {
+                return Err(format!("no media session {id}"));
+            }
+        }
+        app.state::<MediaStore>().set_manual(id);
+        return Ok(());
+    }
+    let index = shown_index(app, manager, &ids).ok_or("nothing is playing")?;
+    let session = &watched[index].session;
+    let accepted = match action {
+        Action::PlayPause => session.TryTogglePlayPauseAsync(),
+        Action::Next => session.TrySkipNextAsync(),
+        Action::Previous => session.TrySkipPreviousAsync(),
+        Action::Seek(ms) => {
+            let timeline = session.GetTimelineProperties().map_err(|e| e.to_string())?;
+            let start = timeline.StartTime().map(|t| t.Duration).unwrap_or(0);
+            let end = timeline.EndTime().map(|t| t.Duration).unwrap_or(0);
+            let ticks = model::seek_ticks(start, ms, model::duration_ms(start, end));
+            session.TryChangePlaybackPositionAsync(ticks)
+        }
+        Action::Select(_) => unreachable!("handled above"),
+    }
+    .and_then(|op| op.get())
+    .map_err(|e| e.to_string())?;
+    if accepted {
+        Ok(())
+    } else {
+        Err("the media app refused".into())
+    }
+}
+
+/// App ids of the watched sessions, and the unique session ids made from them.
+fn session_ids(watched: &[Watched]) -> (Vec<String>, Vec<String>) {
+    let aumids: Vec<String> = watched
+        .iter()
+        .map(|w| {
+            w.session
+                .SourceAppUserModelId()
+                .map(|s| s.to_string())
+                .unwrap_or_default()
+        })
+        .collect();
+    let ids = model::unique_ids(&aumids);
+    (aumids, ids)
+}
+
+/// Index of the session to show: the user's pick, Windows' pick, or the first.
+fn shown_index<R: Runtime>(
+    app: &AppHandle<R>,
+    manager: &SessionManager,
+    ids: &[String],
+) -> Option<usize> {
+    let system = manager
+        .GetCurrentSession()
+        .and_then(|s| s.SourceAppUserModelId())
+        .ok()
+        .map(|s| s.to_string());
+    let manual = app.state::<MediaStore>().manual();
+    let id = model::pick_session(ids, system.as_deref(), manual.as_deref())?;
+    ids.iter().position(|i| i == id)
 }
 
 /// Blocks for the next wake-up, then collects whatever else arrives within the debounce window.
@@ -152,16 +238,7 @@ fn snapshot<R: Runtime>(
     manager: &SessionManager,
     watched: &[Watched],
 ) -> MediaState {
-    let aumids: Vec<String> = watched
-        .iter()
-        .map(|w| {
-            w.session
-                .SourceAppUserModelId()
-                .map(|s| s.to_string())
-                .unwrap_or_default()
-        })
-        .collect();
-    let ids = model::unique_ids(&aumids);
+    let (aumids, ids) = session_ids(watched);
     let apps = app.state::<AppsState>().current();
     let sessions = ids
         .iter()
@@ -172,14 +249,7 @@ fn snapshot<R: Runtime>(
         })
         .collect();
 
-    let system = manager
-        .GetCurrentSession()
-        .and_then(|s| s.SourceAppUserModelId())
-        .ok()
-        .map(|s| s.to_string());
-    let manual = app.state::<MediaStore>().manual();
-    let current = model::pick_session(&ids, system.as_deref(), manual.as_deref())
-        .and_then(|id| ids.iter().position(|i| i == id))
+    let current = shown_index(app, manager, &ids)
         .and_then(|i| read_track(&watched[i].session, &ids[i]))
         .map(|(track, thumbnail)| {
             // Artwork is ready before the state goes out, so the page can fetch it right away.

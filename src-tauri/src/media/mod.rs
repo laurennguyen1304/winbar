@@ -5,17 +5,21 @@ pub mod model;
 #[cfg(windows)]
 mod session;
 
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{channel, Sender};
 use std::sync::Mutex;
+use std::time::Duration;
 
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use model::MediaState;
+use model::{Action, MediaState};
 
 pub const CHANGED_EVENT: &str = "media-changed";
 
+/// Longest a command waits for the media thread (a WinRT call to a hung app).
+const REPLY_TIMEOUT: Duration = Duration::from_secs(5);
+
 /// Wakes the media thread.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Wake {
     /// Something about a session changed: rebuild the state.
     Changed,
@@ -23,6 +27,8 @@ pub enum Wake {
     SessionsChanged,
     /// Windows picked another current session: drop the user's manual pick (§5.3).
     SystemPickChanged,
+    /// A command from the widget, answered on `reply`.
+    Control(Action, Sender<Result<(), String>>),
 }
 
 #[derive(Default)]
@@ -69,6 +75,51 @@ impl MediaStore {
             *w = Some(tx);
         }
     }
+
+    /// Runs `action` on the media thread and waits for its answer.
+    fn request(&self, action: Action) -> Result<(), String> {
+        let wake = self
+            .wake
+            .lock()
+            .map_err(|e| e.to_string())?
+            .clone()
+            .ok_or("media is not ready yet")?;
+        let (reply, answer) = channel();
+        wake.send(Wake::Control(action, reply))
+            .map_err(|_| "media thread stopped".to_string())?;
+        answer
+            .recv_timeout(REPLY_TIMEOUT)
+            .map_err(|_| "the media app did not answer".to_string())?
+    }
+}
+
+/// Blocking request off the async runtime's worker threads.
+async fn run_request<R: Runtime>(app: AppHandle<R>, action: Action) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || app.state::<MediaStore>().request(action))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// `playPause`, `next` or `previous` on the shown session (SPEC-media §6.2).
+#[tauri::command]
+pub async fn media_control<R: Runtime>(app: AppHandle<R>, action: String) -> Result<(), String> {
+    let action = Action::parse(&action).ok_or_else(|| format!("unknown media action {action}"))?;
+    run_request(app, action).await
+}
+
+/// Seeks the shown session to `position_ms` from the start of the track.
+#[tauri::command]
+pub async fn media_seek<R: Runtime>(app: AppHandle<R>, position_ms: u64) -> Result<(), String> {
+    run_request(app, Action::Seek(position_ms)).await
+}
+
+/// Shows this session instead of Windows' pick; `null` follows Windows again (§5.3).
+#[tauri::command]
+pub async fn media_select<R: Runtime>(
+    app: AppHandle<R>,
+    session_id: Option<String>,
+) -> Result<(), String> {
+    run_request(app, Action::Select(session_id)).await
 }
 
 /// Current state, for the widget when it mounts.

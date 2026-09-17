@@ -64,6 +64,13 @@ export function artFor(v: MediaView): string | null | undefined {
   return key !== undefined && v.art?.key === key ? v.art.url : undefined;
 }
 
+/** Shows a seek at once, before the app reports the new position (SPEC-media §5.4). */
+export function seekLocally(positionMs: number) {
+  const current = view.state.current;
+  if (!current) return;
+  set({ ...view, state: { ...view.state, current: { ...current, positionMs, positionAt: Date.now() } } });
+}
+
 /** Tests: push a state as if Rust sent it. */
 export function receiveForTest(state: MediaState) {
   receive(state);

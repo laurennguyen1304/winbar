@@ -67,7 +67,7 @@
 **Quy mô:** M
 
 ## Checkpoint 1
-- [ ] Bạn mở nhạc thật (Spotify/YouTube) và xem card: đúng thông tin, ảnh bìa, tiến độ.
+- [x] Bạn mở nhạc thật (Spotify/YouTube) và xem card: đúng thông tin, ảnh bìa, tiến độ. Bạn xác nhận ảnh bìa đúng (2026-09-17); yêu cầu thêm: media tự lên pill khi các widget khác trống → Task 5.
 
 ### Task 4: Điều khiển, tua, đổi app
 
@@ -77,12 +77,13 @@
 - **Card:** nút ⏮ ⏯ ⏭ bấm được, mờ khi app không cho; ‹ › khi ≥2 phiên; lăn chuột đổi app.
 
 **Tiêu chí chấp nhận:**
-- [ ] Script test: ⏯ đổi `playing`↔`paused`; tua đổi vị trí.
-- [ ] Hai phiên test: ‹ › và lăn chuột đổi phiên; tắt phiên đang chọn thì về phiên còn lại.
-- [ ] Nút mờ và không gửi lệnh khi `can.*` là false.
-- [ ] Test Rust: chọn phiên tay. Test TS: điểm tua từ chuột, phím, nút gọi đúng lệnh.
+- [x] Script test: ⏯ đổi `playing`↔`paused`; tua đổi vị trí. ⚠️ Tua: app nhận lệnh, nhưng nguồn thử không báo lại vị trí cho Windows → 👤 kiểm tua với Spotify/YouTube.
+- [x] Hai phiên test: ‹ › và lăn chuột đổi phiên; tắt phiên đang chọn thì về phiên còn lại.
+- [x] Nút mờ và không gửi lệnh khi `can.*` là false.
+- [x] Test Rust: chọn phiên tay. Test TS: điểm tua từ chuột, phím, nút gọi đúng lệnh.
 
 **Kiểm tra:** `npm test`, `cargo test`, clippy, lint; thủ công bằng script test.
+- 2026-09-17 (bấm nút thật trong card, chế độ click để chuột của bạn không đóng panel): tạm dừng 149ms, phát 250ms; ⏭ mờ (nguồn thử không cho); hai nguồn thử: › đổi phiên 157ms, lăn chuột 128ms; tắt phiên đang hiện → về phiên còn lại 148ms.
 
 **Phụ thuộc:** Checkpoint 1
 **File dự kiến:** `src-tauri/src/media/{mod,session,model}.rs`, `src/widgets/media/{SeekBar.tsx,MediaCard.tsx,native.ts,store.ts}`, test

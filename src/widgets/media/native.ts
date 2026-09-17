@@ -44,6 +44,26 @@ export async function getMediaArt(trackKey: string): Promise<string | null> {
   return invoke<string | null>("media_art", { trackKey });
 }
 
+export type MediaAction = "playPause" | "next" | "previous";
+
+/** Play/pause, next or previous on the shown session; rejects when the app refuses. */
+export async function mediaControl(action: MediaAction): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("media_control", { action });
+}
+
+/** Seeks the shown session to `positionMs` from the start of the track. */
+export async function mediaSeek(positionMs: number): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("media_seek", { positionMs: Math.max(0, Math.round(positionMs)) });
+}
+
+/** Shows this session instead of Windows' pick; `null` follows Windows again. */
+export async function mediaSelect(sessionId: string | null): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("media_select", { sessionId });
+}
+
 export function onMediaChanged(handler: (state: MediaState) => void): () => void {
   if (!isTauri()) return () => {};
   let unlisten: (() => void) | undefined;

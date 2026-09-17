@@ -47,6 +47,36 @@ pub struct MediaState {
     pub current: Option<Track>,
 }
 
+/// What the widget asks the media thread to do.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Action {
+    PlayPause,
+    Next,
+    Previous,
+    /// Position in ms from the start of the track.
+    Seek(u64),
+    /// Show this session; `None` follows Windows again.
+    Select(Option<String>),
+}
+
+impl Action {
+    /// The button actions of `media_control`.
+    pub fn parse(name: &str) -> Option<Action> {
+        match name {
+            "playPause" => Some(Action::PlayPause),
+            "next" => Some(Action::Next),
+            "previous" => Some(Action::Previous),
+            _ => None,
+        }
+    }
+}
+
+/// Timeline position (100 ns ticks) for a seek to `ms` into a track that starts at `start_hns`.
+pub fn seek_ticks(start_hns: i64, ms: u64, duration: Option<u64>) -> i64 {
+    let ms = duration.map_or(ms, |d| ms.min(d));
+    start_hns + (ms as i64) * HNS_PER_MS
+}
+
 /// Session to show: the user's pick while it still exists, else the one Windows chose, else the first.
 pub fn pick_session<'a>(
     ids: &'a [String],
@@ -207,6 +237,23 @@ mod tests {
             Some("Spotify")
         );
         assert_eq!(pick_session(&[], Some("Spotify"), None), None);
+    }
+
+    #[test]
+    fn parses_button_actions_only() {
+        assert_eq!(Action::parse("playPause"), Some(Action::PlayPause));
+        assert_eq!(Action::parse("next"), Some(Action::Next));
+        assert_eq!(Action::parse("previous"), Some(Action::Previous));
+        assert_eq!(Action::parse("seek"), None);
+        assert_eq!(Action::parse("PlayPause"), None);
+    }
+
+    #[test]
+    fn seek_is_relative_to_the_start_and_capped_at_the_end() {
+        assert_eq!(seek_ticks(0, 60_000, Some(243_000)), 600_000_000);
+        assert_eq!(seek_ticks(50_000_000, 1_000, Some(243_000)), 60_000_000);
+        assert_eq!(seek_ticks(0, 999_000, Some(243_000)), 2_430_000_000);
+        assert_eq!(seek_ticks(0, 5_000, None), 50_000_000);
     }
 
     #[test]
