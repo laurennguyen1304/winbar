@@ -1,78 +1,84 @@
-# Implementation Plan: notch-shell
+# Implementation Plan: command-bar
 
-> Spec: `SPEC-notch-shell.md` (đã duyệt 2026-09-16) · Mockup: `design/winbar-mockup.html` · Bản đồ module: `CAPABILITY-MAP.md`
-> Danh sách task chi tiết: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**.
+> Spec: `SPEC-command-bar.md` (đã duyệt 2026-09-17) · Mockup: phần Command bar trong `design/winbar-mockup.html`
+> Danh sách task chi tiết: `tasks/todo.md`. Trạng thái plan: **chờ duyệt**. Module trước: `tasks/notch-shell/` (xong).
 
 ## Tổng quan
 
-Dựng vỏ app winbar bằng Tauri 2 + React/TS ngay ở gốc worktree `firefish`: cửa sổ notch kính mờ, 4 trạng thái
-(pill, alert, always, expanded), khung cắm widget, hàng đợi alert, cửa sổ Cài đặt riêng, icon khay, phím tắt,
-chạy một bản, khởi động cùng Windows. Chưa có widget thật; widget `demo` dùng để kiểm chứng mọi đường đi.
+Thêm cửa sổ command bar thứ hai vào app winbar.
+- **Mở:** bằng phím tắt hoặc menu khay. Nếu đang mở thì đưa lên trước.
+- **Đóng:** chỉ bằng Esc khi command bar đang có focus.
+- **Tìm kiếm:** app, file (Everything, không có thì Windows Search), máy tính, đổi đơn vị, web, hành động winbar, và provider của widget.
+- **Vị trí:** kéo đi và nhớ chỗ đã kéo.
 
 ## Quyết định kiến trúc
 
-- **Làm rủi ro cao nhất trước.** Task 2 là spike kính mờ + bo góc (R1) và đo RAM (R4). Kết quả spike quyết định cách vẽ nền
-  cho mọi task sau, nên dừng lại cho bạn xem trước khi làm tiếp.
-- **Một cửa sổ notch khớp khối notch.** Không dùng cửa sổ trong suốt toàn màn hình, để vùng ngoài notch luôn click xuyên được.
-  Khi mở rộng: đặt cửa sổ lên kích thước đích trước rồi animate bằng CSS; khi thu gọn: animate xong mới thu cửa sổ (R2).
-- **Logic thuần tách khỏi UI.** Máy trạng thái notch, hàng đợi alert, thuật toán bố cục widget, validate cài đặt là hàm/TS
-  module thuần, có test trước; component React chỉ hiển thị.
-- **Cài đặt: Rust là nguồn sự thật.** Rust đọc/ghi/validate `settings.json`, phát sự kiện khi đổi; cửa sổ notch và cửa sổ
-  Cài đặt cùng nghe sự kiện đó, nên hai cửa sổ luôn khớp nhau.
-- **Kích thước và chuyển động khai báo một chỗ** (`src/design/tokens.css` + `src/shell/notch-sizes.ts`), lấy số từ mockup.
-- **Icon tạm** cho tới khi có bộ icon bạn cung cấp; icon đi qua một lớp `Icon` để thay một lần.
+- **Làm rủi ro cao nhất trước.** Task 1 là spike cho 4 việc:
+  - lấy focus khi nhấn phím tắt (R1),
+  - RAM khi có WebView thứ hai (R2),
+  - Everything SDK trên ARM64 và giấy phép (R3),
+  - crate `windows` gọi COM trên ARM64.
+
+  Dừng lại cho bạn xem kết quả trước khi làm tiếp.
+- **Cửa sổ tạo sẵn, ẩn.** Mở chỉ là `show` + `set_focus`. Cửa sổ khớp chiều cao nội dung, giữ cạnh trên, cách làm giống notch.
+- **Provider chạy trong cửa sổ command bar.**
+  - Cửa sổ này nạp cùng registry widget, lọc theo `settings.widgets`, nghe `settings-changed`.
+  - Dữ liệu native (app, file, lịch sử) lấy qua lệnh Rust.
+  - Nguồn có sẵn dùng đúng interface `SearchProvider` như widget.
+- **Logic thuần có test trước.**
+  - TS: máy tính, đổi đơn vị, chấm điểm tên + bỏ dấu, tách tiền tố, gộp nhóm.
+  - Rust: vị trí, lịch sử, escape SQL, kiểm tra `launch`.
+- **Rust là nguồn sự thật** cho vị trí, cài đặt, lịch sử. WebView không tự ghi file.
+- **Mọi việc COM/tìm file chạy ngoài luồng UI** (`spawn_blocking`). Mỗi lần tìm có số thứ tự: kết quả của lần cũ bị bỏ.
 
 ## Danh sách task
 
-### Giai đoạn 0 — Nền móng và spike
-- [x] Task 1: Scaffold Tauri 2 + React/TS + công cụ test/lint
-- [x] Task 2: Spike kính mờ, bo góc và RAM
+### Giai đoạn 0 — Spike
+- [ ] Task 1: Spike cửa sổ thứ hai: focus, thời gian mở, RAM, Everything ARM64, COM
 
-### Checkpoint 0 — Bạn xem kết quả spike và chọn cách vẽ nền ✓ (css-dense)
+### Checkpoint 0 — Bạn xem `docs/spikes/command-bar.md`
 
-### Giai đoạn 1 — Notch lõi
-- [x] Task 3: Pill tĩnh đúng vị trí, kích thước, DPI
-- [x] Task 4: Máy trạng thái notch + mode hover/click + chuyển động mở/thu
-- [x] Task 5: Hợp đồng widget, registry, tab Core/Claude, bố cục, widget demo
+### Giai đoạn 1 — Khung command bar
+- [ ] Task 2: Cửa sổ command bar + giao diện tĩnh + mở/Esc/không đóng khi mất focus
+- [ ] Task 3: Vị trí mặc định, kéo ⠿, nhớ vị trí
+- [ ] Task 4: Hợp đồng provider, bộ gộp kết quả, bàn phím, provider widget demo
 
-### Checkpoint 1 — Mở/thu notch với card demo chạy đúng
+### Checkpoint 1 — Mở, gõ, chọn, chạy được với provider demo; kéo và nhớ vị trí
 
-### Giai đoạn 2 — Alert và always
-- [x] Task 6: Hàng đợi alert + trạng thái alert trên pill
-- [x] Task 7: Mode always (pill lớn hai widget)
+### Giai đoạn 2 — Nguồn không cần native
+- [ ] Task 5: Máy tính + đổi đơn vị + copy + toast
+- [ ] Task 6: Tìm web + hành động winbar + lệnh `launch` an toàn
 
-### Checkpoint 2 — Đủ 4 trạng thái, so với mockup
+### Giai đoạn 3 — App và lịch sử
+- [ ] Task 7: Liệt kê app (AppsFolder), chấm điểm tên, mở app
+- [ ] Task 8: Icon app (PNG cache, tải dần)
+- [ ] Task 9: Lịch sử + nhóm "Gần đây"
 
-### Giai đoạn 3 — Cài đặt
-- [x] Task 8: Mô hình cài đặt (Rust) + áp dụng trực tiếp lên notch
-- [x] Task 9: Cửa sổ Cài đặt (Pill, Widget, Cỡ chữ)
+### Checkpoint 2 — Thay được Quick Launch của yasb cho app + máy tính
 
-### Checkpoint 3 — Cài đặt đổi là notch đổi, khởi động lại vẫn nhớ
+### Giai đoạn 4 — File và cài đặt
+- [ ] Task 10: Tìm file bằng Windows Search + Ctrl+Enter mở thư mục chứa
+- [ ] Task 11: Tìm file bằng Everything + tự chọn nguồn
+- [ ] Task 12: Mục Command bar trong Cài đặt
+- [ ] Task 13: Đo hiệu năng, checklist thủ công, so mockup, 15 tiêu chí
 
-### Giai đoạn 4 — Tích hợp hệ thống
-- [x] Task 10: Icon khay và menu
-- [x] Task 11: Phím tắt toàn cục + phát hiện trùng
-- [x] Task 12: Chạy một bản + khởi động cùng Windows
-- [x] Task 13: Đo hiệu năng, checklist thủ công, soát lại với mockup
-
-### Checkpoint cuối — Đạt 11 tiêu chí ở mục 11 của spec
+### Checkpoint cuối — Đạt 15 tiêu chí ở mục 11 của spec
 
 ## Rủi ro và cách xử lý
 
 | Rủi ro | Mức | Cách xử lý |
 |---|---|---|
-| R1 Acrylic + bo góc lớn bị viền vuông/răng cưa | Cao | Task 2 thử trước; không đạt thì nền mờ đặc, bạn chọn ở Checkpoint 0 |
-| R2 Đổi kích thước cửa sổ native bị giật | Trung bình | Cửa sổ nhảy tới kích thước đích, animate bằng CSS (Task 4) |
-| R3 `Ctrl+Space` trùng yasb/IME | Trung bình | Task 11 phát hiện và báo; bạn tắt phím tắt bên yasb |
-| R4 WebView2 vượt 150 MB RAM | Trung bình | Đo ở Task 2 và Task 13; vượt thì báo trước khi làm tiếp |
-| R5 Đổi màn hình/DPI khi đang chạy | Thấp | Task 3 định vị lại khi cấu hình màn hình đổi |
-| Cài VS Build Tools cần quyền admin (UAC) | Thấp | Đang cài; nếu hộp thoại UAC hiện, bạn bấm đồng ý |
+| R1 Nhấn phím tắt nhưng cửa sổ không nhận focus | Cao | Task 1 thử từ trình duyệt, Terminal, Explorer. Không đạt thì thử `AllowSetForegroundWindow` / phím Alt giả; báo bạn nếu vẫn không được |
+| R2 WebView thứ hai đẩy RAM quá 150 MB | Trung bình | Task 1 đo. Vượt thì đề xuất tạo khi mở lần đầu và hủy sau 5 phút; hỏi trước |
+| R3 Everything64.dll: giấy phép hoặc không có bản ARM64 | Trung bình | Task 1 kiểm. Không được thì gọi IPC của Everything từ Rust, hỏi trước |
+| R4 OLE DB Windows Search khó gọi từ Rust | Trung bình | Task 1 thử một câu truy vấn thật từ Rust; không được thì báo trước Task 10 |
+| R5 App admin đang ở trước chặn focus (UIPI) | Thấp | Ghi vào checklist, không chạy winbar quyền admin |
+| R6 `Ctrl+Space` bị YASB giữ | Thấp | Dev bằng phím khác; bạn tắt Quick Launch của YASB khi chuyển hẳn |
 
 ## Song song hóa
 
-Làm tuần tự: cùng một codebase nhỏ, các task dùng chung máy trạng thái và hợp đồng widget. Có thể làm song song
-Task 10–12 sau Checkpoint 3 nếu muốn nhanh hơn.
+Làm tuần tự. Sau Checkpoint 1, Task 5–6 (TS thuần) và Task 7–8 (Rust) độc lập với nhau, nhưng làm song song không đáng vì codebase nhỏ.
 
 ## Câu hỏi còn mở
 
-- Bộ icon: định dạng và giấy phép (không chặn; dùng icon tạm tới Task 10).
+Không có câu hỏi chặn. Kết quả Task 1 có thể dẫn tới câu hỏi mới ở Checkpoint 0.
