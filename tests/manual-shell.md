@@ -222,7 +222,7 @@ Kiểm trên app dev bằng sự kiện con trỏ giả lập trong webview (kh�
 
 - [x] ✅ Test Rust: chiều cao dải theo DPI và gốc màn hình (`sticky.rs`). Test TS: theo layout, always, khoảng cách mép (`notch-shape.test.ts`, `Notch.test.tsx`).
 - [x] ⚠️ Có YASB: Windows xếp dải của winbar **dưới** YASB (47→97). Notch nằm trong dải đó, tức ngay dưới YASB (test Rust `sits_in_the_sticky_strip_when_one_is_reserved`). Chưa đo lại trên máy khi YASB chạy.
-- [ ] 👤 Bật Sticky, mở trình duyệt phóng to: trang bắt đầu dưới dải, panel mở vẫn nổi đè lên.
+- [x] 👤 Bật Sticky, mở trình duyệt phóng to: trang bắt đầu dưới dải, notch nằm trong dải. Bạn xác nhận 2026-09-17 sau bản sửa.
 
 ## V5. Chiều cao pill
 
