@@ -1,5 +1,5 @@
-//! Global hotkeys (SPEC §2, criterion 8). `Ctrl+Space` is reserved for the command bar: pressing it emits
-//! `command-bar-toggle`. When another app already holds the key, the failure is kept as a status the Settings
+//! Global hotkeys (SPEC §2, criterion 8). `Ctrl+Space` is reserved for the command bar: pressing it opens the
+//! command bar or brings it forward. When another app already holds the key, the failure is kept as a status the Settings
 //! window shows instead of failing silently.
 
 use std::str::FromStr;
@@ -8,8 +8,6 @@ use std::sync::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
-
-use crate::tray::COMMAND_BAR_EVENT;
 
 pub const HOTKEY_STATUS_EVENT: &str = "hotkey-status";
 
@@ -75,7 +73,7 @@ pub struct HotkeyState {
     current: Mutex<Option<(Shortcut, HotkeyStatus)>>,
 }
 
-/// Plugin with the press handler: only the currently registered command-bar shortcut emits the event.
+/// Plugin with the press handler: only the currently registered command-bar shortcut opens the command bar.
 pub fn plugin<R: Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri_plugin_global_shortcut::Builder::new()
         .with_handler(|app, shortcut, event| {
@@ -93,7 +91,7 @@ pub fn plugin<R: Runtime>() -> tauri::plugin::TauriPlugin<R> {
                 .unwrap_or(false);
             if is_command_bar {
                 eprintln!("winbar hotkey: command bar ({shortcut})");
-                let _ = app.emit(COMMAND_BAR_EVENT, ());
+                crate::command_bar::open(app);
             }
         })
         .build()

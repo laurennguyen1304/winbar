@@ -1,12 +1,22 @@
 import { NavArrowUp, Search, Settings, Sparks } from "iconoir-react";
 import type { ComponentType, SVGProps } from "react";
 
+/** Six-dot drag handle from the mockup; Iconoir has no 2×3 grip. */
+function Grip(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 12 18" fill="currentColor" {...props} strokeWidth={undefined}>
+      {[3, 9, 15].map((cy) => [3, 9].map((cx) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={1.5} />))}
+    </svg>
+  );
+}
+
 // The only place that imports iconoir-react, so the icon set can be swapped in one file.
 const ICONS = {
   sparks: Sparks,
   search: Search,
   settings: Settings,
   collapse: NavArrowUp,
+  grip: Grip,
 } satisfies Record<string, ComponentType<SVGProps<SVGSVGElement>>>;
 
 export type IconName = keyof typeof ICONS;

@@ -38,7 +38,7 @@
 **Quy mô:** M
 
 ## Checkpoint 0
-- [ ] Bạn xem `docs/spikes/command-bar.md`, duyệt cách xử lý R1–R4 (và việc kèm Everything64.dll)
+- [x] Bạn xem `docs/spikes/command-bar.md`, duyệt cách xử lý R1–R4 (và việc kèm Everything64.dll) — 2026-09-17
 
 ---
 
@@ -60,15 +60,23 @@
 - **Chuyển động:** M11 fade 150ms, tôn trọng giảm chuyển động.
 
 **Tiêu chí chấp nhận:**
-- [ ] Mở, đưa lên trước, và Esc 2 bước đúng như bảng 5.2 của spec. Click ra ngoài và chuyển app **không** đóng.
-- [ ] `isComposing`: Esc/Enter/↑↓ bị bỏ qua khi IME đang ghép chữ.
-- [ ] Cửa sổ native bằng đúng khối command bar; ngoài khối click xuyên được.
-- [ ] Notch vẫn chạy như cũ. Quit tắt cả hai cửa sổ.
+- [x] Mở, đưa lên trước, và Esc 2 bước đúng như bảng 5.2 của spec. Click ra ngoài và chuyển app **không** đóng.
+- [x] `isComposing`: Esc bị bỏ qua khi IME đang ghép chữ (Enter/↑↓ chưa có hành động, sẽ dùng cùng chỗ chặn ở Task 4).
+- [x] Cửa sổ native bằng đúng khối command bar (825×129 vật lý = 660×103 logic; có chữ 825×198); ngoài khối click xuyên được.
+- [x] Notch vẫn chạy như cũ. Quit tắt cả hai cửa sổ (cùng tiến trình).
 
-**Kiểm tra:**
-- [ ] Test component: Esc 2 bước, isComposing, kiểu không focus.
-- [ ] `npm test`, `cargo test`, clippy, `npm run lint` qua.
-- [ ] Thủ công: phím tắt từ 3 app, gõ chữ tiếng Việt bằng UniKey, click ra ngoài không đóng.
+**Kiểm tra:** (2026-09-17)
+- [x] Test component 7: mở thì focus + bôi đen, Esc 2 bước + fade, `isComposing`/keyCode 229, mất focus không đóng + mờ viền, lấy lại focus thì con trỏ về ô nhập và Esc chạy từ bất kỳ đâu, mở lại lúc đang fade thì hủy ẩn, nút Xóa. Rust 2: hành động của phím tắt, chiều cao hợp lệ.
+- [x] `npm test` 116 · `cargo test` 24 · clippy sạch · `npm run lint` sạch.
+- [x] Thủ công (bản dev, phím thử `Ctrl+Alt+F9`):
+  - phím tắt từ Notepad và từ cửa sổ test → hiện, có focus, gõ vào ô nhập;
+  - nhấn lại khi đang focus → vẫn mở;
+  - app khác lên trước → nhấn phím tắt → đưa lên trước;
+  - click cửa sổ khác → không đóng, cửa sổ dưới mép bar nhận click;
+  - click vào hàng dưới của bar → focus lại;
+  - Esc 1 xóa chữ, Esc 2 ẩn.
+- [x] Lỗi tìm thấy khi chạy thật và đã sửa: sau khi cửa sổ lấy lại focus, Esc không tới ô nhập → bắt phím ở cấp cửa sổ + đưa con trỏ về ô nhập. Sự kiện focus của Tauri không báo khi mở bằng phím tắt → dùng focus/blur của trang.
+- [ ] Bạn kiểm ở Checkpoint 1: kiểu "mờ viền" khi mất focus (bản sửa cuối chưa chạy lại trực tiếp), gõ tiếng Việt bằng UniKey / bàn phím Telex của Windows.
 
 **Phụ thuộc:** Checkpoint 0
 **File dự kiến:** `command-bar.html`, `vite.config.ts`, `src/command-bar/{main.tsx,CommandBar.tsx,CommandBar.module.css}`, `src-tauri/src/command_bar/mod.rs`, `src-tauri/src/lib.rs`, `src-tauri/capabilities/default.json`

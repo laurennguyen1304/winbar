@@ -13,12 +13,13 @@ export default defineConfig(() => ({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
-  // Two pages: the notch window and the Settings window.
+  // Three pages: the notch, Settings and command bar windows.
   build: {
     rollupOptions: {
       input: {
         notch: fileURLToPath(new URL("./index.html", import.meta.url)),
         settings: fileURLToPath(new URL("./settings.html", import.meta.url)),
+        commandBar: fileURLToPath(new URL("./command-bar.html", import.meta.url)),
       },
     },
   },

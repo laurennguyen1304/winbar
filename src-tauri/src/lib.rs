@@ -1,3 +1,4 @@
+mod command_bar;
 mod hotkeys;
 mod settings;
 mod settings_window;
@@ -17,6 +18,8 @@ pub fn run() {
         .manage(hotkeys::HotkeyState::default())
         .invoke_handler(tauri::generate_handler![
             window::notch_layout,
+            command_bar::command_bar_hide,
+            command_bar::command_bar_resize,
             settings::get_settings,
             settings::update_settings,
             settings_window::open_settings,
@@ -31,6 +34,7 @@ pub fn run() {
             hotkeys::apply(app.handle(), &initial.hotkeys.command_bar);
             startup::sync_autostart(app.handle(), initial.launch_at_startup);
             window::create(app.handle())?;
+            command_bar::create(app.handle())?;
             tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());
             Ok(())

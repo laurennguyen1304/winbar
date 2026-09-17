@@ -9,7 +9,6 @@ use crate::{settings_window, window};
 
 /// Frontend events emitted from the tray.
 pub const OPEN_NOTCH_EVENT: &str = "notch-open-requested";
-pub const COMMAND_BAR_EVENT: &str = "command-bar-toggle";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrayAction {
@@ -159,7 +158,10 @@ fn run<R: Runtime>(app: &AppHandle<R>, action: TrayAction) {
             }
             app.emit(OPEN_NOTCH_EVENT, ()).map_err(|e| e.to_string())
         })(),
-        TrayAction::ToggleCommandBar => app.emit(COMMAND_BAR_EVENT, ()).map_err(|e| e.to_string()),
+        TrayAction::ToggleCommandBar => {
+            crate::command_bar::open(app);
+            Ok(())
+        }
         TrayAction::ToggleHidden => {
             let hidden = !window::is_hidden(app);
             let r = window::set_hidden(app, hidden).map_err(|e| e.to_string());

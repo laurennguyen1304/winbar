@@ -1,0 +1,13 @@
+/* Command bar window page: transparent around the bar, which sizes the native window. */
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}

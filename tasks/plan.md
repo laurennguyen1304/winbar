@@ -36,10 +36,10 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 ### Giai đoạn 0 — Spike
 - [x] Task 1: Spike cửa sổ thứ hai: focus, thời gian mở, RAM, Everything ARM64, COM
 
-### Checkpoint 0 — Bạn xem `docs/spikes/command-bar.md`
+### Checkpoint 0 — Bạn xem `docs/spikes/command-bar.md` ✓
 
 ### Giai đoạn 1 — Khung command bar
-- [ ] Task 2: Cửa sổ command bar + giao diện tĩnh + mở/Esc/không đóng khi mất focus
+- [x] Task 2: Cửa sổ command bar + giao diện tĩnh + mở/Esc/không đóng khi mất focus
 - [ ] Task 3: Vị trí mặc định, kéo ⠿, nhớ vị trí
 - [ ] Task 4: Hợp đồng provider, bộ gộp kết quả, bàn phím, provider widget demo
 
