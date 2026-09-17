@@ -81,6 +81,20 @@ Bạn cần máy tính và tìm file sớm nhất, nên thứ tự thực hiện
 9. Task 12 — mục Command bar trong Cài đặt
 10. Task 13 — đo và checklist
 
+## Việc tiếp theo sau command-bar (bạn chốt 2026-09-17)
+
+Nâng cấp `notch-shell`. Làm **sau** khi xong command-bar, **mockup HTML trước**, rồi cập nhật `SPEC-notch-shell.md` và chia task.
+
+- **Dạng giọt nước:** notch dính liền mép trên màn hình, hai bên loe cong dần ra hai góc dưới (góc lõm nối vào mép trên). Là một layout chọn được trong Cài đặt, bên cạnh pill nổi hiện tại.
+- **Kéo notch:** kéo tự do theo chiều ngang, luôn bám mép trên màn hình, nhớ vị trí. Để không đè lên phần browser đang full screen.
+- **Sticky:** giữ chỗ phía trên màn hình (Windows AppBar) để cửa sổ phóng to bắt đầu ngay dưới notch thu gọn.
+  - Windows chỉ giữ được cả dải ngang hết màn hình, bạn đã đồng ý.
+  - Panel mở rộng vẫn nổi đè lên.
+  - Chạy cùng YASB thì hai dải chồng nhau.
+- **Emoji trạng thái Claude:** nhận thêm file cho từng trạng thái.
+  - Định dạng nên dùng: WebP động (hoặc APNG), cỡ gấp đôi ô hiển thị, nền trong suốt.
+  - Tránh GIF (viền răng cưa trên nền tối).
+
 ## Rủi ro và cách xử lý
 
 | Rủi ro | Mức | Cách xử lý |
