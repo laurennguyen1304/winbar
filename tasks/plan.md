@@ -47,7 +47,7 @@ Thêm cửa sổ command bar thứ hai vào app winbar.
 
 ### Giai đoạn 2 — Nguồn không cần native
 - [x] Task 5: Máy tính + đổi đơn vị + copy + toast
-- [ ] Task 6: Tìm web + hành động winbar + lệnh `launch` an toàn
+- [x] Task 6: Tìm web + hành động winbar + lệnh `launch` an toàn
 
 ### Giai đoạn 3 — App và lịch sử
 - [x] Task 7: Liệt kê app (AppsFolder), chấm điểm tên, mở app

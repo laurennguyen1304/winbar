@@ -101,7 +101,14 @@ export function Notch({
   }, [shell, dispatch]);
 
   // Tray › "Mở notch".
-  useEffect(() => onOpenNotchRequested(() => dispatch({ type: "clickPill" })), [dispatch]);
+  useEffect(
+    () =>
+      onOpenNotchRequested((requested) => {
+        if (requested) setTab(requested);
+        dispatch({ type: "clickPill" });
+      }),
+    [dispatch],
+  );
 
   // Alerts from widgets that are no longer enabled go away.
   const enabledIds = widgets.map((w) => w.id).join("\n");

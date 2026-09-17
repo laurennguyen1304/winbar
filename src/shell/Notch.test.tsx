@@ -10,12 +10,12 @@ import type { PillAlert } from "./widget-contract";
 const { requestNotchLayout, blurHandlers, trayOpenHandlers } = vi.hoisted(() => ({
   requestNotchLayout: vi.fn(() => Promise.resolve()),
   blurHandlers: [] as Array<() => void>,
-  trayOpenHandlers: [] as Array<() => void>,
+  trayOpenHandlers: [] as Array<(tab?: "core" | "claude") => void>,
 }));
 vi.mock("./native", () => ({
   requestNotchLayout,
   openSettings: () => Promise.resolve(),
-  onOpenNotchRequested: (cb: () => void) => {
+  onOpenNotchRequested: (cb: (tab?: "core" | "claude") => void) => {
     trayOpenHandlers.push(cb);
     return () => trayOpenHandlers.splice(trayOpenHandlers.indexOf(cb), 1);
   },
@@ -108,6 +108,13 @@ describe("Notch", () => {
     expect(trayOpenHandlers).toHaveLength(1);
     act(() => trayOpenHandlers[0]());
     expect(notch()).toHaveAttribute("data-state", "expanded");
+  });
+
+  it("opens on the Claude tab when the command bar asks for it", () => {
+    render(<Notch mode="hover" widgets={demoWidgets} />);
+    act(() => trayOpenHandlers[0]("claude"));
+    expect(notch()).toHaveAttribute("data-state", "expanded");
+    expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("uses the requested pill size and gap", () => {

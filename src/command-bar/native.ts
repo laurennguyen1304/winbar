@@ -42,6 +42,33 @@ export function onCommandBarOpened(handler: (opened: Opened) => void): () => voi
   );
 }
 
+// ---------------------------------------------------------------- winbar actions (src-tauri/src/command_bar/actions.rs)
+
+export async function openNotch(tab?: "core" | "claude"): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("open_notch", { tab: tab ?? null });
+}
+
+export async function notchHidden(): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>("notch_hidden");
+}
+
+export async function setNotchHidden(hidden: boolean): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("set_notch_hidden", { hidden });
+}
+
+export async function openWinbarSettings(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("open_settings");
+}
+
+export async function quitWinbar(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("quit_app");
+}
+
 // ---------------------------------------------------------------- apps (src-tauri/src/command_bar/apps.rs)
 
 export interface AppEntry {

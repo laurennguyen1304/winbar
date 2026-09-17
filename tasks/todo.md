@@ -219,7 +219,12 @@
 - [x] (phần web) Test Rust: `open_url` từ chối `file:`, `javascript:`, `ms-settings:`, đường dẫn, có dấu cách; nhận `https://…`.
 - [x] (phần web) Test TS: mã hóa URL cho mọi công cụ tìm.
 - [x] (phần web) `? tauri` ra danh sách công cụ tìm, Google đứng đầu (theo yasb). `open_url` từ chối `javascript:` khi chạy thật.
-- [ ] (phần hành động) "Mở notch · tab Claude" mở notch đúng tab. Ẩn/Hiện notch khớp với menu khay → làm sau Task 8 theo thứ tự bạn chốt.
+- [x] (phần hành động) "Mở notch · tab Claude" mở notch đúng tab (chạy thật: notch từ `pill` → `expanded`, tab Claude). Ẩn/Hiện notch dùng chung hàm với menu khay nên nhãn ✓ trong khay đổi theo.
+
+**Kiểm tra (phần hành động):** (2026-09-17)
+- [x] `cargo test` 64 (tab hợp lệ) · clippy sạch · `npm test` 264 (actions 5, Notch +1, sources đổi) · lint sạch.
+- [x] Thủ công qua trang: `cai dat` / `settings` → "Cài đặt winbar"; `claude` → "Mở notch · tab Claude"; `an notch` → "Ẩn notch"; `quit` → "Thoát winbar"; gõ `a` không hiện hành động nào; `open_notch` từ chối tab lạ.
+- Ghi chú: hành động chỉ hiện khi gõ ≥ 2 ký tự và khớp đầu tên/đầu từ (tiếng Việt không dấu hoặc từ khóa tiếng Anh), để không chen vào mọi kết quả. Test `HotkeySection` thỉnh thoảng hết giờ khi chạy cả bộ lúc máy bận → nới thời gian chờ lần render đầu lên 5s (không bỏ test).
 
 **Kiểm tra (phần web):** (2026-09-17)
 - [x] `cargo test` 53 · clippy sạch · `npm test` 230 (web 5, command bar +1, sources đổi) · lint sạch.

@@ -38,7 +38,8 @@ describe("HotkeySection", () => {
   it("shows the shortcut as active", async () => {
     native.status = ok;
     render(<HotkeySection accelerator="Ctrl+Space" onChange={() => {}} />);
-    await waitFor(() => expect(screen.getByText("Đang hoạt động")).toBeInTheDocument());
+    // The first render of a file pays for loading the Radix/Tailwind button (seconds under a busy full run).
+    await waitFor(() => expect(screen.getByText("Đang hoạt động")).toBeInTheDocument(), { timeout: 5000 });
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mặc định" })).not.toBeInTheDocument();
   });

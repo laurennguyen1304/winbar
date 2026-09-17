@@ -1,6 +1,7 @@
 //! Command bar window (SPEC-command-bar.md §2, §5.2). Created hidden at startup so opening is only show + focus.
 //! The hotkey and the tray open it or bring it forward; it hides only when its page asks (Esc while focused).
 
+pub mod actions;
 pub mod apps;
 pub mod files;
 pub mod icons;

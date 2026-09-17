@@ -149,25 +149,31 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Shows the notch if it was hidden and opens its panel, on `tab` ("core" / "claude") when given.
+/// Shared by the tray and the command bar's winbar actions.
+pub fn open_notch<R: Runtime>(app: &AppHandle<R>, tab: Option<&str>) -> Result<(), String> {
+    if window::is_hidden(app) {
+        window::set_hidden(app, false).map_err(|e| e.to_string())?;
+        sync_hidden(app, false);
+    }
+    app.emit(OPEN_NOTCH_EVENT, tab).map_err(|e| e.to_string())
+}
+
+/// "Ẩn notch tạm thời", from the tray or the command bar.
+pub fn set_notch_hidden<R: Runtime>(app: &AppHandle<R>, hidden: bool) -> Result<(), String> {
+    let result = window::set_hidden(app, hidden).map_err(|e| e.to_string());
+    sync_hidden(app, window::is_hidden(app));
+    result
+}
+
 fn run<R: Runtime>(app: &AppHandle<R>, action: TrayAction) {
     let result: Result<(), String> = match action {
-        TrayAction::OpenNotch => (|| {
-            if window::is_hidden(app) {
-                window::set_hidden(app, false).map_err(|e| e.to_string())?;
-                sync_hidden(app, false);
-            }
-            app.emit(OPEN_NOTCH_EVENT, ()).map_err(|e| e.to_string())
-        })(),
+        TrayAction::OpenNotch => open_notch(app, None),
         TrayAction::ToggleCommandBar => {
             crate::command_bar::open(app);
             Ok(())
         }
-        TrayAction::ToggleHidden => {
-            let hidden = !window::is_hidden(app);
-            let r = window::set_hidden(app, hidden).map_err(|e| e.to_string());
-            sync_hidden(app, window::is_hidden(app));
-            r
-        }
+        TrayAction::ToggleHidden => set_notch_hidden(app, !window::is_hidden(app)),
         TrayAction::OpenSettings => {
             let app = app.clone();
             tauri::async_runtime::spawn(async move {

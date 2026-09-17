@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Size } from "./notch-sizes";
 import type { Settings } from "./settings";
+import type { TabId } from "./widget-contract";
 
 /** Asks Rust to size the native notch window to `size` and place it `topGap` px below the top of the primary monitor. */
 export async function requestNotchLayout(size: Size, topGap: number): Promise<void> {
@@ -68,12 +69,12 @@ export async function quitApp(): Promise<void> {
 
 // ---------------------------------------------------------------- tray (src-tauri/src/tray.rs)
 
-/** The tray asked to open the notch panel. */
-export function onOpenNotchRequested(handler: () => void): () => void {
+/** The tray or the command bar asked to open the notch panel, optionally on a given tab. */
+export function onOpenNotchRequested(handler: (tab?: TabId) => void): () => void {
   if (!isTauri()) return () => {};
   let unlisten: (() => void) | undefined;
   let disposed = false;
-  listen("notch-open-requested", () => handler())
+  listen<TabId | null>("notch-open-requested", (e) => handler(e.payload ?? undefined))
     .then((fn) => (disposed ? fn() : (unlisten = fn)))
     .catch((err: unknown) => console.error("listen notch-open-requested failed", err));
   return () => {
