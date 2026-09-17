@@ -96,11 +96,12 @@
 - **`MediaMidPill`:** ảnh bìa 40, tên bài/nghệ sĩ, nút ⏯ (không mở panel).
 
 **Tiêu chí chấp nhận:**
-- [ ] Chọn Media làm pill ưu tiên: pill hiện đúng; tắt script thì pill về widget kế.
-- [ ] Always: nửa media đúng thứ tự theo ưu tiên; ⏯ điều khiển được, không mở panel.
-- [ ] Test component cho cả hai.
+- [x] Chọn Media làm pill ưu tiên: pill hiện đúng; tắt script thì pill về widget kế.
+- [x] Always: nửa media đúng thứ tự theo ưu tiên; ⏯ điều khiển được, không mở panel.
+- [x] Test component cho cả hai.
 
 **Kiểm tra:** `npm test`, lint; ảnh chụp pill 32/36/40 và always.
+- 2026-09-17: thêm quy tắc bạn đề xuất (SPEC-media §5.6): widget ưu tiên trống thì tự ẩn, media đang có phiên lên pill (test `MediaPill.test.tsx`). Trên máy (tạm đặt ưu tiên Media vì bản dev có pill demo): pill 32/36/40 đúng, cột sóng chạy; always: media trước, demo sau, nút ⏸.
 
 **Phụ thuộc:** Task 4
 **File dự kiến:** `src/widgets/media/{MediaPill.tsx,MediaMidPill.tsx,index.tsx,Media.module.css}`, test

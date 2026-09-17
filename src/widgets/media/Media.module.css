@@ -199,3 +199,119 @@
   outline: 2px solid var(--media);
   outline-offset: 2px;
 }
+
+/* Pill (SPEC-media §5.2): artwork 24, title, faint artist, equalizer. */
+.pillTrack,
+.midTrack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  animation: media-in var(--motion-quick-fade) both;
+}
+
+.midTrack {
+  flex: 1 1 0;
+}
+
+.pillTitle,
+.pillArtist,
+.midTitle,
+.midArtist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.pillTitle {
+  font-weight: 500;
+}
+
+.pillArtist {
+  flex-shrink: 1000;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.midText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.midTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.midArtist {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.eq {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.eq > i {
+  width: 3px;
+  background: var(--media);
+  border-radius: 2px;
+  transform-origin: bottom;
+  transform: scaleY(0.35);
+}
+
+.eq > i:nth-child(1) {
+  height: 60%;
+}
+
+.eq > i:nth-child(2) {
+  height: 100%;
+}
+
+.eq > i:nth-child(3) {
+  height: 40%;
+}
+
+.eq > i:nth-child(4) {
+  height: 80%;
+}
+
+/* Only transform animates, so the bars stay on the compositor while music plays. */
+.eq[data-playing] > i {
+  animation: media-eq 0.9s ease-in-out infinite alternate;
+}
+
+.eq[data-playing] > i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.eq[data-playing] > i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+
+.eq[data-playing] > i:nth-child(4) {
+  animation-delay: -0.15s;
+}
+
+@keyframes media-eq {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eq[data-playing] > i {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}

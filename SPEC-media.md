@@ -112,6 +112,12 @@ Như notch-shell: `npm test` · `cargo test --manifest-path src-tauri/Cargo.toml
   - media là pill ưu tiên thì pill hiện widget kế tiếp có pill;
   - mode always chỉ hiện nửa còn lại.
 
+### 5.6 Media tự lên pill (bạn đề xuất 2026-09-17)
+
+- Pill vẫn ưu tiên widget bạn chọn. Nếu widget đó (và các widget đứng trước media) **trống** thì chúng tự ẩn, và media đang có phiên lên pill. Mode always cũng vậy.
+- Không có nhạc và các widget khác trống: pill mặc định "winbar · Ctrl+Space".
+- Quy ước cho mọi widget (ghi thêm vào hợp đồng §6.1): widget **không có gì để hiện** thì gọi `setHidden(id, true)`, không hiện pill rỗng. Ví dụ `claude-sessions` sau này ẩn khi không có phiên Claude nào.
+
 ## 6. Hợp đồng
 
 ### 6.1 Mở rộng hợp đồng widget (notch-shell)
@@ -126,6 +132,7 @@ export interface ShellApi {
 
 - Shell giữ tập widget đang ẩn trong snapshot, và `pickPill`, `pickMidPills`, bố cục panel bỏ qua chúng.
 - Widget mới bật mặc định **hiện**. Media gọi `setHidden("media", true)` ngay khi biết không có phiên.
+- Quy ước: widget không có gì để hiện thì tự ẩn, để widget kế tiếp (ví dụ media) được lên pill (§5.6).
 
 ### 6.2 Rust ↔ frontend
 

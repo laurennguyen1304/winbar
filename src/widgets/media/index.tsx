@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useShell } from "../../shell/shell-context";
 import type { WidgetDefinition } from "../../shell/widget-contract";
 import { MediaCard } from "./MediaCard";
+import { MediaMidPill, MediaPill } from "./MediaPill";
 import { useMedia } from "./store";
 
 /** Keeps the store live while the panel is closed and hides the widget when nothing has a media session (§5.5). */
@@ -19,5 +20,7 @@ export const mediaWidget: WidgetDefinition = {
   title: "Đang phát",
   description: "Ảnh bìa, tiến độ, điều khiển nhạc",
   Card: MediaCard,
+  Pill: MediaPill,
+  MidPill: MediaMidPill,
   Background: MediaBackground,
 };
