@@ -300,7 +300,7 @@ nối với `launchAtStartup` trong cài đặt, menu khay và Cài đặt.
 
 **Kiểm tra:** (2026-09-17, bản `tauri build --no-bundle`)
 - [x] `cargo test` 22 (startup 2) · clippy sạch · `npm test` 109 · lint sạch
-- [x] Lần mở đầu (cờ mặc định bật) → thêm `HKCU\...\Run\winbar` = `targetelease\winbar.exe`
+- [x] Lần mở đầu (cờ mặc định bật) → thêm `HKCU\...\Run\winbar` = `target\release\winbar.exe`
 - [x] Lần mở thứ hai → thoát mã 0, vẫn 1 tiến trình, bản đang chạy mở cửa sổ Cài đặt (và hiện lại notch nếu đang ẩn)
 - [x] `launchAtStartup` false → xóa mục `Run`; true → thêm lại; false → xóa · Thoát → 0 tiến trình
 - [x] Sau kiểm tra: danh sách `Run` giống hệt lúc đầu, đã xóa file cài đặt thử
@@ -320,19 +320,23 @@ nối với `launchAtStartup` trong cài đặt, menu khay và Cài đặt.
 Soát từng trạng thái với mockup, sửa chỗ lệch hoặc ghi lý do.
 
 **Tiêu chí chấp nhận:**
-- [ ] CPU trung bình < 1%, RAM < 150 MB (ghi số đo vào checklist)
-- [ ] Mọi mục checklist thủ công qua hoặc có ghi chú
-- [ ] Đạt đủ 11 tiêu chí ở mục 11 của spec
+- [x] CPU trung bình < 1%, RAM < 150 MB — release, 203s: CPU 0.007%, Task Manager 78 MB, private bytes 137 MB (ghi trong checklist)
+- [x] Mọi mục checklist thủ công qua hoặc có ghi chú (6 mục ⚠️, 6 mục 👤 bạn tự kiểm)
+- [x] Đạt 11 tiêu chí ở mục 11 của spec — trừ phần chỉ bạn làm được: DPI 100/150% thật, đăng nhập lại để thấy autostart, tắt Animation effects thật
 
-**Kiểm tra:**
-- [ ] `npm test`, `cargo test`, `npm run lint`, `npm run tauri build` qua
-- [ ] Checklist thủ công đã điền
+**Kiểm tra:** (2026-09-17)
+- [x] `npm test` 109 · `cargo test` 22 · clippy sạch · `npm run lint` sạch · `npm run tauri build -- --no-bundle` ra `winbar.exe`
+- [x] Checklist thủ công đã điền: `tests/manual-shell.md`
+- [x] Thủ công bằng chuột/phím thật: hover 150ms đóng / 500ms mở, không lấy focus; click mode mở, Esc đóng, click ra ngoài đóng;
+  always 620×64, click mở 8/8; alert 490×44, hover không mở, bấm "Cho phép" thật → callback `allow`, pill trở lại;
+  reduced-motion (giả lập) thu cửa sổ sau ~150ms thay vì ~600ms
+- [x] So mockup: kích thước/bo góc/bố cục khớp; lệch có lý do: không blur (css-dense), nút alert demo chưa có kiểu (thuộc `claude-approvals`), đè thanh YASB (R6)
 
 **Phụ thuộc:** Task 12
 **File dự kiến:** `tests/manual-shell.md`, các file sửa lỗi nhỏ
 **Quy mô:** S–M
 
 ## Checkpoint cuối
-- [ ] Đạt 11 tiêu chí của spec
-- [ ] Test, lint, build qua
+- [x] Đạt 11 tiêu chí của spec (còn 3 việc bạn tự kiểm, xem `tests/manual-shell.md` mục 👤)
+- [x] Test, lint, build qua
 - [ ] Bạn duyệt để chuyển sang module `command-bar`

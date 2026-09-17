@@ -53,7 +53,7 @@ chạy một bản, khởi động cùng Windows. Chưa có widget thật; widge
 - [x] Task 10: Icon khay và menu
 - [x] Task 11: Phím tắt toàn cục + phát hiện trùng
 - [x] Task 12: Chạy một bản + khởi động cùng Windows
-- [ ] Task 13: Đo hiệu năng, checklist thủ công, soát lại với mockup
+- [x] Task 13: Đo hiệu năng, checklist thủ công, soát lại với mockup
 
 ### Checkpoint cuối — Đạt 11 tiêu chí ở mục 11 của spec
 
