@@ -37,6 +37,8 @@ windows = { version = "0.61", features = [
   "Win32_Foundation",
   "Win32_Graphics_Gdi",
   "Win32_Graphics_Imaging",
+  # Claude usage: one HTTPS GET without adding a TLS stack (SPEC-claude §4).
+  "Win32_Networking_WinHttp",
   "Win32_Storage_EnhancedStorage",
   "Win32_System_Com",
   # Clipboard widget: format listener and clipboard formats (SPEC-clipboard §3).

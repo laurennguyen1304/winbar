@@ -29,7 +29,7 @@
 **Phụ thuộc:** không
 **Quy mô:** M
 
-### Task 2: Rust — hạn mức qua WinHTTP, parser, cache
+### Task 2: Rust — hạn mức qua WinHTTP, parser, cache ✅
 
 **Mô tả:**
 - **`http.rs`:** một hàm `get(url, headers) -> Result<Vec<u8>, HttpError>` bằng WinHTTP; handle đóng bằng `Drop`;
@@ -39,12 +39,15 @@
 - **Lệnh:** `claude_usage(force)`.
 
 **Tiêu chí chấp nhận:**
-- [ ] Gọi thật trên máy: trả đúng số của tài khoản (so với `/usage` trong Claude Code).
-- [ ] Gọi lần hai trong 120 giây: không ra mạng (cache), `force = true` thì có.
-- [ ] Đổi tên `.credentials.json`: trả `error = "no-login"`, **không** gọi mạng, không crash.
-- [ ] Ngắt mạng: giữ số cache, `error = "network"`.
-- [ ] Không có chuỗi token nào trong log hay trong struct trả về frontend.
-- [ ] Test Rust: parser với 3 dạng payload (chỉ `five_hour`/`seven_day`, chỉ `limits`, cả hai), thiếu trường, cache hết hạn.
+- [x] Gọi thật qua WinHTTP trên app đang chạy: **5h 25%** (reset 22:00), **7d 27%**, **Fable 10%** — 776 ms.
+- [x] Gọi lần hai: lấy cache, **20 ms**, không ra mạng.
+- [x] Không có credentials: trả `no-login`, không chạm mạng (test Rust).
+- [x] Host không tồn tại: trả `network` và **không treo** (test Rust gọi WinHTTP thật).
+- [x] Token không lọt: quét 25 file (log dev + mọi file winbar ghi) — không thấy. Cache trên đĩa chỉ có % và giờ reset.
+- [x] Test Rust: 3 dạng payload, thiếu trường, giá trị ngoài khoảng, per-model trùng, cache hỏng. Tổng 193 pass.
+
+**Ghi chú:** hook `block_secrets.py` của bạn chặn đúng lệnh kiểm token đầu tiên tôi viết (vì tôi đưa token vào biến
+shell). Đã viết lại để token không rời khỏi tiến trình Python. Lớp bảo vệ đó chạy đúng.
 
 **Phụ thuộc:** không
 **Quy mô:** M

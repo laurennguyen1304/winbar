@@ -5,8 +5,10 @@
 //!
 //! Log lines carry counts and error kinds only — never a path, a session title, or a token (SPEC §9).
 
+mod http;
 mod model;
 mod sessions;
+mod usage;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -15,6 +17,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 pub use model::Session;
+pub use usage::Usage;
 
 /// The live list changed: a session started, ended, or moved to another phase.
 pub const SESSIONS_CHANGED: &str = "claude-sessions-changed";
@@ -74,6 +77,17 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
+}
+
+/// How much of the limit is left. Uses a recent answer unless `force` asks for a fresh one.
+#[tauri::command]
+pub fn claude_usage(state: tauri::State<'_, ClaudeState>, force: Option<bool>) -> Usage {
+    usage::fetch(
+        &state.home,
+        &state.appdata,
+        now_ms(),
+        force.unwrap_or(false),
+    )
 }
 
 /// Sessions to show: live ones in order, then recent Desktop history.
