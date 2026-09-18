@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Icon } from "../../shell/Icon";
+import { startRowDrag, prefetchText } from "./drag";
 import { relativeTime } from "./filter";
 import type { ClipItem } from "./native";
 import { requestThumb } from "./store";
@@ -18,7 +19,7 @@ export interface ClipRowProps {
   onRemove: () => void;
 }
 
-/** One line of the history: click to copy it back, with pin and delete on hover (SPEC-clipboard §5.3). */
+/** One line of the history: click to copy it back, drag it out, pin and delete on hover (SPEC-clipboard §5.3). */
 export function ClipRow({ item, thumb, now, copied, onCopy, onPin, onRemove }: ClipRowProps) {
   const isImage = item.kind === "image";
   useEffect(() => {
@@ -27,7 +28,16 @@ export function ClipRow({ item, thumb, now, copied, onCopy, onPin, onRemove }: C
 
   return (
     <div className={copied ? `${styles.row} ${styles.rowCopied}` : styles.row}>
-      <button type="button" className={styles.rowBody} onClick={onCopy} title={item.preview}>
+      <button
+        type="button"
+        className={styles.rowBody}
+        onClick={onCopy}
+        title={item.preview}
+        draggable
+        // The full text has to be in hand before the drag starts, so it is read when the pointer arrives.
+        onPointerEnter={() => prefetchText(item)}
+        onDragStart={(e) => startRowDrag(e.nativeEvent, item)}
+      >
         {isImage ? (
           thumb ? (
             <img className={styles.thumb} src={thumb} alt="" />

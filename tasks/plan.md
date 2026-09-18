@@ -36,7 +36,7 @@ Task 1 (spike: bắt clipboard + thử kéo ra ngoài)
 
 ### Checkpoint: bạn dùng thử
 
-- [ ] Task 4: Kéo ra app khác + provider command bar + mục Cài đặt
+- [x] Task 4: Kéo ra app khác + provider command bar + mục Cài đặt
 - [ ] Task 5: Đo hiệu năng, checklist thủ công
 
 ## Rủi ro

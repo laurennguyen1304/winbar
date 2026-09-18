@@ -18,6 +18,8 @@ pub fn run() {
         .plugin(startup::single_instance_plugin())
         .plugin(startup::autostart_plugin())
         .plugin(hotkeys::plugin())
+        // Dragging a picture out to another app needs a Windows drag, which WebView2 cannot start (SPEC-clipboard §5.5).
+        .plugin(tauri_plugin_drag::init())
         .manage(window::NotchState::default())
         .manage(sticky::StickyState::default())
         .manage(media::MediaStore::default())

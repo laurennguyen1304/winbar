@@ -5,6 +5,7 @@ import { PillPreview } from "../shell/PillPreview";
 import { registry } from "../shell/registry";
 import { mergeWidgets, moveWidget, type Settings } from "../shell/settings";
 import { useSettings } from "../shell/use-settings";
+import { ClipboardSection } from "./ClipboardSection";
 import { CommandBarSection } from "./CommandBarSection";
 import { HotkeySection } from "./HotkeySection";
 import type { TabId, WidgetDefinition } from "../shell/widget-contract";
@@ -20,6 +21,7 @@ const SECTIONS = [
   { id: "font", label: "Cỡ chữ" },
   { id: "hotkey", label: "Phím tắt" },
   { id: "command-bar", label: "Command bar" },
+  { id: "clipboard", label: "Clipboard" },
   { id: "general", label: "Chung" },
 ] as const;
 
@@ -185,10 +187,7 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
                 </Button>
               </div>
             </Row>
-            <Row
-              title="Màn hình"
-              description="Máy nhiều màn hình: chỉ một notch ở màn chính, hoặc mỗi màn một notch"
-            >
+            <Row title="Màn hình" description="Máy nhiều màn hình: chỉ một notch ở màn chính, hoặc mỗi màn một notch">
               <Choice
                 label="Màn hình"
                 value={view.pill.monitor}
@@ -336,6 +335,8 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
           />
 
           <CommandBarSection value={view.commandBar} onChange={(commandBar) => save({ ...view, commandBar })} />
+
+          <ClipboardSection value={view.clipboard} onChange={(clipboard) => save({ ...view, clipboard })} />
 
           <section id="set-general">
             <h2 className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Chung</h2>

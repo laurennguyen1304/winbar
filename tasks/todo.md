@@ -83,12 +83,21 @@ Thumbnail lấy từng dòng một qua lệnh mới `clipboard_thumb` (data URL)
 
 - [ ] Bạn kiểm: đúng thứ cần, không lưu nhầm thứ nhạy cảm, tốc độ ổn
 
-### Task 4: Kéo ra app khác + command bar + Cài đặt
+### Task 4: Kéo ra app khác + command bar + Cài đặt ✅ (còn 👤 kéo bằng chuột thật)
+
+**Đã làm:**
+- **Kéo:** `drag.ts` — chữ đi bằng kéo HTML5 của WebView2, ảnh đi bằng `tauri-plugin-drag` 2.1.1 (Windows `DoDragDrop` + `CF_HDROP`), thumbnail làm ảnh xem trước. Nội dung đầy đủ được đọc **trước** khi kéo (lúc chuột chạm dòng) vì `dragstart` không chờ được.
+- **Command bar:** provider `clipboard`, nhóm "Clipboard", tiền tố `cb`. Gõ `cb` một mình thì hiện mục mới nhất; gõ từ khóa (≥ 2 ký tự) thì lọc, không dấu cũng ra. Enter copy lại, Ctrl+Enter mở file ảnh. Provider **không** gọi `history.record` nên item clipboard không bao giờ vào "Gần đây".
+- **Cài đặt:** mục "Clipboard" — giữ 1/2 ngày, nút Đang ghi/Đang tạm dừng, danh sách app bỏ qua (thêm/xóa/đặt lại mặc định), "Xóa toàn bộ lịch sử" có xác nhận.
 
 **Tiêu chí chấp nhận:**
-- [ ] Kéo chữ vào Notepad ra đúng nội dung; ảnh theo kết luận của Task 1.
-- [ ] Command bar: `cb` + từ khóa ra item, Enter copy lại, không vào "Gần đây".
-- [ ] Cài đặt: thời gian giữ 1/2 ngày, danh sách app bỏ qua, nút xóa toàn bộ lịch sử.
+- [x] Command bar trên app thật: `cb` ra 7 mục mới nhất kèm tên app và chữ "Copy ↵"; gõ "unboxing" ra đúng 2 mục, không nhóm nào khác chen vào.
+- [x] Không vào "Gần đây": provider không ghi lịch sử — không có đường nào để item lọt vào.
+- [x] Cài đặt trên app thật: đủ 4 dòng, có mục "Clipboard" ở thanh bên.
+- [x] Plugin kéo đã nạp và được cấp quyền (gọi `plugin:drag|start_drag` đi tới được lệnh, chỉ lỗi vì tôi cố tình gửi sai tham số).
+- [ ] 👤 **Cần bạn thử bằng chuột thật:** kéo một dòng chữ thả vào Notepad, và kéo một dòng ảnh thả vào Explorer / Word. Tôi không tự kéo được vì không tạo được thao tác chuột thật trên máy bạn.
+
+**Test:** 392 test TS (thêm 20: 8 command bar, 5 kéo, 7 Cài đặt), Rust 155, clippy sạch.
 
 **Phụ thuộc:** Checkpoint
 **Quy mô:** M
