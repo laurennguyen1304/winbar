@@ -283,7 +283,17 @@ Bản release, không bật cổng debug. Đo từ giây 60 sau khi mở, pill t
 | App treo khi bật/tắt "Cả 2 màn" | Mở/đóng cửa sổ chạy trên luồng chính, phải chờ chính vòng lặp sự kiện đang bận | Chuyển việc mở/đóng cửa sổ sang luồng nền (`spawn_blocking`, hoặc luồng theo dõi màn hình) |
 | App treo khi đổi DPI | Gọi đặt lại kích thước ngay trong callback sự kiện của cửa sổ | Xếp hàng chạy sau qua `run_on_main_thread` |
 
-## 4. Chưa kiểm
+## 4. Hiệu năng (bản release, 2026-09-18)
+
+| Chế độ | CPU | RAM | Tiến trình |
+|---|---|---|---|
+| `primary` | 0.000–0.017% | 122–126 MB | 8 |
+| `all` (2 màn) | 0.006–0.014% | 146–149 MB | 9 |
+
+- [x] ✅ Thêm màn thứ hai tốn thêm **~25 MB** (một tiến trình WebView nữa); CPU gần như không đổi.
+- [x] ⚠️ Ở `all`, RAM 146–149 MB sát ngưỡng 150 MB của spec. Trước khi làm thêm module nặng, nên đo lại ở chế độ này.
+
+## 5. Chưa kiểm
 
 - [ ] 👤 Rút màn 2 khi đang ở `all`: notch của màn đó biến mất trong ~2 giây; cắm lại thì hiện lại.
-- [ ] 👤 RAM khi bật `all` (dự kiến +~25 MB cho cửa sổ WebView thứ hai) — đo trên bản release.
+- [ ] 👤 Mở panel ở màn 2 trong lúc dùng thật, xem có vướng gì không.

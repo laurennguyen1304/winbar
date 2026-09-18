@@ -1,7 +1,7 @@
 # Implementation Plan: notch trên nhiều màn hình (notch-shell v3)
 
 > Spec: `SPEC-notch-shell.md` §16 (duyệt 2026-09-18)
-> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**.
+> Danh sách task: `tasks/todo.md`. Trạng thái plan: **xong (2026-09-18)**.
 > Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/`, `tasks/system/` (xong).
 > Sau plan này: module `clipboard` (`SPEC-clipboard.md` đã viết, chờ duyệt phần kéo file).
 
@@ -19,8 +19,8 @@ Vẫn chỉ một cửa sổ notch.
 
 ## Danh sách task
 
-- [ ] Task 1: Cài đặt `pill.monitor` + chọn màn hình theo con trỏ (Rust) + mục chọn trong Cài đặt
-- [ ] Task 2: Kiểm trên hai màn hình thật, sticky theo màn, checklist
+- [x] Task 1: Cài đặt `pill.monitor` + chọn màn hình theo con trỏ (Rust) + mục chọn trong Cài đặt
+- [x] Task 2: Kiểm trên hai màn hình thật, sticky theo màn, checklist
 
 ## Rủi ro
 

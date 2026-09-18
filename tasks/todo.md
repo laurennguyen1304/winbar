@@ -28,8 +28,8 @@
 - [x] Bật `all`: hai notch hiện cùng lúc, mỗi cái đúng kích thước theo DPI màn đó.
 - [x] Sticky bật: mỗi màn có dải giữ chỗ riêng (40 và 32 px vật lý).
 - [ ] Rút màn 2: notch của màn đó biến mất trong ~2 giây; cắm lại thì hiện lại.
-- [ ] RAM tăng thêm khi bật `all` (đo bản release, ghi vào checklist).
-- [ ] `tests/manual-shell.md` thêm phần v3.
+- [x] RAM tăng thêm khi bật `all`: +~25 MB (122–126 → 146–149 MB), CPU không đổi.
+- [x] `tests/manual-shell.md` thêm phần v3.
 
 **Phụ thuộc:** Task 1
 **Quy mô:** S
