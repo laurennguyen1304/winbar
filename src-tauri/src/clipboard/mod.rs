@@ -172,8 +172,13 @@ fn keep<R: Runtime>(app: &AppHandle<R>, capture: native::Capture) -> Result<Opti
         }
         (None, Some(dib)) => {
             let state = app.state::<ClipboardState>();
+            // Only the two paths are read under the lock: turning a DIB into a PNG takes long enough that holding
+            // the history meanwhile would block the card, and the lock is taken again further down.
             let (full, thumb) = {
-                let store = state.store.lock().map_err(|_| Skip::Paused)?;
+                let Ok(store) = state.store.lock() else {
+                    eprintln!("winbar clipboard: the history is locked; this copy is not kept");
+                    return Ok(None);
+                };
                 (
                     store.images_dir().join(format!("{id}.png")),
                     store.thumbs_dir().join(format!("{id}.png")),
@@ -206,7 +211,10 @@ fn keep<R: Runtime>(app: &AppHandle<R>, capture: native::Capture) -> Result<Opti
     };
 
     let state = app.state::<ClipboardState>();
-    let mut store = state.store.lock().map_err(|_| Skip::Paused)?;
+    let Ok(mut store) = state.store.lock() else {
+        eprintln!("winbar clipboard: the history is locked; this copy is not kept");
+        return Ok(None);
+    };
     store.insert(stored);
     store.prune(at, u64::from(settings.retention_days) * DAY_MS);
     if let Err(e) = store.save() {

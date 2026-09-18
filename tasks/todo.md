@@ -71,7 +71,7 @@ Thumbnail lấy từng dòng một qua lệnh mới `clipboard_thumb` (data URL)
 - [x] Bấm item: clipboard đổi đúng (đã kiểm ở Task 2), dòng nháy "Đã copy".
 - [x] Ghim / xóa / xóa tất cả có xác nhận — test component.
 - [x] Tạm dừng: đổi được, nút đổi nhãn thành "Đang tạm dừng"; trạng thái nằm trong `settings.json` nên nhớ sau khi khởi động lại.
-- [x] Test: 21 test mới (12 lọc/tìm thuần + 9 component), tổng TS 372 pass; Rust 155 pass; clippy sạch.
+- [x] Test: 21 test mới (12 lọc/tìm thuần + 9 component), tổng TS 372 pass; Rust 154 pass; clippy sạch.
 
 **Thêm ngoài kế hoạch:** `Store::open` dọn file ảnh mồ côi (không dòng nào trỏ tới) — trừ khi index hỏng, vì lúc
 đó ảnh là thứ duy nhất còn lại. Phát hiện ra vì script test của tôi để lại đúng loại rác này trên máy bạn.
