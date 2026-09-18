@@ -1,32 +1,50 @@
-# Implementation Plan: notch trên nhiều màn hình (notch-shell v3)
+# Implementation Plan: clipboard
 
-> Spec: `SPEC-notch-shell.md` §16 (duyệt 2026-09-18)
-> Danh sách task: `tasks/todo.md`. Trạng thái plan: **xong (2026-09-18)**.
-> Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/`, `tasks/system/` (xong).
-> Sau plan này: module `clipboard` (`SPEC-clipboard.md` đã viết, chờ duyệt phần kéo file).
+> Spec: `SPEC-clipboard.md` (bạn chốt phạm vi 2026-09-18: chỉ chữ và ảnh) · Mockup: `design/winbar-mockup.html` (card "Clipboard")
+> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**.
+> Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/`, `tasks/system/`, `tasks/notch-shell-v3/` (xong).
 
 ## Tổng quan
 
-Thêm cài đặt `pill.monitor`: notch ở màn chính (như hiện nay) hoặc nhảy sang màn hình đang có con trỏ chuột.
-Vẫn chỉ một cửa sổ notch.
+Lịch sử clipboard ngắn hạn: 50 mục trong 1 ngày (Cài đặt cho tối đa 2 ngày), chữ và ảnh, tìm được, ghim được,
+kéo ra app khác, và **không lưu** thứ nhạy cảm. Đây là module lớn nhất của nhóm Core nên chia 5 task.
 
 ## Quyết định kiến trúc
 
-- **Chọn màn hình trong Rust:** `GetCursorPos` + `monitor_from_point` của Tauri. Không dùng hook chuột, chỉ xem vị trí con trỏ 300ms/lần khi cài đặt là `mouse`.
-- **Một chỗ quyết định:** `window::target_geometry()` trả về hình học màn hình cần dùng; `apply` và `sticky` dùng chung nó, nên dải giữ chỗ luôn theo màn hình của notch.
-- **Không chuyển khi panel đang mở:** người dùng đang đọc thì notch đứng yên; chuyển ngay sau khi thu gọn.
-- **Phần thuần có test:** chọn màn hình theo điểm con trỏ, và kẹp `offsetX` trong màn hình mới.
+- **Bắt clipboard trong Rust:** `AddClipboardFormatListener` trên cửa sổ notch chính (đã có subclass cho sticky), nhận `WM_CLIPBOARDUPDATE`. Đọc clipboard ngay trên luồng cửa sổ, rồi đẩy việc nặng (ảnh, ghi đĩa) sang luồng nền.
+- **Phần thuần tách riêng:** phân loại, cắt preview, dọn theo số mục/hạn giữ, nhận diện key/token — tất cả trong `model.rs` và `secrets.rs`, có test, không cần Windows.
+- **Lưu trữ:** `%APPDATA%\winbar\clipboard\index.json` + `images/<id>.png` + `thumbs/<id>.png`; ghi tạm rồi đổi tên, như các file khác.
+- **Riêng tư:** nội dung không bao giờ ra log; mục bị bỏ qua không ghi xuống đĩa; item clipboard không vào "Gần đây" của command bar.
+- **Kéo ra ngoài:** chưa chắc WebView2 làm được với file ảnh → **Task 1 thử trước**, rồi mới quyết (nếu cần thêm crate `tauri-plugin-drag` thì hỏi bạn).
+
+## Thứ tự và phụ thuộc
+
+```
+Task 1 (spike: bắt clipboard + thử kéo ra ngoài)
+   └→ Task 2 (Rust: lưu, dọn, lọc nhạy cảm, lệnh + sự kiện)
+         └→ Task 3 (card: danh sách, tìm, lọc, copy lại, ghim, xóa, tạm dừng)
+               ├→ Checkpoint: bạn dùng thử vài hôm
+               └→ Task 4 (kéo ra ngoài + command bar + mục Cài đặt)
+                     └→ Task 5 (đo, checklist thủ công)
+```
 
 ## Danh sách task
 
-- [x] Task 1: Cài đặt `pill.monitor` + chọn màn hình theo con trỏ (Rust) + mục chọn trong Cài đặt
-- [x] Task 2: Kiểm trên hai màn hình thật, sticky theo màn, checklist
+- [ ] Task 1: Spike — bắt `WM_CLIPBOARDUPDATE` + thử kéo chữ/ảnh ra app khác
+- [ ] Task 2: Rust — lưu trữ, dọn, lọc nhạy cảm, lệnh và sự kiện
+- [ ] Task 3: Card "Clipboard" trong panel
+
+### Checkpoint: bạn dùng thử
+
+- [ ] Task 4: Kéo ra app khác + provider command bar + mục Cài đặt
+- [ ] Task 5: Đo hiệu năng, checklist thủ công
 
 ## Rủi ro
 
 | Rủi ro | Mức | Cách xử lý |
 |---|---|---|
-| Notch nhảy qua lại khi chuột đi ngang mép hai màn | Trung bình | Chỉ chuyển khi màn đổi hẳn; kiểm tra lại sau 300ms trước khi chuyển |
-| Chuyển màn lúc panel đang mở gây giật | Trung bình | Hoãn tới khi thu gọn |
-| Sticky để lại dải trên màn cũ | Trung bình | Gỡ AppBar trước khi chuyển, đăng ký lại ở màn mới |
-| Đo vị trí chuột 300ms/lần tốn CPU | Thấp | Chỉ chạy khi cài đặt là `mouse`; `GetCursorPos` rất rẻ; đo ở Task 2 |
+| Kéo file ảnh ra ngoài không làm được trong WebView2 | Cao | Thử ngay Task 1; phương án dự phòng: chỉ kéo chữ + nút mở file ảnh |
+| Bỏ sót nội dung nhạy cảm | Cao | 4 lớp lọc (spec §5.4); test nhiều mẫu thật; nút tạm dừng |
+| Nhận nhầm nội dung thường là key | Trung bình | Test cả chuỗi dễ nhầm: hash git, base64 ngắn, câu tiếng Việt |
+| RAM tăng vì ảnh | Trung bình | Chỉ giữ thumbnail trong bộ nhớ; ảnh gốc trên đĩa; ở chế độ 2 màn RAM đã 146–149 MB nên phải đo kỹ |
+| Vòng lặp tự bắt chính mình khi copy lại | Trung bình | Bỏ qua lần đổi ngay sau khi winbar tự ghi clipboard |
