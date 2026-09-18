@@ -12,6 +12,8 @@ const { native } = vi.hoisted(() => ({
     usage: { perModel: [], fetchedAt: 0 } as ClaudeUsage,
     sessions: [] as ClaudeSession[],
     forced: [] as boolean[],
+    /** Number of leading calls that should fail, as they do when Rust has not managed its state yet. */
+    failFirst: 0,
   },
 }));
 
@@ -21,6 +23,10 @@ vi.mock("./native", () => ({
   extraIcons: () => Promise.resolve({}),
   getUsage: (force: boolean) => {
     native.forced.push(force);
+    if (native.failFirst > 0) {
+      native.failFirst -= 1;
+      return Promise.reject(new Error("state not managed for field `state` on command `claude_usage`"));
+    }
     return Promise.resolve(native.usage);
   },
   onSessionsChanged: () => () => {},
@@ -35,6 +41,7 @@ describe("UsageCard", () => {
     resetForTests();
     native.forced = [];
     native.sessions = [];
+    native.failFirst = 0;
     native.usage = {
       fiveHour: { percent: 52, resetsAt: new Date(Date.now() + 134 * 60_000).toISOString() },
       sevenDay: { percent: 24 },
@@ -84,6 +91,15 @@ describe("UsageCard", () => {
     // The meters stay, showing a dash rather than a number nobody fetched.
     expect(screen.getAllByText("—")).toHaveLength(2);
     expect(screen.queryByText("52")).not.toBeInTheDocument();
+  });
+
+  it("recovers when the very first read lands before Rust is ready", async () => {
+    // The page is alive before setup finishes managing state, so the first call can fail outright. Without a
+    // retry the card would sit empty until something else happened to refresh it.
+    native.failFirst = 2;
+    render(<UsageCard />);
+    expect(await screen.findByText("52", {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(native.forced.length).toBeGreaterThan(1);
   });
 
   it("asks for a new login when the token was refused", async () => {

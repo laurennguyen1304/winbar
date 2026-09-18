@@ -92,18 +92,20 @@ pub fn run() {
             hotkeys::retry_hotkey
         ])
         .setup(|app| {
+            // Every piece of state a command needs is managed first. The windows are already alive by now, and a
+            // page that calls before its state exists gets "state not managed" — seen in the dev log at startup.
             let settings = settings::SettingsState::load(app.handle())?;
             let initial = settings.get();
             app.manage(settings);
             app.manage(command_bar::history::HistoryState::load(app.handle())?);
+            app.manage(clipboard::ClipboardState::load(app.handle())?);
+            app.manage(claude::ClaudeState::load(app.handle())?);
             hotkeys::apply(app.handle(), &initial.hotkeys.command_bar);
             startup::sync_autostart(app.handle(), initial.launch_at_startup);
             window::sync_windows(app.handle()).map_err(|e| e.to_string())?;
             command_bar::create(app.handle())?;
             command_bar::apps::warm_up(app.handle());
             media::start(app.handle());
-            app.manage(clipboard::ClipboardState::load(app.handle())?);
-            app.manage(claude::ClaudeState::load(app.handle())?);
             claude::start(app.handle());
             clipboard::start(app.handle());
             tray::create(app.handle())?;

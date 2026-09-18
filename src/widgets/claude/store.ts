@@ -38,36 +38,47 @@ function set(next: ClaudeView) {
 }
 
 export function refresh(): Promise<void> {
-  return listSessions()
-    .then((sessions) => set({ ...view, sessions }))
-    .catch((err: unknown) => console.error("claude_sessions failed", err));
+  return listSessions().then((sessions) => set({ ...view, sessions }));
 }
 
 /** Re-reads the limits. Rust serves a cached answer unless `force` asks for a fresh one. */
 export function refreshUsage(force = false): Promise<void> {
-  return getUsage(force)
-    .then((usage) => set({ ...view, usage }))
-    .catch((err: unknown) => console.error("claude_usage failed", err));
+  return getUsage(force).then((usage) => set({ ...view, usage }));
 }
 
 /** Re-reads the user's icon folder. Called when the panel opens, so a new file shows up without a restart. */
 export function refreshIcons(): Promise<void> {
-  return extraIcons()
-    .then((icons) => set({ ...view, icons }))
-    .catch((err: unknown) => console.error("claude_icons failed", err));
+  return extraIcons().then((icons) => set({ ...view, icons }));
+}
+
+/**
+ * Runs `read` and retries a few times if it fails.
+ *
+ * The page is alive before Rust finishes its setup, so the very first call can land on a command whose state is
+ * not managed yet ("state not managed", seen in the dev log at startup). Without a retry the card would sit empty
+ * until something else happened to refresh it.
+ */
+function withRetry(name: string, read: () => Promise<unknown>, attempt = 0): void {
+  read().catch((err: unknown) => {
+    if (attempt >= 4) {
+      console.error(`${name} failed`, err);
+      return;
+    }
+    setTimeout(() => withRetry(name, read, attempt + 1), 250 * (attempt + 1));
+  });
 }
 
 function start() {
   if (started) return;
   started = true;
-  onSessionsChanged(() => void refresh());
+  onSessionsChanged(() => withRetry("claude_sessions", refresh));
   onSettingsChanged((settings) => set({ ...view, options: settings.claude }));
   loadSettings()
     .then((settings) => settings && set({ ...view, options: settings.claude }))
     .catch((err: unknown) => console.error("loadSettings failed", err));
-  void refresh();
-  void refreshIcons();
-  void refreshUsage();
+  withRetry("claude_sessions", refresh);
+  withRetry("claude_icons", refreshIcons);
+  withRetry("claude_usage", () => refreshUsage());
 }
 
 function subscribe(listener: () => void) {
