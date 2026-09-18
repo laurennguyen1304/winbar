@@ -6,6 +6,7 @@
 //! Log lines carry counts and error kinds only — never a path, a session title, or a token (SPEC §9).
 
 mod http;
+mod icons;
 mod model;
 mod sessions;
 mod usage;
@@ -77,6 +78,14 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0)
+}
+
+/// Extra status images Lauren added, per phase, as data URLs. The three bundled with the app live in the page.
+#[tauri::command]
+pub fn claude_icons(
+    state: tauri::State<'_, ClaudeState>,
+) -> std::collections::BTreeMap<String, Vec<String>> {
+    icons::read(&state.appdata)
 }
 
 /// How much of the limit is left. Uses a recent answer unless `force` asks for a fresh one.

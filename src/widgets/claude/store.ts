@@ -1,0 +1,60 @@
+// One Claude store for the whole notch page, so the card and the pill read the same sessions.
+import { useSyncExternalStore } from "react";
+import { extraIcons, listSessions, onSessionsChanged, type ClaudeSession } from "./native";
+
+export interface ClaudeView {
+  sessions: ClaudeSession[];
+  /** Extra images per phase, added by the user. Empty until the first read. */
+  icons: Readonly<Record<string, string[]>>;
+}
+
+const EMPTY: ClaudeView = { sessions: [], icons: {} };
+
+let view: ClaudeView = EMPTY;
+const listeners = new Set<() => void>();
+let started = false;
+
+function set(next: ClaudeView) {
+  view = next;
+  listeners.forEach((l) => l());
+}
+
+export function refresh(): Promise<void> {
+  return listSessions()
+    .then((sessions) => set({ ...view, sessions }))
+    .catch((err: unknown) => console.error("claude_sessions failed", err));
+}
+
+/** Re-reads the user's icon folder. Called when the panel opens, so a new file shows up without a restart. */
+export function refreshIcons(): Promise<void> {
+  return extraIcons()
+    .then((icons) => set({ ...view, icons }))
+    .catch((err: unknown) => console.error("claude_icons failed", err));
+}
+
+function start() {
+  if (started) return;
+  started = true;
+  onSessionsChanged(() => void refresh());
+  void refresh();
+  void refreshIcons();
+}
+
+function subscribe(listener: () => void) {
+  start();
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+const getView = () => view;
+
+export function useClaude(): ClaudeView {
+  return useSyncExternalStore(subscribe, getView);
+}
+
+/** Tests only: forgets everything so each case starts clean. */
+export function resetForTests(): void {
+  view = EMPTY;
+  started = false;
+  listeners.clear();
+}

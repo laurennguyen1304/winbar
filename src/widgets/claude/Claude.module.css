@@ -1,0 +1,151 @@
+/* Claude widgets (SPEC-claude §5.2), following the mockup's Claude tab. */
+
+.card {
+  gap: 8px;
+  min-height: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+  margin: 0 -8px;
+  /* About six rows; more than that scrolls rather than stretching the notch (see notch-sizes panelMaxHeight). */
+  max-height: 324px;
+}
+
+.row {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.row:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.row:disabled {
+  cursor: default;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.rowDim {
+  opacity: 0.55;
+}
+
+.icon,
+.iconEmpty {
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 8px;
+  animation: icon-in var(--motion-quick-fade);
+}
+
+@keyframes icon-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A session waiting on you gets a ring in the warning colour, so the row reads at a glance. */
+.iconWaiting {
+  box-shadow: 0 0 0 2px var(--warn);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.rowTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The project is the part that tells two worktrees apart; the worktree name is the detail. */
+.project {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project::after {
+  content: " ·";
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+.worktree {
+  font-size: 13px;
+  color: var(--text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* With no project, the worktree name is the title, so it carries the weight. */
+.rowTitle > .worktree:first-child {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+
+.status {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.groupLabel {
+  margin: 6px 8px 2px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.empty {
+  margin: 0;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--text-faint);
+}

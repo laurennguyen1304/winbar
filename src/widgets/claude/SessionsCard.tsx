@@ -1,0 +1,98 @@
+import { useEffect, useState } from "react";
+import { openPath } from "../../command-bar/native";
+import { Card, CardLabel } from "../../shell/ui";
+import { ClaudeIcon } from "./ClaudeIcon";
+import type { ClaudeSession } from "./native";
+import { ago, groupSessions, phaseLook, rowTime } from "./phase";
+import { refreshIcons, useClaude } from "./store";
+import styles from "./Claude.module.css";
+
+/** How often the relative times are refreshed. */
+const TICK_MS = 30_000;
+
+function useNow(intervalMs = TICK_MS): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
+function Row({
+  session,
+  extra,
+  now,
+  dim,
+}: {
+  session: ClaudeSession;
+  extra: Readonly<Record<string, string[]>>;
+  now: number;
+  dim?: boolean;
+}) {
+  const look = phaseLook(session);
+  const isHistory = session.source === "history";
+  const status = isHistory ? `${session.turns ?? 0} lượt · ${ago(session.lastActiveAt, now)}` : look.label;
+
+  const open = () => {
+    if (session.cwd) void openPath(session.cwd).catch((err: unknown) => console.error("open_path failed", err));
+  };
+
+  return (
+    <button
+      type="button"
+      className={dim ? `${styles.row} ${styles.rowDim}` : styles.row}
+      onClick={open}
+      disabled={!session.cwd}
+      title={session.cwd ?? session.title}
+    >
+      <ClaudeIcon phase={session.phase} extra={extra} />
+      <span className={styles.rowText}>
+        <span className={styles.rowTitle}>
+          {session.project && <span className={styles.project}>{session.project}</span>}
+          <span className={styles.worktree}>{session.title}</span>
+          <span className={styles.badge}>{session.source === "history" ? "đã xong" : session.source}</span>
+        </span>
+        <span className={styles.status} style={{ color: isHistory ? undefined : look.color }}>
+          {status}
+        </span>
+      </span>
+      <span className={styles.time}>{isHistory ? "" : rowTime(session, now)}</span>
+    </button>
+  );
+}
+
+/** "Phiên Claude" card: what is running now, what has gone quiet, and recent Desktop sessions (SPEC §5.2). */
+export function SessionsCard() {
+  const { sessions, icons } = useClaude();
+  const now = useNow();
+  const { live, quiet, history } = groupSessions(sessions);
+
+  // A file dropped into the icons folder shows up the next time the panel opens, without a restart.
+  useEffect(() => {
+    void refreshIcons();
+  }, []);
+
+  return (
+    <Card className={styles.card}>
+      <CardLabel aside={live.length > 0 ? `${live.length} đang mở` : undefined}>Phiên Claude</CardLabel>
+      {sessions.length === 0 ? (
+        <p className={styles.empty}>Không có phiên Claude nào đang mở</p>
+      ) : (
+        <div className={styles.list}>
+          {live.map((s) => (
+            <Row key={s.id} session={s} extra={icons} now={now} />
+          ))}
+          {quiet.length > 0 && <p className={styles.groupLabel}>Đã lâu không hoạt động</p>}
+          {quiet.map((s) => (
+            <Row key={s.id} session={s} extra={icons} now={now} dim />
+          ))}
+          {history.length > 0 && <p className={styles.groupLabel}>Phiên Desktop gần đây</p>}
+          {history.map((s) => (
+            <Row key={s.id} session={s} extra={icons} now={now} dim />
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}

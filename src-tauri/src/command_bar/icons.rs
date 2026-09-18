@@ -94,10 +94,11 @@ pub fn cache_file(dir: &Path, source: &IconSource) -> PathBuf {
 }
 
 pub fn data_url(png: &[u8]) -> String {
-    format!("data:image/png;base64,{}", base64(png))
+    format!("data:image/png;base64,{}", base64_of(png))
 }
 
-fn base64(bytes: &[u8]) -> String {
+/// Standard base64 with padding. Shared with the Claude icons, which need their own media type.
+pub fn base64_of(bytes: &[u8]) -> String {
     const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
     for chunk in bytes.chunks(3) {
@@ -376,12 +377,12 @@ mod tests {
 
     #[test]
     fn base64_matches_the_standard_alphabet_with_padding() {
-        assert_eq!(base64(b""), "");
-        assert_eq!(base64(b"f"), "Zg==");
-        assert_eq!(base64(b"fo"), "Zm8=");
-        assert_eq!(base64(b"foo"), "Zm9v");
-        assert_eq!(base64(b"foobar"), "Zm9vYmFy");
-        assert_eq!(base64(&[0xff, 0xfe]), "//4=");
+        assert_eq!(base64_of(b""), "");
+        assert_eq!(base64_of(b"f"), "Zg==");
+        assert_eq!(base64_of(b"fo"), "Zm8=");
+        assert_eq!(base64_of(b"foo"), "Zm9v");
+        assert_eq!(base64_of(b"foobar"), "Zm9vYmFy");
+        assert_eq!(base64_of(&[0xff, 0xfe]), "//4=");
         assert!(data_url(b"x").starts_with("data:image/png;base64,"));
     }
 

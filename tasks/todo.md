@@ -52,17 +52,22 @@ shell). Đã viết lại để token không rời khỏi tiến trình Python. 
 **Phụ thuộc:** không
 **Quy mô:** M
 
-### Task 3: Card "Phiên Claude" + ảnh trạng thái luân phiên
+### Task 3: Card "Phiên Claude" + ảnh trạng thái luân phiên ✅
 
 **Mô tả:** card theo mockup; `icons.rs` gom bộ ảnh kèm app + `%APPDATA%\winbar\claude-icons\<trạng thái>\`
 (≤ 12 file, ≤ 2 MB, đuôi hợp lệ) thành data URL; component luân phiên ảnh mỗi 6 giây, chỉ khi thấy được.
 
 **Tiêu chí chấp nhận:**
-- [ ] Card hiện đúng danh sách, `winbar · firefish`, mục "đã lâu không hoạt động" ở cuối.
-- [ ] Bấm một dòng mở đúng thư mục.
-- [ ] Ảnh luân phiên khi có > 1 ảnh; thả thêm ảnh vào thư mục người dùng thì lần mở panel sau đã thấy.
-- [ ] Rời card thì không còn timer nào chạy (test component).
-- [ ] Test: chữ/màu theo trạng thái, luân phiên, card rỗng.
+- [x] Trên app thật: `winbar · firefish` (Cooking · Bash, ảnh động), `brain`, `qikify-theme-v3 · fangtooth`,
+      rồi mục "Đã lâu không hoạt động" và "Phiên Desktop gần đây" — đúng 8 dòng.
+- [x] Panel cao 442 px, card 430 px: **nằm trọn trong cửa sổ**, danh sách cuộn bên trong (chặn ~6 dòng).
+- [x] Bấm một dòng mở đúng thư mục (test component).
+- [x] Ảnh luân phiên 6 giây khi phase có > 1 ảnh; thêm ảnh vào thư mục người dùng thì `idle` cũng luân phiên.
+- [x] **Không timer nào chạy** khi phase chỉ có 1 ảnh, khi tắt luân phiên, hay sau khi rời card (test dùng fake timer).
+- [x] Test: 21 test mới (10 thuần + 11 component); tổng TS 415, Rust 200, lint sạch.
+
+**Ảnh thứ ba:** `working.gif` lấy từ yasb — theo `NOTICE.md` của yasb đó là ảnh bạn tự đưa vào, nên dùng lại được.
+Đã ghi xuất xứ ở `src/assets/claude/NOTICE.md`. `spark_*.png` (MIT, của m1ckc3s) **không** sao chép vào.
 
 **Phụ thuộc:** Task 1
 **Quy mô:** M

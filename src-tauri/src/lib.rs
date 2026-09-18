@@ -57,6 +57,7 @@ pub fn run() {
             system::open_task_manager,
             claude::claude_sessions,
             claude::claude_usage,
+            claude::claude_icons,
             clipboard::clipboard_list,
             clipboard::clipboard_text,
             clipboard::clipboard_thumb,
