@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createShell } from "../../shell/shell";
+import { ShellProvider } from "../../shell/shell-context";
 import { ClipboardCard } from "./ClipboardCard";
 import type { ClipItem, SkipReason } from "./native";
 import { resetForTests } from "./store";
@@ -122,6 +124,19 @@ describe("ClipboardCard", () => {
     fireEvent.click(row);
     await waitFor(() => expect(native.copied).toEqual(["note"]));
     expect(await screen.findByText("Đã copy")).toBeInTheDocument();
+  });
+
+  it("flashes the collapsed pill too, since the panel is about to close", async () => {
+    const shell = createShell();
+    const flashed: unknown[] = [];
+    shell.api.flashPill = (content) => flashed.push(content);
+    render(
+      <ShellProvider shell={shell}>
+        <ClipboardCard />
+      </ShellProvider>,
+    );
+    fireEvent.click(await screen.findByTitle("https://tauri.app/v2/"));
+    await waitFor(() => expect(flashed).toHaveLength(1));
   });
 
   it("reports a copy that did not work", async () => {

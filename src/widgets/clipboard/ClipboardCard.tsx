@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../../shell/Icon";
+import { useShell } from "../../shell/shell-context";
 import { Card, CardLabel } from "../../shell/ui";
 import { ClipRow } from "./ClipRow";
 import { CHIPS, emptyMessage, filterClips, type Chip } from "./filter";
@@ -21,6 +22,16 @@ const SKIP_TEXT = {
   paused: "Đang tạm dừng nên không lưu",
 };
 
+/** What the collapsed pill says after a copy (SPEC-clipboard §5.3, SPEC-notch-shell M7). */
+function CopiedPill() {
+  return (
+    <>
+      <Icon name="check" size={14} />
+      <span>Đã copy</span>
+    </>
+  );
+}
+
 /** A clock that only ticks while the card is on screen, so a closed panel costs nothing. */
 function useNow(intervalMs = TICK_MS): number {
   const [now, setNow] = useState(() => Date.now());
@@ -40,6 +51,7 @@ export function ClipboardCard() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const now = useNow();
+  const shell = useShell();
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
@@ -62,6 +74,8 @@ export function ClipboardCard() {
       clearTimeout(copiedTimer.current);
       setCopied(id);
       copiedTimer.current = setTimeout(() => setCopied(undefined), COPIED_MS);
+      // The panel is usually about to close, so the pill says it too.
+      shell.flashPill(CopiedPill);
     }, fail("copy"));
   };
 
