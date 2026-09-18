@@ -61,6 +61,30 @@ pub struct CommandBarSettings {
     pub web_search: String,
 }
 
+/// Clipboard history (SPEC-clipboard §7).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClipboardSettings {
+    /// How long an unpinned item is kept: 1 or 2 days.
+    pub retention_days: u32,
+    /// Apps whose copies are never kept, by executable name.
+    pub ignored_apps: Vec<String>,
+    /// Nothing is recorded while this is on.
+    pub paused: bool,
+}
+
+/// Password managers whose copies never belong in a history (SPEC-clipboard §5.4 lớp 3).
+pub const DEFAULT_IGNORED_APPS: [&str; 8] = [
+    "keepass",
+    "keepassxc",
+    "1password",
+    "bitwarden",
+    "proton pass",
+    "dashlane",
+    "lastpass",
+    "credentialuibroker",
+];
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -72,6 +96,7 @@ pub struct Settings {
     pub hotkeys: Hotkeys,
     pub launch_at_startup: bool,
     pub command_bar: CommandBarSettings,
+    pub clipboard: ClipboardSettings,
 }
 
 impl Default for Settings {
@@ -101,6 +126,11 @@ impl Default for Settings {
                 position: None,
                 file_search: "auto".into(),
                 web_search: "google".into(),
+            },
+            clipboard: ClipboardSettings {
+                retention_days: 1,
+                ignored_apps: DEFAULT_IGNORED_APPS.iter().map(|a| (*a).into()).collect(),
+                paused: false,
             },
         }
     }
@@ -213,6 +243,9 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
     let command_bar = root
         .and_then(|r| r.get("commandBar"))
         .and_then(Value::as_object);
+    let clipboard = root
+        .and_then(|r| r.get("clipboard"))
+        .and_then(Value::as_object);
     let mut r = Reader {
         warnings: &mut warnings,
     };
@@ -277,8 +310,54 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
                 &d.command_bar.web_search,
             ),
         },
+        clipboard: ClipboardSettings {
+            retention_days: r.int(
+                clipboard,
+                "retentionDays",
+                1,
+                2,
+                1,
+                d.clipboard.retention_days,
+            ),
+            ignored_apps: read_app_list(
+                clipboard.and_then(|c| c.get("ignoredApps")),
+                &d.clipboard.ignored_apps,
+                r.warnings,
+            ),
+            paused: r.boolean(clipboard, "paused", d.clipboard.paused),
+        },
     };
     (settings, warnings)
+}
+
+/// Executable names to skip. A broken list falls back to the defaults; broken entries are dropped one by one.
+fn read_app_list(
+    value: Option<&Value>,
+    default: &[String],
+    warnings: &mut Vec<String>,
+) -> Vec<String> {
+    let Some(value) = value else {
+        return default.to_vec();
+    };
+    let Some(list) = value.as_array() else {
+        warnings.push(format!(
+            "ignoredApps: invalid value {value}, using defaults"
+        ));
+        return default.to_vec();
+    };
+    let mut apps = Vec::new();
+    for entry in list.iter().take(200) {
+        match entry.as_str().map(str::trim) {
+            Some(name) if !name.is_empty() && name.chars().count() <= 100 => {
+                let name = name.to_lowercase();
+                if !apps.contains(&name) {
+                    apps.push(name);
+                }
+            }
+            _ => warnings.push(format!("ignoredApps: dropping invalid entry {entry}")),
+        }
+    }
+    apps
 }
 
 /// Desktops never reach this far; anything bigger is a corrupt value, not a real screen coordinate.

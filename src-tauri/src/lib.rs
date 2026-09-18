@@ -22,7 +22,6 @@ pub fn run() {
         .manage(sticky::StickyState::default())
         .manage(media::MediaStore::default())
         .manage(system::SystemState::default())
-        .manage(clipboard::ClipboardProbe::default())
         .manage(hotkeys::HotkeyState::default())
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
@@ -53,7 +52,14 @@ pub fn run() {
             media::media_select,
             system::system_stats,
             system::open_task_manager,
-            clipboard::clipboard_probe,
+            clipboard::clipboard_list,
+            clipboard::clipboard_text,
+            clipboard::clipboard_copy,
+            clipboard::clipboard_pin,
+            clipboard::clipboard_remove,
+            clipboard::clipboard_clear,
+            clipboard::clipboard_pause,
+            clipboard::clipboard_status,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
             command_bar::command_bar_save_position,
@@ -89,6 +95,7 @@ pub fn run() {
             command_bar::create(app.handle())?;
             command_bar::apps::warm_up(app.handle());
             media::start(app.handle());
+            app.manage(clipboard::ClipboardState::load(app.handle())?);
             clipboard::start(app.handle());
             tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());

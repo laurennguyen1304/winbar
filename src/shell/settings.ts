@@ -45,7 +45,27 @@ export interface Settings {
     fileSearch: "auto" | "everything" | "windows" | "off";
     webSearch: "google" | "youtube" | "reddit" | "x";
   };
+  clipboard: {
+    /** How long an unpinned item is kept, in days. */
+    retentionDays: 1 | 2;
+    /** Executable names whose copies are never kept (SPEC-clipboard §5.4 lớp 3). */
+    ignoredApps: string[];
+    /** Nothing is recorded while this is on. */
+    paused: boolean;
+  };
 }
+
+/** Must match `DEFAULT_IGNORED_APPS` in src-tauri/src/settings.rs. */
+export const DEFAULT_IGNORED_APPS = [
+  "keepass",
+  "keepassxc",
+  "1password",
+  "bitwarden",
+  "proton pass",
+  "dashlane",
+  "lastpass",
+  "credentialuibroker",
+];
 
 /** Must match `Settings::default()` in src-tauri/src/settings.rs. */
 export const DEFAULT_SETTINGS: Settings = {
@@ -68,6 +88,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hotkeys: { commandBar: "Ctrl+Space" },
   launchAtStartup: true,
   commandBar: { position: null, fileSearch: "auto", webSearch: "google" },
+  clipboard: { retentionDays: 1, ignoredApps: DEFAULT_IGNORED_APPS, paused: false },
 };
 
 /** Stored order and flags win; widgets that no longer exist are dropped; new widgets are appended, enabled. */

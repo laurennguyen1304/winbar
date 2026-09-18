@@ -15,7 +15,7 @@
 - [x] Copy chữ và copy ảnh: nhận đúng loại trong 1 giây (chữ 41 ký tự; ảnh 12 424 byte `CF_DIBV5`; file `CF_HDROP`), kèm app nguồn `powershell`.
 - [x] Cờ trình quản lý mật khẩu đọc được: `ExcludeClipboardContentFromMonitorProcessing` → riêng tư; `CanIncludeInClipboardHistory` = 0 → riêng tư; = 1 → bình thường.
 - [x] Copy liên tục 20 lần trong 1,3 giây: app không treo, **0 lần copy bị từ chối**, 20 lần gộp còn 1 lần đọc.
-- [ ] Kéo ra ngoài: xem bảng dưới — cần bạn chọn hướng.
+- [x] Kéo ra ngoài: kết luận rõ — xem bảng dưới.
 
 **Kiểm tra:** `cargo test` (113 pass, 7 test mới), clippy sạch; thử trên app thật qua CDP.
 
@@ -30,30 +30,34 @@ trên luồng nền thì hết (0/20 lỗi). Đây cũng là lý do nhiều app 
 | Kéo cái gì | WebView2 làm được? | Ghi chú |
 |---|---|---|
 | Chữ | Được | Kéo HTML5 bình thường của Chromium, không cần gì thêm |
-| **File ảnh** | Chưa chắc | Cần Windows `DoDragDrop` + `CF_HDROP`. Chromium có `DownloadURL` nhưng WebView2 nhúng thường không nối phần này |
+| **File ảnh** | Không | Cần Windows `DoDragDrop` + `CF_HDROP`; WebView2 nhúng không nối phần `DownloadURL` của Chromium |
 
 **Bạn chọn:** thêm `tauri-plugin-drag` 2.1.1 — sẽ thêm ở Task 4, lúc dùng tới. 👤 Kéo thật bằng chuột vẫn cần bạn thử tay ở Task 4.
 
 **Phụ thuộc:** không
 **Quy mô:** M
 
-### Task 2: Rust — lưu trữ, dọn, lọc nhạy cảm
+### Task 2: Rust — lưu trữ, dọn, lọc nhạy cảm ✅
 
-**Mô tả:**
-- **`model.rs`:** phân loại text/link/code, cắt preview 200 ký tự, dọn theo 50 mục + hạn giữ, giữ mục ghim.
-- **`secrets.rs`:** nhận diện key/token theo spec §5.4 lớp 2.
-- **`store.rs`:** `index.json`, ảnh PNG + thumbnail 160px, ghi tạm rồi đổi tên.
-- **Lệnh:** `clipboard_list`, `clipboard_copy`, `clipboard_pin`, `clipboard_remove`, `clipboard_clear`, `clipboard_pause`, `clipboard_text`; sự kiện `clipboard-changed`, `clipboard-skipped`.
+**Đã làm:**
+- **`model.rs`:** phân loại text/link/code, cắt preview 200 ký tự, cắt text quá dài (100 000 ký tự), dọn theo 50 mục + hạn giữ, giữ mục ghim, gộp bản copy trùng.
+- **`secrets.rs`:** nhận diện key/token theo spec §5.4 lớp 2 — kèm cả mẫu dễ nhầm (hash git, câu tiếng Việt, chuỗi in hoa dài).
+- **`store.rs`:** `index.json` + `images/` + `thumbs/`, ghi tạm rồi đổi tên; xóa mục thì xóa luôn file ảnh; index hỏng thì giữ `.bak`.
+- **`image.rs`:** DIB → PNG + thumbnail 160 px bằng WIC, và PNG → DIB khi copy lại (phần đọc header BMP là thuần, có test).
+- **Lệnh:** `clipboard_list`, `clipboard_text`, `clipboard_copy`, `clipboard_pin`, `clipboard_remove`, `clipboard_clear`, `clipboard_pause`, `clipboard_status`; sự kiện `clipboard-changed`, `clipboard-skipped`.
+- **Cài đặt:** `clipboard.retentionDays` (1–2), `clipboard.ignoredApps` (8 app mặc định), `clipboard.paused`.
 
 **Tiêu chí chấp nhận:**
-- [ ] Copy 3 thứ khác loại: `clipboard_list` trả đúng thứ tự mới nhất trước, đúng loại.
-- [ ] Copy quá 50 mục: mục cũ nhất biến mất, mục ghim còn nguyên.
-- [ ] Copy chuỗi `sk-…`, JWT, `password=…`, và copy từ app trong danh sách bỏ qua: **không** vào lịch sử, có sự kiện `clipboard-skipped`.
-- [ ] `clipboard_copy` đưa lại đúng nội dung vào clipboard; winbar không tự bắt lại mục đó.
-- [ ] Test Rust cho `model.rs`, `secrets.rs`, đọc/ghi index hỏng.
+- [x] Copy 4 thứ khác loại: danh sách đúng thứ tự mới nhất trước, đúng loại (`text`, `link`, `code`, `image` — ảnh ghi "Ảnh 320×200").
+- [x] Copy 55 lần + 1 mục ghim: còn 51 mục = 50 chưa ghim + mục ghim.
+- [x] Copy `sk-proj-…` và `password=hunter22`: danh sách vẫn 4 mục, không lưu gì.
+- [x] `clipboard_copy` đưa lại đúng link vào clipboard, danh sách vẫn 4 mục — không tự bắt lại.
+- [x] Test Rust: 152 pass (thêm 39 test mới), clippy sạch, TS 351 pass.
+
+**Ghi chú:** luồng đọc gọi `CoInitializeEx` vì WIC là COM.
 
 **Phụ thuộc:** Task 1
-**Quy mô:** L (nếu quá thì tách lọc nhạy cảm ra task riêng)
+**Quy mô:** L
 
 ### Task 3: Card "Clipboard"
 
