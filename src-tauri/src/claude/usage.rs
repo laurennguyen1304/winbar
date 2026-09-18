@@ -177,13 +177,30 @@ fn credentials_path(home: &Path) -> PathBuf {
         .join(".credentials.json")
 }
 
-/// Reads the OAuth token. The value is returned, never logged, and the caller drops it as soon as the header is
-/// built.
+/// Reads the OAuth token. The value is never logged, and the caller wipes it as soon as the header is built.
+///
+/// A token that could not go in a header — a stray newline, a control character — is treated as no token at all,
+/// rather than handed down to be refused with a misleading "network" error.
 fn read_token(home: &Path) -> Option<String> {
     let text = std::fs::read_to_string(credentials_path(home)).ok()?;
     let value: Value = serde_json::from_str(text.trim_start_matches('\u{feff}')).ok()?;
     let token = value.get("claudeAiOauth")?.get("accessToken")?.as_str()?;
-    (!token.is_empty()).then(|| token.to_string())
+    if token.is_empty() || !http::is_safe_header(token) {
+        return None;
+    }
+    Some(token.to_string())
+}
+
+/// Overwrites a string's bytes before it is freed.
+///
+/// Partial protection, and worth saying so plainly: the OS may already have copied the page, and the same token
+/// sits unencrypted in `.credentials.json` anyway. It costs nothing and shortens the window, which is all it does.
+fn wipe(mut text: String) {
+    // SAFETY: every byte becomes a space, which is valid UTF-8, and the string is dropped immediately after.
+    unsafe { text.as_bytes_mut() }
+        .iter_mut()
+        .for_each(|b| *b = b' ');
+    drop(text);
 }
 
 fn load_cache(path: &Path) -> Option<Usage> {
@@ -232,9 +249,13 @@ pub fn fetch(home: &Path, config_dir: &Path, now_ms: u64, force: bool) -> Usage 
         format!("Authorization: Bearer {token}"),
         format!("anthropic-beta: {OAUTH_BETA}"),
     ];
-    drop(token);
+    wipe(token);
 
-    match http::get(HOST, PATH, &headers) {
+    let answer = http::get(HOST, PATH, &headers);
+    // The Authorization line is a second copy of the token; it goes the same way.
+    headers.into_iter().for_each(wipe);
+
+    match answer {
         Ok(body) => match serde_json::from_slice::<Value>(&body) {
             Ok(payload) => {
                 let usage = parse(&payload, now_ms);
@@ -425,6 +446,20 @@ mod tests {
         std::fs::write(&path, "{ not json").expect("writes");
         assert_eq!(load_cache(&path), None);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_token_that_could_not_go_in_a_header_is_treated_as_no_token() {
+        let home = std::env::temp_dir().join("winbar-claude-bad-token");
+        let _ = std::fs::remove_dir_all(&home);
+        std::fs::create_dir_all(home.join(".claude")).expect("creates");
+        std::fs::write(
+            home.join(".claude").join(".credentials.json"),
+            "{\"claudeAiOauth\":{\"accessToken\":\"abc\r\nX-Evil: 1\"}}",
+        )
+        .expect("writes");
+        assert_eq!(read_token(&home), None);
+        let _ = std::fs::remove_dir_all(&home);
     }
 
     #[test]

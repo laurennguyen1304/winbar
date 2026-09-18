@@ -7,6 +7,12 @@
 //! Every handle is owned by [`Handle`], which closes it on the way out — including on the error paths, which is
 //! where a hand-written client usually leaks.
 
+/// A header line that is safe to send: no CR or LF, so a value can never open a second header, and no control
+/// characters at all. Callers build these from a token read off disk — trusted, but not worth trusting blindly.
+pub fn is_safe_header(line: &str) -> bool {
+    !line.is_empty() && line.is_ascii() && !line.chars().any(|c| c.is_ascii_control())
+}
+
 /// Why a request did not produce a body.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HttpError {
@@ -30,9 +36,10 @@ mod win {
     use windows::core::PCWSTR;
     use windows::Win32::Networking::WinHttp::{
         WinHttpCloseHandle, WinHttpConnect, WinHttpOpen, WinHttpOpenRequest, WinHttpQueryHeaders,
-        WinHttpReadData, WinHttpReceiveResponse, WinHttpSendRequest, WinHttpSetTimeouts,
-        WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_FLAG_SECURE, WINHTTP_QUERY_FLAG_NUMBER,
-        WINHTTP_QUERY_STATUS_CODE,
+        WinHttpReadData, WinHttpReceiveResponse, WinHttpSendRequest, WinHttpSetOption,
+        WinHttpSetTimeouts, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_FLAG_SECURE,
+        WINHTTP_OPTION_REDIRECT_POLICY, WINHTTP_OPTION_REDIRECT_POLICY_NEVER,
+        WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_QUERY_STATUS_CODE,
     };
 
     /// A WinHTTP handle that closes itself, so no error path can leak one.
@@ -58,6 +65,10 @@ mod win {
     /// The headers are secret — an Authorization line lives here — so nothing in this function logs or returns
     /// them, and no error message repeats them back.
     pub fn get(host: &str, path: &str, headers: &[String]) -> Result<Vec<u8>, HttpError> {
+        if !headers.iter().all(|line| super::is_safe_header(line)) {
+            // A CR or LF in a value would split it into extra headers; refuse rather than send it.
+            return Err(HttpError::Network);
+        }
         // SAFETY: each handle is checked for null before use and owned by a `Handle` that closes it.
         unsafe {
             let agent = wide("winbar");
@@ -95,18 +106,30 @@ mod win {
                 return Err(HttpError::Network);
             }
 
-            let header_block = wide(&headers.join("\r\n"));
+            // Never follow a redirect. WinHTTP follows them by default, and a redirect away from the host we
+            // chose would carry the Authorization header to wherever it points.
+            let never = WINHTTP_OPTION_REDIRECT_POLICY_NEVER.to_ne_bytes();
+            WinHttpSetOption(
+                Some(request.0.cast_const()),
+                WINHTTP_OPTION_REDIRECT_POLICY,
+                Some(&never),
+            )
+            .map_err(|_| HttpError::Network)?;
+
+            let mut header_block = wide(&headers.join("\r\n"));
             // The trailing NUL is not part of the header text.
-            let header_slice = &header_block[..header_block.len().saturating_sub(1)];
-            WinHttpSendRequest(
+            let header_len = header_block.len().saturating_sub(1);
+            let sent = WinHttpSendRequest(
                 request.0,
-                (!header_slice.is_empty()).then_some(header_slice),
+                (header_len > 0).then(|| &header_block[..header_len]),
                 None,
                 0,
                 0,
                 0,
-            )
-            .map_err(|_| HttpError::Network)?;
+            );
+            // This copy held the token; clear it as soon as WinHTTP has taken it.
+            header_block.iter_mut().for_each(|c| *c = 0);
+            sent.map_err(|_| HttpError::Network)?;
             WinHttpReceiveResponse(request.0, std::ptr::null_mut())
                 .map_err(|_| HttpError::Network)?;
 
@@ -172,6 +195,21 @@ mod tests {
             started.elapsed() < std::time::Duration::from_millis(TIMEOUT_MS as u64 + 5_000),
             "a dead host must fail, not sit there"
         );
+    }
+
+    #[test]
+    fn a_header_that_could_smuggle_another_header_is_refused() {
+        let injected = "Authorization: Bearer abc\r\nX-Evil: 1".to_string();
+        assert_eq!(
+            get("api.anthropic.com", "/", &[injected]),
+            Err(HttpError::Network)
+        );
+        assert!(!is_safe_header("a\rb"));
+        assert!(!is_safe_header("a\nb"));
+        assert!(!is_safe_header("a\0b"));
+        assert!(!is_safe_header(""));
+        assert!(!is_safe_header("Authorization: Bearer ünicode"));
+        assert!(is_safe_header("Authorization: Bearer sk-ant-oat01-abc.def"));
     }
 
     #[test]

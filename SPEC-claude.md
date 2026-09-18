@@ -102,6 +102,9 @@ nếu có, mặc định `~/orca`; không khớp thì không đoán gì thêm. P
 | Gọi HTTPS | **WinHTTP** qua crate `windows` (feature `Win32_Networking_WinHttp`) | `reqwest` đã có trong cây phụ thuộc nhưng **không có TLS backend**; bật `rustls-tls` sẽ kéo thêm cả rustls + ring và làm build lâu hơn nhiều. App vốn đã chỉ chạy Windows và đã dùng nhiều Win32 |
 | Cache hạn mức | `%APPDATA%\winbar\claude-usage.json`, TTL **120 giây**, làm mới mỗi 5 phút khi panel mở | Endpoint không công khai, phải tôn trọng rate limit (capability map) |
 | Token | Đọc lại từ `.credentials.json` mỗi lần gọi, giữ trong bộ nhớ đúng lúc gọi | Không sao chép token sang chỗ khác, không ghi ra đĩa, **không bao giờ ghi log** |
+| Không đi theo redirect | `WINHTTP_OPTION_REDIRECT_POLICY_NEVER` | WinHTTP mặc định **có** đi theo; một redirect đổi host sẽ mang header `Authorization` tới đó |
+| Từ chối header dị dạng | Kiểm ASCII, không ký tự điều khiển, trước khi gửi | Ký tự CR/LF trong token sẽ chèn thêm header |
+| Xóa token khỏi bộ nhớ | Ghi đè cả chuỗi token lẫn dòng header sau khi gửi | Che một phần thôi — nói rõ ở §13 |
 | Lịch sử Desktop | Quét khi panel mở và mỗi 60 giây, không quét khi panel đóng | 156 file; không đáng quét liên tục |
 | Tên project qua Orca | Tách `cwd` theo `<gốc>/workspaces/<project>/<worktree>` (§3.4) | Không có nó thì card chỉ toàn tên cá |
 | Ảnh trạng thái | Bộ ảnh kèm app + thư mục người dùng, xem §5.4 | Bạn muốn tự thêm ảnh mà không phải build lại |
@@ -335,6 +338,23 @@ trạng thái, và mã lỗi.
 - **Luôn:** chỉ đọc `~/.claude`; test trước khi commit; mỗi task một commit; kiểm trên app thật.
 - **Hỏi trước:** thêm crate; thêm feature `windows` ngoài `Win32_Networking_WinHttp`; bất cứ thứ gì ghi vào `~/.claude`.
 - **Không bao giờ:** ghi token ra đĩa hay log; đọc nội dung hội thoại; cài hook.
+
+### 13.1 Bảo mật: đã chặn gì, chưa chặn được gì
+
+| Đã chặn | Cách |
+|---|---|
+| Token vào log hoặc file của winbar | Không có `eprintln!` nào chạm token; cache chỉ chứa % và giờ reset. Đã quét 25 file trên máy để xác nhận |
+| Token ra giao diện | `Usage` không có trường nào chứa token; có test khẳng định JSON không chứa `token`/`Bearer`/`accessToken` |
+| Redirect mang token sang host khác | Tắt hẳn redirect ở tầng WinHTTP |
+| Chèn header qua token dị dạng | Từ chối chuỗi có ký tự điều khiển; token hỏng bị coi như chưa đăng nhập |
+| Nhận chứng chỉ giả | Không đụng tới `WINHTTP_OPTION_SECURITY_FLAGS`, nên giữ nguyên kiểm tra chứng chỉ mặc định của Windows |
+| Rò handle khi lỗi | Mọi handle thuộc `Handle` tự đóng; có test gọi host không tồn tại |
+
+| **Chưa chặn được** | Vì sao |
+|---|---|
+| Token nằm **plaintext** trong `~/.claude/.credentials.json` | Đó là file của Claude Code, không phải của winbar. Ai đọc được máy bạn thì đọc được token, bất kể winbar làm gì |
+| Ghi đè bộ nhớ chỉ che một phần | Hệ điều hành có thể đã sao chép trang nhớ (pagefile, crash dump) trước đó. Việc ghi đè chỉ rút ngắn khoảng thời gian, không xóa được dấu vết đã có |
+| Proxy hệ thống | Dùng đúng proxy Windows đang cấu hình, giống Claude Code. Nếu máy bị cài proxy MITM thì đó là vấn đề ở tầng máy |
 
 ## 14. Câu hỏi mở
 
