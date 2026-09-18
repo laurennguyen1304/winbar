@@ -52,11 +52,18 @@ fn fingerprint(dir: &std::path::Path) -> Vec<(std::ffi::OsString, u64, u128)> {
     out
 }
 
+/// How long the Desktop history is reused before it is scanned again (SPEC-claude §4).
+const HISTORY_TTL_MS: u64 = 60_000;
+
 pub struct ClaudeState {
     home: PathBuf,
     appdata: PathBuf,
     /// Last list handed out, so the watcher can tell a real change from a touched file.
     last: Mutex<Vec<Session>>,
+    /// Desktop history and when it was read. Scanning it means parsing every session file the Desktop app has
+    /// kept — 156 of them here — and it is history, so it does not need re-reading every time a live session
+    /// changes phase. Measured: without this the watcher cost 2.2% CPU while a session was working.
+    history: Mutex<(u64, Vec<Session>)>,
 }
 
 impl ClaudeState {
@@ -65,11 +72,31 @@ impl ClaudeState {
             home: app.path().home_dir()?,
             appdata: app.path().config_dir()?,
             last: Mutex::new(Vec::new()),
+            history: Mutex::new((0, Vec::new())),
         })
     }
 
     fn read(&self, with_history: bool) -> Vec<Session> {
-        sessions::collect(&self.home, &self.appdata, now_ms(), with_history)
+        let now = now_ms();
+        let mut list = sessions::collect(&self.home, &self.appdata, now, false);
+        if with_history {
+            list.extend(self.history(now));
+        }
+        list
+    }
+
+    /// Recent Desktop sessions, scanned at most once a minute.
+    fn history(&self, now: u64) -> Vec<Session> {
+        let Ok(mut cached) = self.history.lock() else {
+            return Vec::new();
+        };
+        if cached.0 == 0 || now.saturating_sub(cached.0) > HISTORY_TTL_MS {
+            *cached = (
+                now,
+                sessions::read_history(&self.appdata, now, sessions::HISTORY_LIMIT),
+            );
+        }
+        cached.1.clone()
     }
 }
 
@@ -171,6 +198,46 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn the_desktop_history_is_not_rescanned_on_every_read() {
+        // Scanning it parses every session file the Desktop app kept. Doing that each time a live session changes
+        // phase cost 2.2% CPU on the release build; the cache is what brings it back down.
+        let dir = std::env::temp_dir().join("winbar-claude-history-cache");
+        let _ = fs::remove_dir_all(&dir);
+        let store = dir.join("Claude").join("claude-code-sessions");
+        fs::create_dir_all(&store).expect("creates");
+        let now = 1_789_725_126_000u64;
+        let write_one = |title: &str| {
+            fs::write(
+                store.join("local_1.json"),
+                format!(
+                    "{{\"sessionId\":\"one\",\"title\":\"{title}\",\"lastActivityAt\":{}}}",
+                    now - 1000
+                ),
+            )
+            .expect("writes");
+        };
+        write_one("first");
+
+        let state = ClaudeState {
+            home: dir.clone(),
+            appdata: dir.clone(),
+            last: Mutex::new(Vec::new()),
+            history: Mutex::new((0, Vec::new())),
+        };
+        assert_eq!(state.history(now)[0].title, "first");
+
+        // Change what is on disk: a read a moment later must still come from the cache.
+        write_one("second");
+        assert_eq!(state.history(now + 1000)[0].title, "first", "still cached");
+        assert_eq!(
+            state.history(now + HISTORY_TTL_MS + 1)[0].title,
+            "second",
+            "and scanned again once the cache is old"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn the_fingerprint_notices_a_file_rewritten_in_place() {
