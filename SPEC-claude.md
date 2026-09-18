@@ -133,6 +133,23 @@ bên phải. Nhãn card ghi số phiên đang mở.
 - Cột phải: "hoạt động 2 phút trước"; chỉ khi `startedAt > 0` mới ghi "đã chạy 12m".
 - Phiên `idle` quá **2 giờ** xuống mục "đã lâu không hoạt động" ở cuối, chữ mờ — vẫn còn file nhưng gần như
   chắc chắn bạn đã quên nó (máy đang có một phiên idle 22 giờ).
+
+#### Hai dòng cùng một worktree: gần như luôn là phiên cũ chưa được dọn
+
+Bạn nói bạn hay **tắt phiên rồi mở phiên mới** trên cùng worktree. Vấn đề là hook chỉ xóa file khi `SessionEnd`
+chạy, mà đóng cửa sổ terminal hay Ctrl+C thì nó **không** chạy. Bằng chứng trên máy lúc này: `sessions.d` có
+**94 file** từ đầu tháng 8, trong khi chỉ **6** phiên còn trong `state.d`. Tức `SessionEnd` hiếm khi chạy; file
+cũ nằm lại tới khi hook tự quét dọn sau **24 giờ**.
+
+Nên khi hai dòng trùng `cwd`, mặc định đó là **phiên thật + bóng ma của phiên bạn vừa tắt**, chứ không phải hai
+phiên song song. Quy tắc:
+
+1. Gom theo `cwd`. Dòng có `ts` mới nhất là phiên chính.
+2. Dòng cũ hơn mà vẫn hoạt động trong **5 phút** gần đây thì hiện như một phiên thật thứ hai — đúng trường hợp
+   bạn chạy một task phụ ngắn song song.
+3. Cũ hơn 5 phút thì gộp xuống mục "đã lâu không hoạt động", không chiếm chỗ ở trên.
+
+Card **không** nói phiên nào "đã chết" — winbar không biết chắc điều đó, chỉ biết lần cuối nó báo về.
 - **Lịch sử Desktop** (§3.2) là một mục riêng ở dưới, tối đa 3 dòng, ghi `<n> lượt · <thời gian>`;
   **không** giả vờ có trạng thái live.
 - Bấm một dòng: mở thư mục (`cwd`) bằng lệnh `open_path` sẵn có.
@@ -275,7 +292,7 @@ trạng thái, và mã lỗi.
 
 | Mức | Nội dung |
 |---|---|
-| Rust | đọc `state.d` (file hỏng, file cũ 24h, thiếu trường, `startedAt = 0`); tách tên project/worktree của Orca (trong Orca, ngoài Orca, `ORCA_HOME` khác, đường dẫn kỳ quặc); sắp thứ tự phiên; chọn cửa sổ hạn mức từ 3 dạng payload thật; cache hết hạn; quét thư mục ảnh (file quá lớn, đuôi lạ) |
+| Rust | đọc `state.d` (file hỏng, file cũ 24h, thiếu trường, `startedAt = 0`); gom trùng `cwd` (bóng ma cũ, task phụ song song); tách tên project/worktree của Orca (trong Orca, ngoài Orca, `ORCA_HOME` khác, đường dẫn kỳ quặc); sắp thứ tự phiên; chọn cửa sổ hạn mức từ 3 dạng payload thật; cache hết hạn; quét thư mục ảnh (file quá lớn, đuôi lạ) |
 | TS thuần | chữ/màu theo trạng thái; "Reset sau 2h 14m"; luân phiên ảnh |
 | Component | card phiên (rỗng, chỉ CLI, CLI + Desktop), card hạn mức (bình thường, lỗi auth, lỗi mạng, chưa đăng nhập) |
 | Command bar | provider trả đúng dòng |
@@ -288,6 +305,8 @@ trạng thái, và mã lỗi.
 3. Card phiên hiện đúng các phiên đang sống (cả `cli` lẫn `claude-desktop`) + tối đa 3 dòng lịch sử Desktop,
    bấm vào mở đúng thư mục.
 3b. Phiên trong Orca hiện `winbar · firefish`, và hai worktree của cùng project nhìn ra được là cùng project.
+3c. Tắt một phiên bằng cách đóng cửa sổ terminal rồi mở phiên mới trên cùng worktree: card chỉ có **một** dòng ở
+   trên, bóng ma của phiên cũ nằm dưới mục "đã lâu không hoạt động".
 4. Card hạn mức khớp với số thật của tài khoản (so với `/usage` trong Claude Code).
 5. Rút mạng: card giữ số cũ và nói rõ là số cũ; cắm lại thì tự cập nhật.
 6. Đổi tên/xóa `.credentials.json`: card báo "Chưa đăng nhập", **không** gọi mạng, không crash.
@@ -303,6 +322,7 @@ trạng thái, và mã lỗi.
 | Rủi ro | Mức | Cách xử lý |
 |---|---|---|
 | Endpoint usage không công khai, có thể đổi hoặc bị chặn | **Cao** | Parser chịu được thiếu trường; lỗi thì giữ cache và nói rõ; không bao giờ làm app treo |
+| `SessionEnd` không chạy nên file phiên cũ nằm lại tới 24 giờ | **Cao** (đã xảy ra: 94 file trong `sessions.d`) | Gom theo `cwd` và dùng `ts` để tách phiên thật khỏi bóng ma (§5.2); không bao giờ khẳng định một phiên "đã chết" |
 | Định dạng `state.d` là của hook yasb, đổi hook là hỏng parser | Trung bình | Bỏ qua file không parse được thay vì hỏng cả danh sách; test với file thiếu trường |
 | Orca đổi cách xếp thư mục worktree | Thấp | Không khớp thì hiện tên thư mục như cũ, không đoán; hàm tách chuỗi có test |
 | Token lộ ra log hoặc ảnh chụp màn hình | **Cao** | Không log; không đưa token vào bất kỳ struct nào phát ra frontend; checklist có mục kiểm |
