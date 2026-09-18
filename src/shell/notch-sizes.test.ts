@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { ALWAYS_SIZES, PANEL_WIDTHS, PILL_SIZES, alertSize, panelHeight, pillRadius } from "./notch-sizes";
+import {
+  ALWAYS_SIZES,
+  PANEL_WIDTHS,
+  PILL_SIZES,
+  alertSize,
+  panelHeight,
+  panelMaxHeight,
+  pillRadius,
+} from "./notch-sizes";
 
 describe("notch sizes", () => {
   it("matches the approved defaults", () => {
@@ -25,5 +33,15 @@ describe("notch sizes", () => {
     expect(panelHeight(20, 1080)).toBe(120);
     expect(panelHeight(2000, 1080)).toBe(864);
     expect(panelHeight(500, 0)).toBe(120);
+  });
+
+  it("caps the window and the panel content at the same height", () => {
+    // These two must agree. When only the window was capped, the content kept growing and every row past the
+    // cap sat outside the window — visible, but impossible to click or drag.
+    for (const screen of [1080, 1200, 1440, 800, 0]) {
+      expect(panelHeight(99_999, screen)).toBe(panelMaxHeight(screen));
+    }
+    expect(panelMaxHeight(1080)).toBe(864);
+    expect(panelMaxHeight(0)).toBe(120);
   });
 });

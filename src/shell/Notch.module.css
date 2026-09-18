@@ -51,6 +51,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  /* Paired with the max-height set from panelMaxHeight: lets a tall card scroll instead of running off the window. */
+  min-height: 0;
   animation: panel-in var(--motion-panel-fade) both;
 }
 

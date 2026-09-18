@@ -126,7 +126,26 @@ là số của notch-shell v3 ở chế độ `all`: **146–149 MB, 9 tiến tr
 - [x] ✅ Khóa `Run\winbar` do bản release tự thêm đã bị xóa.
 - [x] ✅ `settings.json` khôi phục từ bản sao (`monitor = all`, `sticky = true`, 8 widget).
 
-## 11. Chưa làm / giới hạn đã biết
+## 11. Lỗi tìm ra khi dùng thật (2026-09-18)
+
+Bạn báo: "phần clipboard kéo dài gần hết màn hình" và "chữ/link không copy và không kéo thả được, ảnh thì được".
+
+**Hai triệu chứng là một lỗi.** Cửa sổ notch có chặn ở 80% màn hình (864 px) nhưng **nội dung thì không**:
+card clipboard cao 1501 px, nên mọi dòng từ 864 px trở xuống nằm **ngoài cửa sổ** — thấy được nhưng không bấm,
+không kéo được. Ảnh của bạn là item mới nhất nên ở trên cùng, trong vùng sống; chữ và link nằm dưới. Không liên
+quan gì tới loại nội dung: `clipboard_copy` trên một item chữ chạy đúng, đưa đủ 1597 ký tự vào clipboard.
+
+| | Trước | Sau |
+|---|---|---|
+| Chiều cao cửa sổ | 864 px | **595 px** |
+| Đáy card | 1554 px (ngoài cửa sổ 690 px) | 583 px (trong cửa sổ) |
+| Danh sách | không cuộn, cao 1343 px | cuộn được, cao 372 px |
+| Dòng bấm được | 13/23 | **23/23** |
+
+Sửa: `panelMaxHeight()` dùng chung cho cả cửa sổ lẫn nội dung, và danh sách clipboard chặn ở ~7 dòng.
+Test `notch-sizes.test.ts` giữ cho hai con số đó luôn bằng nhau.
+
+## 12. Chưa làm / giới hạn đã biết
 
 - Copy **file** (`CF_HDROP`) không được lưu — bạn chốt "chỉ chữ và ảnh".
 - Ảnh lớn hơn 64 MB (dạng DIB trong bộ nhớ) bị bỏ qua.

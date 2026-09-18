@@ -21,6 +21,7 @@ import {
   RESIZE_MS,
   alertSize,
   panelHeight,
+  panelMaxHeight,
   pillRadius,
   type Size,
 } from "./notch-sizes";
@@ -278,7 +279,16 @@ export function Notch({
           style={{ borderRadius: layout === "attached" ? `0 0 ${radius}px ${radius}px` : radius }}
         >
           {expanded ? (
-            <div className={styles.panel} ref={contentRef} style={{ width: panelWidth / fontScale, zoom: fontScale }}>
+            <div
+              className={styles.panel}
+              ref={contentRef}
+              // The zoom divides both: the measurement below is in visual px, but these are the zoomed units.
+              style={{
+                width: panelWidth / fontScale,
+                maxHeight: panelMaxHeight(window.screen.height) / fontScale,
+                zoom: fontScale,
+              }}
+            >
               <Panel
                 widgets={shown}
                 tab={tab}

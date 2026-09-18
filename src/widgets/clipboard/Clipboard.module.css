@@ -65,10 +65,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: auto;
+  overflow-y: auto;
   min-height: 0;
   flex-grow: 1;
   margin: 0 -8px;
+  /* About seven rows. Without a cap the notch stretches towards the bottom of the screen (SPEC §5.3). */
+  max-height: 372px;
 }
 
 /* One row: the body is the copy button, the actions sit on top of its right edge on hover. */

@@ -44,8 +44,16 @@ export function pillRadius(size: Size): number {
   return size.height / 2;
 }
 
+/**
+ * Tallest the expanded panel may be. The panel content is capped at the same number, otherwise the window stops
+ * growing here while the content keeps going — and every row past this point sits outside the window, where it
+ * cannot be clicked or dragged.
+ */
+export function panelMaxHeight(screenHeight: number): number {
+  return Math.max(PANEL_MIN_HEIGHT, Math.floor(screenHeight * PANEL_MAX_SCREEN_SHARE));
+}
+
 /** Panel height follows its content, clamped between a minimum and a share of the screen height. */
 export function panelHeight(contentHeight: number, screenHeight: number): number {
-  const max = Math.max(PANEL_MIN_HEIGHT, Math.floor(screenHeight * PANEL_MAX_SCREEN_SHARE));
-  return Math.min(Math.max(Math.ceil(contentHeight), PANEL_MIN_HEIGHT), max);
+  return Math.min(Math.max(Math.ceil(contentHeight), PANEL_MIN_HEIGHT), panelMaxHeight(screenHeight));
 }

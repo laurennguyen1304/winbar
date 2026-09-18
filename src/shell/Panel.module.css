@@ -60,6 +60,13 @@
 
 .body {
   animation: tab-in var(--motion-tab-fade) both;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.body > * {
+  min-height: 0;
 }
 
 @keyframes tab-in {
@@ -76,6 +83,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   align-items: start;
+  min-height: 0;
+}
+
+/* A tall card stretches to the panel and scrolls inside itself, instead of pushing the panel past the window. */
+.grid:has(> .stretch) {
+  align-items: stretch;
+}
+
+.stretch {
+  min-height: 0;
 }
 
 .stack {

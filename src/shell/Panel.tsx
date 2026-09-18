@@ -81,7 +81,8 @@ function TabBody({ widgets }: { widgets: WidgetDefinition[] }) {
       return <div className={styles.grid}>{layout.ids.map(card)}</div>;
     case "columns": {
       const stack = <div className={styles.stack}>{layout.stack.map(card)}</div>;
-      const tall = <div className={styles.stack}>{card(layout.tall)}</div>;
+      // `stretch` tells the grid this column may fill the panel; its card scrolls inside rather than growing it.
+      const tall = <div className={`${styles.stack} ${styles.stretch}`}>{card(layout.tall)}</div>;
       return (
         <div className={styles.grid}>
           {layout.tallFirst ? tall : stack}
