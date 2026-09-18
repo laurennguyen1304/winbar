@@ -45,9 +45,27 @@ export function SystemCard() {
   };
 
   const ramShare = stats && ramPercent(stats.ramUsedBytes, stats.ramTotalBytes);
+  const openTask = () =>
+    openTaskManager().then(
+      () => showNote("Đã mở Task Manager"),
+      (err: unknown) => {
+        console.error("open_task_manager failed", err);
+        showNote(`Không mở được Task Manager: ${String(err)}`, true);
+      },
+    );
+
   return (
-    <Card>
-      <CardLabel aside="Ctrl+Shift+Esc">Hệ thống</CardLabel>
+    <Card className={styles.card}>
+      <CardLabel
+        aside={
+          <button type="button" className={styles.button} onClick={openTask}>
+            <Icon name="activity" size={14} />
+            <span>Task Manager</span>
+          </button>
+        }
+      >
+        Hệ thống
+      </CardLabel>
       <div className={styles.meters}>
         <Meter label="CPU" value={formatPercent(stats?.cpuPercent)} percent={stats?.cpuPercent} />
         <Meter
@@ -56,22 +74,6 @@ export function SystemCard() {
           percent={ramShare}
         />
       </div>
-      <button
-        type="button"
-        className={styles.button}
-        onClick={() =>
-          openTaskManager().then(
-            () => showNote("Đã mở Task Manager"),
-            (err: unknown) => {
-              console.error("open_task_manager failed", err);
-              showNote(`Không mở được Task Manager: ${String(err)}`, true);
-            },
-          )
-        }
-      >
-        <Icon name="activity" size={16} />
-        <span>Task Manager</span>
-      </button>
       {(note || failed) && (
         <p className={note?.failed || failed ? `${styles.note} ${styles.noteError}` : styles.note}>
           {note?.text ?? "Không đọc được tình trạng máy"}

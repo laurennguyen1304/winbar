@@ -66,7 +66,8 @@ Bản release, Spotify đang phát (pill hiện media, cột sóng chạy).
 
 ## 7. So với mockup
 
-- [x] ✅ Nhãn "HỆ THỐNG" + ghi chú phím tắt bên phải, nút Task Manager chiếm hết chiều ngang, bo góc và nền như mockup.
+- [x] ✅ Nhãn "HỆ THỐNG" bên trái, nút Task Manager dạng viên thuốc bên phải; hai thanh mức CPU và RAM bên dưới.
+- [x] ✅ Thu gọn theo yêu cầu 2026-09-18: card cao **79px**, trước đó 127px (giảm 38%).
 - [x] ⚠️ Khác mockup có chủ đích: mockup có nút nguồn và lưới Ngủ / Khởi động lại / Tắt máy / Đổi người dùng; bạn chốt bỏ hẳn (2026-09-18), thay bằng hai thanh mức CPU và RAM.
 
 ## 8. Tự động (tiêu chí 7)

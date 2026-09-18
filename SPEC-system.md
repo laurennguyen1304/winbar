@@ -49,17 +49,18 @@ Như các module trước: `npm test` · `cargo test --manifest-path src-tauri/C
 
 ### 5.1 Card
 
+Card gọn, cao khoảng 79px (bạn chốt thu nhỏ ~30% ngày 2026-09-18; bản đầu cao 127px):
+
 ```
-HỆ THỐNG                          Ctrl+Shift+Esc
-CPU                23%     RAM      12.4 / 31.7 GB
-▇▇▇▇▁▁▁▁▁▁▁▁▁▁▁▁   ▇▇▇▇▇▇▇▇▁▁▁▁▁▁▁▁
-[ ⌁ Task Manager                              ]
+HỆ THỐNG                          [ ⌁ Task Manager ]
+CPU                38%     RAM      24.5 / 31.6 GB
+▇▇▇▇▇▁▁▁▁▁▁▁▁▁▁▁   ▇▇▇▇▇▇▇▇▇▇▁▁▁▁▁▁
 ```
 
 - **CPU:** phần trăm toàn máy, làm tròn số nguyên.
-- **RAM:** đã dùng / tổng, đơn vị GB một số lẻ (ví dụ `12.4 / 31.7 GB`); thanh mức theo tỉ lệ đã dùng.
+- **RAM:** đã dùng / tổng, đơn vị GB một số lẻ (ví dụ `24.5 / 31.6 GB`); thanh mức theo tỉ lệ đã dùng.
 - Thanh đổi màu khi cao: ≥ 90% màu cảnh báo, 75–89% màu vàng, dưới 75% màu chữ thường.
-- Nhãn phụ bên phải nhắc phím tắt sẵn có của Windows cho Task Manager (winbar **không** đăng ký phím này).
+- Nút Task Manager nằm ngay trên hàng tiêu đề (chỗ mockup để ghi chú), nền viên thuốc, cao 22px.
 - Số nhảy thì không có hiệu ứng đếm; chỉ đổi thẳng (M9 để sau).
 
 ### 5.2 Nhịp đo
