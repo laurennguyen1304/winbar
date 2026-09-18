@@ -1,3 +1,4 @@
+mod claude;
 mod clipboard;
 mod command_bar;
 mod hotkeys;
@@ -54,6 +55,7 @@ pub fn run() {
             media::media_select,
             system::system_stats,
             system::open_task_manager,
+            claude::claude_sessions,
             clipboard::clipboard_list,
             clipboard::clipboard_text,
             clipboard::clipboard_thumb,
@@ -99,6 +101,8 @@ pub fn run() {
             command_bar::apps::warm_up(app.handle());
             media::start(app.handle());
             app.manage(clipboard::ClipboardState::load(app.handle())?);
+            app.manage(claude::ClaudeState::load(app.handle())?);
+            claude::start(app.handle());
             clipboard::start(app.handle());
             tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());

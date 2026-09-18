@@ -3,7 +3,7 @@
 > Plan: `tasks/plan.md` · Spec: `SPEC-claude.md`
 > Lệnh chung: `npm test` · `cargo test --manifest-path src-tauri/Cargo.toml` · `npm run lint` · `npm run tauri dev`
 
-### Task 1: Rust — phiên đang sống, lịch sử Desktop, tên project theo Orca
+### Task 1: Rust — phiên đang sống, lịch sử Desktop, tên project theo Orca ✅
 
 **Mô tả:**
 - **`sessions.rs`:** đọc `~/.claude/statusbar/state.d/*.json`; bỏ file hỏng, file quá 24 giờ; đọc lịch sử Desktop
@@ -14,11 +14,17 @@
 - **Lệnh:** `claude_sessions()`.
 
 **Tiêu chí chấp nhận:**
-- [ ] `claude_sessions` trả đúng 6 phiên thật đang có trên máy, đúng trạng thái và badge `cli`/`desktop`.
-- [ ] Phiên trong Orca ra `project = winbar`, `title = firefish`; `makara` và `fangtooth` cùng `project`.
-- [ ] Mở một phiên Claude mới ở cửa sổ khác: sự kiện tới trong 1 giây.
-- [ ] Phiên idle > 2 giờ bị đánh dấu `stale`; hai dòng cùng `cwd` gom theo đúng quy tắc §5.2.
-- [ ] Test Rust: đường dẫn Orca (trong/ngoài/`ORCA_HOME` khác/đường dẫn lạ), sắp thứ tự, gom trùng, file hỏng, `startedAt = 0`.
+- [x] `claude_sessions` trả đúng 9 dòng thật trên máy: 6 phiên sống + 3 dòng lịch sử Desktop, đúng badge.
+- [x] Orca: `winbar · firefish`; `makara` và `fangtooth` **cùng** hiện `qikify-theme-v3`; `brain` không có tiền tố.
+- [x] Phiên idle 368/417/1420 phút bị đánh dấu `stale` và xuống dưới các phiên sống.
+- [x] Test Rust 24 test mới; tổng 180 pass, clippy sạch.
+- [ ] 👤 Mở một phiên Claude mới ở cửa sổ khác rồi xem card đổi trong 1 giây (kiểm ở Task 3, khi đã có giao diện).
+
+**Lỗi tự bắt được khi đang viết:**
+1. Bản đầu theo dõi bằng `mtime` của **thư mục** — nhưng sửa nội dung file không làm đổi mtime thư mục, nên đổi
+   trạng thái phiên sẽ bị bỏ sót hoàn toàn. Đổi sang vân tay (tên + cỡ + mtime) của từng file.
+2. Vân tay lấy mtime theo **giây**: hai lần ghi trong cùng một giây với cùng độ dài sẽ trùng nhau — mà đổi phase
+   đúng là kiểu ghi đó. Đổi sang mili-giây. Có test khẳng định cả hai điều này.
 
 **Phụ thuộc:** không
 **Quy mô:** M
