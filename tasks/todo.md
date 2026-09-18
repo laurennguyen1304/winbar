@@ -110,9 +110,9 @@
 ### Task 6: Đo, checklist thủ công, so mockup
 
 **Tiêu chí chấp nhận:**
-- [ ] Bản release, script test đang phát, panel đóng: CPU < 1%; RAM tăng ≤ 15 MB so với 109 MB.
-- [ ] `tests/manual-media.md` theo tiêu chí §11 của spec; phần cần app thật đánh 👤.
-- [ ] So ảnh card/pill/always với mockup.
+- [x] Bản release, script test đang phát, panel đóng: CPU 0.27–0.31% (trước khi sửa cột sóng: 1.007%); RAM 122 MB, +13 MB so với 109 MB, đi ngang sau vài phút (đo qua đêm ~9 giờ).
+- [x] `tests/manual-media.md` theo tiêu chí §11 của spec; phần cần app thật đánh 👤.
+- [x] So ảnh card/pill/always với mockup.
 
 **Phụ thuộc:** Task 5
 **Quy mô:** S

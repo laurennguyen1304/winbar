@@ -283,21 +283,16 @@
   height: 80%;
 }
 
-/* Only transform animates, so the bars stay on the compositor while music plays. */
+/*
+ * Bars move in steps, all on the same beat (even bars reversed), so the notch redraws about 3 times a second instead
+ * of 60: 0.27% CPU instead of 1.15% on the reference machine while music plays (tests/manual-media.md §7).
+ */
 .eq[data-playing] > i {
-  animation: media-eq 0.9s ease-in-out infinite alternate;
+  animation: media-eq 1.2s steps(4, jump-none) infinite alternate;
 }
 
-.eq[data-playing] > i:nth-child(2) {
-  animation-delay: -0.3s;
-}
-
-.eq[data-playing] > i:nth-child(3) {
-  animation-delay: -0.6s;
-}
-
-.eq[data-playing] > i:nth-child(4) {
-  animation-delay: -0.15s;
+.eq[data-playing] > i:nth-child(even) {
+  animation-direction: alternate-reverse;
 }
 
 @keyframes media-eq {

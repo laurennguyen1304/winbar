@@ -148,7 +148,8 @@ fn publish<R: Runtime>(app: &AppHandle<R>, next: MediaState) {
     let Ok(mut state) = store.state.lock() else {
         return;
     };
-    if *state == next {
+    // Position reports the page already estimates keep the old anchor, so the estimate stays consistent.
+    if *state == next || model::is_timeline_drift(&state, &next) {
         return;
     }
     *state = next.clone();

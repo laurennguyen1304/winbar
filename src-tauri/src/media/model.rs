@@ -77,6 +77,38 @@ pub fn seek_ticks(start_hns: i64, ms: u64, duration: Option<u64>) -> i64 {
     start_hns + (ms as i64) * HNS_PER_MS
 }
 
+/// A timeline report that lands this close to where the page already estimates playback is not worth an event.
+pub const DRIFT_TOLERANCE_MS: i64 = 1500;
+
+/// True when `next` only re-reports the position of `prev`'s track and that position matches the estimate the page
+/// makes from `prev` (SPEC-media §5.1). Skipping these keeps events to real changes: track, status, seek, controls.
+pub fn is_timeline_drift(prev: &MediaState, next: &MediaState) -> bool {
+    let (Some(a), Some(b)) = (&prev.current, &next.current) else {
+        return false;
+    };
+    if prev.sessions != next.sessions {
+        return false;
+    }
+    let same_apart_from_timeline = Track {
+        position_ms: a.position_ms,
+        position_at: a.position_at,
+        ..b.clone()
+    } == *a;
+    if !same_apart_from_timeline {
+        return false;
+    }
+    let (Some(from), Some(to)) = (a.position_ms, b.position_ms) else {
+        return a.position_ms == b.position_ms;
+    };
+    let elapsed = if a.status == "playing" {
+        ((b.position_at - a.position_at) as f64 * a.rate) as i64
+    } else {
+        0
+    };
+    let estimated = from as i64 + elapsed;
+    (to as i64 - estimated).abs() < DRIFT_TOLERANCE_MS
+}
+
 /// Session to show: the user's pick while it still exists, else the one Windows chose, else the first.
 pub fn pick_session<'a>(
     ids: &'a [String],
@@ -237,6 +269,67 @@ mod tests {
             Some("Spotify")
         );
         assert_eq!(pick_session(&[], Some("Spotify"), None), None);
+    }
+
+    fn playing_at(position_ms: u64, position_at: i64) -> MediaState {
+        MediaState {
+            sessions: vec![MediaSession {
+                id: "Spotify".into(),
+                app_name: "Spotify".into(),
+            }],
+            current: Some(Track {
+                session_id: "Spotify".into(),
+                title: "t".into(),
+                artist: "a".into(),
+                album: "b".into(),
+                track_key: "k".into(),
+                status: "playing",
+                position_ms: Some(position_ms),
+                duration_ms: Some(243_000),
+                position_at,
+                rate: 1.0,
+                can: Controls {
+                    play_pause: true,
+                    ..Default::default()
+                },
+            }),
+        }
+    }
+
+    #[test]
+    fn skips_position_reports_that_match_the_estimate() {
+        let prev = playing_at(60_000, 1_000_000);
+        // Six seconds later the app reports six seconds further on.
+        assert!(is_timeline_drift(&prev, &playing_at(66_000, 1_006_000)));
+        assert!(is_timeline_drift(&prev, &playing_at(67_200, 1_006_000)));
+        // A seek, or a position that disagrees with the estimate, goes out.
+        assert!(!is_timeline_drift(&prev, &playing_at(120_000, 1_006_000)));
+        assert!(!is_timeline_drift(&prev, &playing_at(60_000, 1_006_000)));
+    }
+
+    #[test]
+    fn never_skips_real_changes() {
+        let prev = playing_at(60_000, 1_000_000);
+        let mut paused = playing_at(66_000, 1_006_000);
+        paused.current.as_mut().unwrap().status = "paused";
+        assert!(!is_timeline_drift(&prev, &paused));
+        let mut other_track = playing_at(66_000, 1_006_000);
+        other_track.current.as_mut().unwrap().track_key = "k2".into();
+        assert!(!is_timeline_drift(&prev, &other_track));
+        let mut more_sessions = playing_at(66_000, 1_006_000);
+        more_sessions.sessions.push(MediaSession {
+            id: "chrome.exe".into(),
+            app_name: "Chrome".into(),
+        });
+        assert!(!is_timeline_drift(&prev, &more_sessions));
+        assert!(!is_timeline_drift(&MediaState::default(), &prev));
+        assert!(!is_timeline_drift(&prev, &MediaState::default()));
+        // Paused and still reporting the same spot: nothing to send.
+        let mut still = playing_at(60_000, 1_000_000);
+        still.current.as_mut().unwrap().status = "paused";
+        let mut still_later = playing_at(60_000, 1_009_000);
+        still_later.current.as_mut().unwrap().status = "paused";
+        assert!(is_timeline_drift(&still, &still_later));
     }
 
     #[test]

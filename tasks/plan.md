@@ -1,7 +1,7 @@
 # Implementation Plan: media
 
 > Spec: `SPEC-media.md` (duyệt 2026-09-17) · Mockup: `design/winbar-mockup.html` (card "Đang phát", pill media, nửa always)
-> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**. Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/` (xong).
+> Danh sách task: `tasks/todo.md`. Trạng thái plan: **xong (2026-09-18)**. Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/` (xong).
 
 ## Tổng quan
 
@@ -35,15 +35,15 @@ Task 2 (shell setHidden)             ─┼─→ Task 3 (card hiển thị + �
 
 ## Danh sách task
 
-- [ ] Task 1: Spike WinRT + Rust đọc trạng thái (`media_state`, `media-changed`)
-- [ ] Task 2: `ShellApi.setHidden` trong notch-shell
-- [ ] Task 3: Card "Đang phát" (hiển thị, ảnh bìa, tiến độ chỉ xem) + tự ẩn
+- [x] Task 1: Spike WinRT + Rust đọc trạng thái (`media_state`, `media-changed`)
+- [x] Task 2: `ShellApi.setHidden` trong notch-shell
+- [x] Task 3: Card "Đang phát" (hiển thị, ảnh bìa, tiến độ chỉ xem) + tự ẩn
 
 ### Checkpoint 1: bạn xem card với nhạc thật
 
-- [ ] Task 4: Điều khiển ⏮ ⏯ ⏭, tua, đổi app
-- [ ] Task 5: Pill ưu tiên + nửa always
-- [ ] Task 6: Đo hiệu năng, checklist thủ công, so mockup
+- [x] Task 4: Điều khiển ⏮ ⏯ ⏭, tua, đổi app
+- [x] Task 5: Pill ưu tiên + nửa always
+- [x] Task 6: Đo hiệu năng, checklist thủ công, so mockup
 
 ## Rủi ro
 
