@@ -143,14 +143,14 @@ pub fn store_text(text: &str) -> (String, bool) {
 }
 
 /// Whether two copies are the same thing, so re-copying a line does not fill the list with duplicates.
+///
+/// Only text is ever judged the same. A picture's preview is just its size, and two different screenshots are very
+/// often the same size — comparing those would quietly throw one of them away.
 pub fn same_content(a: &StoredItem, b: &StoredItem) -> bool {
-    a.item.kind == b.item.kind
-        && match (&a.text, &b.text) {
-            (Some(x), Some(y)) => x == y,
-            _ => {
-                a.item.preview == b.item.preview && a.item.image.is_some() == b.item.image.is_some()
-            }
-        }
+    match (&a.text, &b.text) {
+        (Some(x), Some(y)) => a.item.kind == b.item.kind && x == y,
+        _ => false,
+    }
 }
 
 /// Ids to drop: unpinned items past `retention_ms`, then the oldest unpinned above [`MAX_ITEMS`].
@@ -285,6 +285,26 @@ mod tests {
     fn recopying_the_same_thing_is_the_same_item() {
         assert!(same_content(&item("a", 1, false), &item("a", 2, false)));
         assert!(!same_content(&item("a", 1, false), &item("b", 1, false)));
+    }
+
+    #[test]
+    fn two_pictures_of_one_size_are_still_two_pictures() {
+        // Screenshots of the same window share a preview ("Ảnh 1920×1080"); treating them as one loses a real copy.
+        let picture = |id: &str| StoredItem {
+            item: ClipItem {
+                kind: ClipKind::Image,
+                preview: "Ảnh 1920×1080".into(),
+                image: Some(ImageRef {
+                    width: 1920,
+                    height: 1080,
+                    path: format!("C:/{id}.png"),
+                    thumb: format!("C:/t-{id}.png"),
+                }),
+                ..item(id, 1, false).item
+            },
+            text: None,
+        };
+        assert!(!same_content(&picture("one"), &picture("two")));
     }
 
     #[test]

@@ -1,7 +1,7 @@
 # Implementation Plan: clipboard
 
 > Spec: `SPEC-clipboard.md` (bạn chốt phạm vi 2026-09-18: chỉ chữ và ảnh) · Mockup: `design/winbar-mockup.html` (card "Clipboard")
-> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**.
+> Danh sách task: `tasks/todo.md`. Trạng thái plan: **xong** (còn 👤 kéo bằng chuột thật và checkpoint bạn dùng thử).
 > Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/`, `tasks/system/`, `tasks/notch-shell-v3/` (xong).
 
 ## Tổng quan
@@ -37,7 +37,7 @@ Task 1 (spike: bắt clipboard + thử kéo ra ngoài)
 ### Checkpoint: bạn dùng thử
 
 - [x] Task 4: Kéo ra app khác + provider command bar + mục Cài đặt
-- [ ] Task 5: Đo hiệu năng, checklist thủ công
+- [x] Task 5: Đo hiệu năng, checklist thủ công
 
 ## Rủi ro
 

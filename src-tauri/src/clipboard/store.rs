@@ -76,10 +76,15 @@ impl Store {
         self.dir.join("thumbs")
     }
 
-    /// Puts an item at the top, replacing an older copy of the same thing.
+    /// Puts an item at the top, replacing an older copy of the same thing (and deleting anything it left on disk).
     pub fn insert(&mut self, item: StoredItem) {
-        self.items
-            .retain(|s| !super::model::same_content(s, &item) || s.item.pinned);
+        let stale: Vec<String> = self
+            .items
+            .iter()
+            .filter(|s| !s.item.pinned && super::model::same_content(s, &item))
+            .map(|s| s.item.id.clone())
+            .collect();
+        self.remove(&stale);
         self.items.insert(0, item);
     }
 
@@ -225,6 +230,29 @@ mod tests {
         store.insert(stored("c", "một", false));
         assert_eq!(store.list().len(), 2);
         assert_eq!(store.list()[0].id, "c");
+    }
+
+    #[test]
+    fn replacing_a_duplicate_takes_its_files_with_it() {
+        let dir = temp_dir("dupe-files");
+        let png = dir.join("images").join("old.png");
+        write_file(&png, b"left over").expect("writes");
+        let mut store = Store::open(dir.clone());
+        let mut first = stored("old", "cùng một câu", false);
+        first.item.image = Some(ImageRef {
+            width: 4,
+            height: 2,
+            path: png.to_string_lossy().into_owned(),
+            thumb: png.to_string_lossy().into_owned(),
+        });
+        store.insert(first);
+        store.insert(stored("new", "cùng một câu", false));
+        assert_eq!(store.list().len(), 1);
+        assert!(
+            !png.exists(),
+            "the replaced item does not leave its file behind"
+        );
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

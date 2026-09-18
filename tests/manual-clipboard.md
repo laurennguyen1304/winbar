@@ -102,11 +102,29 @@ Bốn lớp của §5.4:
 
 ## 9. Hiệu năng (tiêu chí 11)
 
-Xem bảng số ở mục 10 dưới.
+Bản release, notch ở **cả 2 màn** (`pill.monitor = all`, sticky bật) — đúng cấu hình bạn đang dùng, nên mốc so sánh
+là số của notch-shell v3 ở chế độ `all`: **146–149 MB, 9 tiến trình, CPU 0,006–0,014%**.
 
-## 10. Số đo bản release
+| Trạng thái | RAM (private WS) | CPU, panel đóng | Tiến trình |
+|---|---|---|---|
+| Trước module (mốc v3, `all`) | 146–149 MB | 0,006–0,014% | 9 |
+| Lịch sử rỗng | 150,2–153,8 MB | 0,019% (48 s) | 9 |
+| **50 mục (45 chữ + 5 ảnh)** | **160,6–161,3 MB** | **0,010% (89 s)** | 9 |
 
-_(điền sau khi đo)_
+- [x] ✅ RAM tăng **≈ 13 MB** so với trước module (yêu cầu ≤ 15 MB) — sát trần, chủ yếu là thumbnail và index
+      trong bộ nhớ. Nếu sau này thấy chật thì bỏ thumbnail khỏi bộ nhớ, chỉ đọc khi dòng hiện ra.
+- [x] ✅ CPU khi panel đóng cùng bậc với trước module; lịch sử đầy **không** đắt hơn lịch sử rỗng.
+- [x] ✅ Đĩa: `index.json` 23 KB · 5 ảnh 1920×1080 → 102 KB · thumbnail 12 KB.
+- [x] ✅ RAM đứng yên qua 4 lần đo trong 89 giây (160,6 → 161,3 MB), không leo.
+
+> Bản đo là commit `1b55dc2`. Hai commit sau đó (`same_content` không còn gộp hai ảnh khác nhau, và `insert` xóa
+> luôn file của mục bị thay) chỉ **giảm** dung lượng đĩa, không đổi số RAM/CPU.
+
+## 10. Việc để lại trên máy sau khi đo
+
+- [x] ✅ Lịch sử thật được **chuyển** đi (không phải chép) trong lúc **cả hai** app đều đã tắt, rồi chuyển lại.
+- [x] ✅ Khóa `Run\winbar` do bản release tự thêm đã bị xóa.
+- [x] ✅ `settings.json` khôi phục từ bản sao (`monitor = all`, `sticky = true`, 8 widget).
 
 ## 11. Chưa làm / giới hạn đã biết
 

@@ -102,11 +102,31 @@ Thumbnail lấy từng dòng một qua lệnh mới `clipboard_thumb` (data URL)
 **Phụ thuộc:** Checkpoint
 **Quy mô:** M
 
-### Task 5: Đo, checklist thủ công
+### Task 5: Đo, checklist thủ công ✅
+
+**Đo trên bản release** (notch ở cả 2 màn, đúng cấu hình bạn đang dùng; mốc so sánh là notch-shell v3 chế độ `all`:
+146–149 MB, CPU 0,006–0,014%):
+
+| Trạng thái | RAM | CPU, panel đóng |
+|---|---|---|
+| Lịch sử rỗng | 150,2–153,8 MB | 0,019% |
+| 50 mục (45 chữ + 5 ảnh) | 160,6–161,3 MB | 0,010% |
 
 **Tiêu chí chấp nhận:**
-- [ ] Bản release, 50 mục có 5 ảnh: RAM tăng ≤ 15 MB; CPU khi panel đóng như trước module.
-- [ ] `tests/manual-clipboard.md` theo tiêu chí §11 của spec.
+- [x] RAM tăng **≈ 13 MB** (yêu cầu ≤ 15 MB) — sát trần.
+- [x] CPU khi panel đóng cùng bậc với trước module; lịch sử đầy không đắt hơn lịch sử rỗng.
+- [x] Đĩa: index 23 KB + 5 ảnh 102 KB + thumbnail 12 KB. RAM đứng yên qua 89 giây.
+- [x] `tests/manual-clipboard.md` viết xong theo 12 tiêu chí của spec §11.
+- [x] Dọn sạch sau khi đo: lịch sử thật trả về, khóa `Run\winbar` đã xóa, `settings.json` khôi phục.
+
+**Hai lỗi đo xong mới lộ ra (đã sửa):**
+1. `same_content` gộp **hai ảnh khác nhau cùng kích thước** thành một — hai ảnh chụp cùng cửa sổ có preview giống
+   nhau ("Ảnh 1920×1080"), nên bản mới sẽ âm thầm đè mất bản cũ. Giờ chỉ **chữ** mới được coi là trùng nhau.
+2. `insert` bỏ mục trùng nhưng **không xóa file ảnh** của nó → rác đọng lại tới lần khởi động sau. Giờ đi qua
+   `remove` nên xóa luôn file.
+   Đã kiểm lại trên app thật: copy 2 ảnh khác nhau → đúng 2 dòng, 2 file.
+
+**Test cuối:** Rust 156, TS 393, clippy sạch, lint sạch.
 
 **Phụ thuộc:** Task 4
 **Quy mô:** S
