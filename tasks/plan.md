@@ -1,30 +1,32 @@
-# Implementation Plan: system
+# Implementation Plan: notch trên nhiều màn hình (notch-shell v3)
 
-> Spec: `SPEC-system.md` (bản 2, 2026-09-18) · Mockup: `design/winbar-mockup.html` (card "Hệ thống")
-> Danh sách task: `tasks/todo.md`. Trạng thái plan: **xong (2026-09-18)**. Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/` (xong).
+> Spec: `SPEC-notch-shell.md` §16 (duyệt 2026-09-18)
+> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**.
+> Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/`, `tasks/system/` (xong).
+> Sau plan này: module `clipboard` (`SPEC-clipboard.md` đã viết, chờ duyệt phần kéo file).
 
 ## Tổng quan
 
-Widget `system` nhỏ: card hiện CPU và RAM (đo 2 giây một lần, chỉ khi card đang hiện) và một nút mở Task Manager.
-Command bar có thêm một dòng "Mở Task Manager".
+Thêm cài đặt `pill.monitor`: notch ở màn chính (như hiện nay) hoặc nhảy sang màn hình đang có con trỏ chuột.
+Vẫn chỉ một cửa sổ notch.
 
 ## Quyết định kiến trúc
 
-- **Rust đọc số:** `GlobalMemoryStatusEx` cho RAM, `GetSystemTimes` cho CPU. Phần tính toán (`% CPU` từ hai mốc, định dạng GB) tách vào `model.rs` thuần, có test.
-- **Mốc đo giữ trong Rust:** lệnh `system_stats` so với lần gọi trước; mốc cũ quá 10 giây thì tự đo nhanh 150ms trên luồng blocking.
-- **Frontend không có tiến trình nền:** hook `use-stats.ts` chỉ chạy khi card được vẽ; rời card là dừng, giống đồng hồ tiến độ của media.
-- **Không đụng vào pill:** module này không có `Pill`/`MidPill`, nên không ảnh hưởng quy tắc media tự lên pill.
+- **Chọn màn hình trong Rust:** `GetCursorPos` + `monitor_from_point` của Tauri. Không dùng hook chuột, chỉ xem vị trí con trỏ 300ms/lần khi cài đặt là `mouse`.
+- **Một chỗ quyết định:** `window::target_geometry()` trả về hình học màn hình cần dùng; `apply` và `sticky` dùng chung nó, nên dải giữ chỗ luôn theo màn hình của notch.
+- **Không chuyển khi panel đang mở:** người dùng đang đọc thì notch đứng yên; chuyển ngay sau khi thu gọn.
+- **Phần thuần có test:** chọn màn hình theo điểm con trỏ, và kẹp `offsetX` trong màn hình mới.
 
 ## Danh sách task
 
-- [x] Task 1: Rust đọc CPU/RAM + mở Task Manager (`system_stats`, `open_task_manager`)
-- [x] Task 2: Card "Hệ thống" + hook đo + search provider
-- [x] Task 3: Đo hiệu năng, checklist thủ công, so số với Task Manager
+- [ ] Task 1: Cài đặt `pill.monitor` + chọn màn hình theo con trỏ (Rust) + mục chọn trong Cài đặt
+- [ ] Task 2: Kiểm trên hai màn hình thật, sticky theo màn, checklist
 
 ## Rủi ro
 
 | Rủi ro | Mức | Cách xử lý |
 |---|---|---|
-| Số CPU lệch so với Task Manager | Trung bình | Dùng đúng công thức idle/kernel/user; so trực tiếp ở Task 3 |
-| Hook đo vẫn chạy sau khi panel đóng | Trung bình | Test component kiểm số lần gọi sau khi rời card; kiểm lại trên máy bằng log lệnh |
-| Thêm feature crate `windows` làm nặng bản build | Thấp | Hai feature nhỏ; đo lại RAM và dung lượng exe ở Task 3 |
+| Notch nhảy qua lại khi chuột đi ngang mép hai màn | Trung bình | Chỉ chuyển khi màn đổi hẳn; kiểm tra lại sau 300ms trước khi chuyển |
+| Chuyển màn lúc panel đang mở gây giật | Trung bình | Hoãn tới khi thu gọn |
+| Sticky để lại dải trên màn cũ | Trung bình | Gỡ AppBar trước khi chuyển, đăng ký lại ở màn mới |
+| Đo vị trí chuột 300ms/lần tốn CPU | Thấp | Chỉ chạy khi cài đặt là `mouse`; `GetCursorPos` rất rẻ; đo ở Task 2 |

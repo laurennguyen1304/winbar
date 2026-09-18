@@ -322,5 +322,24 @@ Cài đặt thêm (validate từng trường như §7):
 | `pill.material` | `liquid` · `dense` | `liquid` |
 | `pill.offsetX` | số nguyên −4000…4000 (px logic từ giữa màn hình) | `0` |
 | `pill.sticky` | `true` · `false` | `false` |
+| `pill.monitor` | `primary` · `mouse` | `primary` (xem §16) |
 
 `pill.topGap` chỉ áp dụng cho `float`. Cửa sổ native rộng thêm 2×14px khi `attached` để chứa phần loe; phần trong suốt ở hai góc loe vẫn thuộc cửa sổ (vài px).
+
+## 16. Notch trên nhiều màn hình (duyệt 2026-09-18)
+
+Bạn chốt: thêm cài đặt chọn notch nằm ở màn chính, hoặc **nhảy theo chuột** khi có nhiều màn hình.
+
+| Cài đặt | Giá trị | Mặc định |
+|---|---|---|
+| `pill.monitor` | `primary` (chỉ màn chính) · `mouse` (màn hình đang có con trỏ) | `primary` |
+
+**`mouse` hoạt động thế nào**
+
+- winbar xem con trỏ đang ở màn nào, mỗi 300ms một lần. Đổi màn thì notch chuyển sang mép trên màn đó.
+- Chỉ chuyển khi **đổi màn**, không chạy theo từng bước chuột, nên không nháy.
+- `pill.offsetX` tính từ giữa màn hình đang đứng, và bị kẹp trong màn đó: kéo lệch ở màn rộng rồi sang màn hẹp thì notch tự lùi vào trong.
+- Panel đang mở thì **không** chuyển màn giữa chừng; chuyển sau khi thu gọn, để không bị giật khi đang đọc.
+- Sticky: dải giữ chỗ nằm trên màn hình notch đang đứng; đổi màn thì trả chỗ ở màn cũ, giữ chỗ ở màn mới.
+- Chỉ có **một** notch; không mở thêm cửa sổ cho màn thứ hai (đỡ tốn RAM, và không có hai notch cùng lúc).
+- Rút màn hình đang đứng: notch về màn chính trong khoảng 2 giây (đã có sẵn cơ chế theo dõi màn hình).

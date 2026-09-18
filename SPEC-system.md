@@ -1,6 +1,6 @@
 # Spec: system
 
-> Module id: `system` (xem `CAPABILITY-MAP.md`). Phụ thuộc: `notch-shell`. Trạng thái: **CHỜ DUYỆT (bản 2)**.
+> Module id: `system` (xem `CAPABILITY-MAP.md`). Phụ thuộc: `notch-shell`. Trạng thái: **ĐÃ DUYỆT (bản 2, 2026-09-18)**.
 > Nguồn UI: `design/winbar-mockup.html` (card "Hệ thống"; phần chỉ số lấy kiểu thanh mức của card hạn mức Claude).
 >
 > **Đổi so với bản 1 (2026-09-18, bạn chốt):** bỏ hẳn menu nguồn (Ngủ / Khởi động lại / Tắt máy / Đổi người dùng).
