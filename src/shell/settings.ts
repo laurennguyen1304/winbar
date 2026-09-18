@@ -32,8 +32,8 @@ export interface Settings {
     offsetX: number;
     /** Reserve the strip above maximised windows (Windows AppBar). */
     sticky: boolean;
-    /** `primary`: main screen only. `mouse`: follow the screen the cursor is on (SPEC §16). */
-    monitor: "primary" | "mouse";
+    /** `primary`: one notch on the main screen. `all`: one notch per screen (SPEC §16). */
+    monitor: "primary" | "all";
   };
   fontScale: number;
   widgets: WidgetSetting[];

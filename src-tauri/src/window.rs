@@ -1,9 +1,10 @@
-//! Notch window: creation, sizing and placement at the top centre of the primary monitor.
+//! Notch windows: creation, sizing and placement at the top of a monitor.
 //!
 //! The frontend owns the notch dimensions (see `src/shell/notch-sizes.ts`) and asks Rust to
-//! resize/place the native window through [`notch_layout`]. The native window always matches the
-//! notch block, so everything outside it stays click-through.
+//! resize/place its own window through [`notch_layout`]. A window always matches the notch block, so everything
+//! outside it stays click-through. With `pill.monitor = "all"` there is one window per screen (SPEC §16).
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
@@ -13,10 +14,8 @@ use tauri::{
     WebviewWindowBuilder,
 };
 
+/// Window on the primary screen; the others are `notch-1`, `notch-2`…
 pub const NOTCH_LABEL: &str = "notch";
-
-/// How often the cursor is checked while the notch follows the mouse (SPEC §16).
-const CURSOR_POLL: Duration = Duration::from_millis(300);
 /// How often the display setup is checked (resolution, DPI, monitors coming and going).
 const DISPLAY_POLL: Duration = Duration::from_secs(2);
 
@@ -30,7 +29,7 @@ pub struct MonitorGeometry {
     pub scale: f64,
 }
 
-/// Physical size and position of the notch window.
+/// Physical size and position of a notch window.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NotchPlacement {
     pub x: i32,
@@ -75,19 +74,38 @@ pub struct LayoutRequest {
 
 #[derive(Default)]
 pub struct NotchState {
-    pub layout: Mutex<Option<LayoutRequest>>,
-    /// The panel is open: the notch stays where it is, even if the cursor moves to another screen (SPEC §16).
-    pub expanded: AtomicBool,
-    /// "Ẩn notch tạm thời" from the tray: layout calls keep sizing the window but never show it.
+    /// Last layout of each notch window, by window label.
+    layout: Mutex<HashMap<String, LayoutRequest>>,
+    /// Screen each notch window belongs to, by window label.
+    monitors: Mutex<HashMap<String, MonitorGeometry>>,
+    /// "Ẩn notch tạm thời" from the tray: layout calls keep sizing the windows but never show them.
     pub hidden: AtomicBool,
 }
 
-pub fn primary_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
-    let monitor = window
-        .primary_monitor()
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "no primary monitor".to_string())?;
-    Ok(geometry_of(&monitor))
+/// Label of the notch window on the `index`-th screen.
+pub fn label_for(index: usize) -> String {
+    if index == 0 {
+        NOTCH_LABEL.to_string()
+    } else {
+        format!("{NOTCH_LABEL}-{index}")
+    }
+}
+
+/// True for labels that belong to a notch window.
+pub fn is_notch_label(label: &str) -> bool {
+    label == NOTCH_LABEL || label.starts_with(&format!("{NOTCH_LABEL}-"))
+}
+
+/// Labels of the notch windows that exist right now.
+pub fn notch_labels<R: Runtime>(app: &AppHandle<R>) -> Vec<String> {
+    let mut labels: Vec<String> = app
+        .webview_windows()
+        .keys()
+        .filter(|l| is_notch_label(l))
+        .cloned()
+        .collect();
+    labels.sort();
+    labels
 }
 
 fn geometry_of(monitor: &tauri::Monitor) -> MonitorGeometry {
@@ -102,57 +120,63 @@ fn geometry_of(monitor: &tauri::Monitor) -> MonitorGeometry {
     }
 }
 
-/// Monitor holding this physical point, if any.
-pub fn monitor_at(point: (i32, i32), monitors: &[MonitorGeometry]) -> Option<usize> {
-    monitors.iter().position(|m| {
-        let (x, y) = point;
-        x >= m.x && x < m.x + m.width as i32 && y >= m.y && y < m.y + m.height as i32
-    })
+/// Screens in the order notch windows are assigned to them: the primary one first, then left to right.
+pub fn screen_order(primary: MonitorGeometry, all: &[MonitorGeometry]) -> Vec<MonitorGeometry> {
+    let mut others: Vec<MonitorGeometry> = all.iter().copied().filter(|m| *m != primary).collect();
+    others.sort_by_key(|m| (m.x, m.y));
+    std::iter::once(primary).chain(others).collect()
 }
 
-/// Screen the notch belongs on: the one under the cursor when `pill.monitor` is `mouse`, else the primary one.
-pub fn target_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
-    if follows_mouse(window.app_handle()) {
-        if let Some(geometry) = cursor_geometry(window) {
-            return Ok(geometry);
-        }
-    }
-    primary_geometry(window)
+pub fn primary_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
+    let monitor = window
+        .primary_monitor()
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "no primary monitor".to_string())?;
+    Ok(geometry_of(&monitor))
 }
 
-fn follows_mouse<R: Runtime>(app: &AppHandle<R>) -> bool {
+fn shows_on_every_screen<R: Runtime>(app: &AppHandle<R>) -> bool {
     app.try_state::<crate::settings::SettingsState>()
-        .is_some_and(|s| s.get().pill.monitor == "mouse")
+        .is_some_and(|s| s.get().pill.monitor == "all")
 }
 
-/// Geometry of the monitor under the cursor; `None` when the cursor cannot be read or sits outside every monitor.
-fn cursor_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Option<MonitorGeometry> {
-    let point = cursor_position()?;
-    let monitors = window.available_monitors().ok()?;
-    let geometries: Vec<MonitorGeometry> = monitors.iter().map(geometry_of).collect();
-    monitor_at(point, &geometries).map(|i| geometries[i])
+/// Screens that should carry a notch: every screen, or only the primary one (SPEC §16).
+pub fn wanted_screens<R: Runtime>(app: &AppHandle<R>) -> Result<Vec<MonitorGeometry>, String> {
+    let primary = geometry_of(
+        &app.primary_monitor()
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "no primary monitor".to_string())?,
+    );
+    if !shows_on_every_screen(app) {
+        return Ok(vec![primary]);
+    }
+    let all: Vec<MonitorGeometry> = app
+        .available_monitors()
+        .map_err(|e| e.to_string())?
+        .iter()
+        .map(geometry_of)
+        .collect();
+    Ok(screen_order(primary, &all))
 }
 
-#[cfg(windows)]
-fn cursor_position() -> Option<(i32, i32)> {
-    use windows::Win32::Foundation::POINT;
-    use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
-
-    let mut point = POINT::default();
-    // SAFETY: `point` is an owned struct that outlives the call.
-    unsafe { GetCursorPos(&mut point) }.ok()?;
-    Some((point.x, point.y))
-}
-
-#[cfg(not(windows))]
-fn cursor_position() -> Option<(i32, i32)> {
-    None
+/// Screen a notch window sits on.
+pub fn screen_of_window<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
+    let assigned = window
+        .state::<NotchState>()
+        .monitors
+        .lock()
+        .ok()
+        .and_then(|m| m.get(window.label()).copied());
+    match assigned {
+        Some(geometry) => Ok(geometry),
+        None => primary_geometry(window),
+    }
 }
 
 fn apply<R: Runtime>(window: &WebviewWindow<R>, req: LayoutRequest) -> Result<(), String> {
-    let strip_top = crate::sticky::strip_top(window.app_handle());
+    let strip_top = crate::sticky::strip_top(window.app_handle(), window.label());
     let p = place_notch(
-        target_geometry(window)?,
+        screen_of_window(window)?,
         req.width,
         req.height,
         req.top_gap,
@@ -160,30 +184,34 @@ fn apply<R: Runtime>(window: &WebviewWindow<R>, req: LayoutRequest) -> Result<()
         strip_top,
     );
     crate::sticky::pin(window, strip_top.map(|_| (p.x, p.y)));
-    window
-        .set_size(PhysicalSize::new(p.width, p.height))
-        .map_err(|e| e.to_string())?;
+    // Position first: moving to a screen with another DPI makes Windows rescale the window, and the size below then
+    // lands on the screen the notch ends up on.
     window
         .set_position(PhysicalPosition::new(p.x, p.y))
+        .map_err(|e| e.to_string())?;
+    window
+        .set_size(PhysicalSize::new(p.width, p.height))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
 
-/// Places the notch again from the last layout request, e.g. after sticky mode moved the top edge. Windows also moves
-/// the notch window below a newly reserved strip, so this puts it back.
+/// Places a notch again from its last layout request, e.g. after sticky mode moved the top edge. Windows also moves
+/// the window below a newly reserved strip, so this puts it back.
 pub fn reapply<R: Runtime>(window: &WebviewWindow<R>) -> Result<(), String> {
-    let req = *window
+    let req = window
         .state::<NotchState>()
         .layout
         .lock()
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?
+        .get(window.label())
+        .copied();
     match req {
         Some(req) => apply(window, req),
         None => Ok(()),
     }
 }
 
-/// Resizes and places the notch window, then shows it without taking focus.
+/// Resizes and places the calling notch window, then shows it without taking focus.
 #[tauri::command]
 pub fn notch_layout<R: Runtime>(
     window: WebviewWindow<R>,
@@ -192,7 +220,6 @@ pub fn notch_layout<R: Runtime>(
     height: f64,
     top_gap: f64,
     offset_x: f64,
-    expanded: bool,
 ) -> Result<(), String> {
     if !(width.is_finite() && height.is_finite() && top_gap.is_finite() && offset_x.is_finite())
         || width <= 0.0
@@ -208,25 +235,30 @@ pub fn notch_layout<R: Runtime>(
         top_gap,
         offset_x,
     };
-    state.expanded.store(expanded, Ordering::Relaxed);
     apply(&window, req)?;
-    *state.layout.lock().map_err(|e| e.to_string())? = Some(req);
+    state
+        .layout
+        .lock()
+        .map_err(|e| e.to_string())?
+        .insert(window.label().to_string(), req);
     if !state.hidden.load(Ordering::Relaxed) && !window.is_visible().map_err(|e| e.to_string())? {
         window.show().map_err(|e| e.to_string())?;
     }
     Ok(())
 }
 
-/// Hides or shows the notch window (tray "Ẩn notch tạm thời"). The frontend keeps running, so alerts still queue.
+/// Hides or shows every notch window (tray "Ẩn notch tạm thời"). The frontend keeps running, so alerts still queue.
 pub fn set_hidden<R: Runtime>(app: &AppHandle<R>, hidden: bool) -> tauri::Result<()> {
     app.state::<NotchState>()
         .hidden
         .store(hidden, Ordering::Relaxed);
-    if let Some(window) = app.get_webview_window(NOTCH_LABEL) {
-        if hidden {
-            window.hide()?;
-        } else {
-            window.show()?;
+    for label in notch_labels(app) {
+        if let Some(window) = app.get_webview_window(&label) {
+            if hidden {
+                window.hide()?;
+            } else {
+                window.show()?;
+            }
         }
     }
     Ok(())
@@ -236,9 +268,9 @@ pub fn is_hidden<R: Runtime>(app: &AppHandle<R>) -> bool {
     app.state::<NotchState>().hidden.load(Ordering::Relaxed)
 }
 
-/// Creates the hidden notch window. It becomes visible on the frontend's first `notch_layout` call.
-pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>> {
-    WebviewWindowBuilder::new(app, NOTCH_LABEL, WebviewUrl::App("index.html".into()))
+/// Creates one hidden notch window. It becomes visible on its frontend's first `notch_layout` call.
+fn create_window<R: Runtime>(app: &AppHandle<R>, label: &str) -> tauri::Result<WebviewWindow<R>> {
+    WebviewWindowBuilder::new(app, label, WebviewUrl::App("index.html".into()))
         .title("winbar")
         .decorations(false)
         .transparent(true)
@@ -252,49 +284,64 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>>
         .build()
 }
 
-/// Re-places the notch when the primary monitor's geometry or scale changes (resolution, DPI, primary display).
+/// Makes the notch windows match the screens they should be on: one on the primary screen, or one per screen.
+/// Called at startup, when the setting changes and when monitors come and go.
+pub fn sync_windows<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    let screens = wanted_screens(app)?;
+    let wanted: Vec<String> = (0..screens.len()).map(label_for).collect();
+
+    for (index, screen) in screens.iter().enumerate() {
+        let label = label_for(index);
+        if let Ok(mut monitors) = app.state::<NotchState>().monitors.lock() {
+            monitors.insert(label.clone(), *screen);
+        }
+        match app.get_webview_window(&label) {
+            Some(window) => {
+                let _ = reapply(&window);
+            }
+            None => {
+                create_window(app, &label).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    // Screens that went away, or the extra windows after switching back to "primary".
+    for label in notch_labels(app) {
+        if wanted.contains(&label) {
+            continue;
+        }
+        crate::sticky::forget(app, &label);
+        if let Some(window) = app.get_webview_window(&label) {
+            let _ = window.close();
+        }
+        if let Ok(mut state) = app.state::<NotchState>().layout.lock() {
+            state.remove(&label);
+        }
+        if let Ok(mut monitors) = app.state::<NotchState>().monitors.lock() {
+            monitors.remove(&label);
+        }
+    }
+    Ok(())
+}
+
+/// Watches the display setup: monitors coming and going, resolution and DPI changes.
 pub fn watch_displays<R: Runtime>(app: AppHandle<R>) {
     std::thread::spawn(move || {
-        let mut last: Option<MonitorGeometry> = None;
-        let mut since_display_check = Duration::ZERO;
+        let mut last: Option<Vec<MonitorGeometry>> = None;
         loop {
-            std::thread::sleep(CURSOR_POLL);
-            since_display_check += CURSOR_POLL;
-            let Some(window) = app.get_webview_window(NOTCH_LABEL) else {
+            std::thread::sleep(DISPLAY_POLL);
+            let Ok(screens) = wanted_screens(&app) else {
                 continue;
             };
-            // The cursor is cheap to read; the display setup is only worth checking now and then.
-            let follows = follows_mouse(&app);
-            if !follows && since_display_check < DISPLAY_POLL {
-                continue;
-            }
-            if since_display_check >= DISPLAY_POLL {
-                since_display_check = Duration::ZERO;
-            }
-            let Ok(geometry) = target_geometry(&window) else {
-                continue;
-            };
-            // Moving the notch out from under the open panel would be jarring, so wait until it collapses.
-            let expanded = app.state::<NotchState>().expanded.load(Ordering::Relaxed);
-            if last.is_some_and(|g| g != geometry) && !expanded {
-                let req = app
-                    .state::<NotchState>()
-                    .layout
-                    .lock()
-                    .ok()
-                    .and_then(|l| *l);
-                if let Some(req) = req {
-                    let w = window.clone();
-                    let _ = window.run_on_main_thread(move || {
-                        let _ = apply(&w, req);
-                    });
+            if last.as_ref().is_some_and(|s| *s != screens) {
+                // This watcher runs off the main thread, which is where opening and closing windows has to happen.
+                if let Err(e) = sync_windows(&app) {
+                    eprintln!("winbar notch: could not follow the display change: {e}");
                 }
                 let handle = app.clone();
                 let _ = app.run_on_main_thread(move || crate::sticky::refresh(&handle));
-                last = Some(geometry);
-            } else if last.is_none() || !expanded {
-                last = Some(geometry);
             }
+            last = Some(screens);
         }
     });
 }
@@ -401,31 +448,43 @@ mod tests {
     }
 
     #[test]
-    fn finds_the_monitor_holding_a_point() {
-        let screens = [
-            MonitorGeometry {
-                x: 0,
-                y: 0,
-                width: 1920,
-                height: 1200,
-                scale: 1.25,
-            },
-            MonitorGeometry {
-                x: 1920,
-                y: 0,
-                width: 1920,
-                height: 1080,
-                scale: 1.0,
-            },
-        ];
-        assert_eq!(monitor_at((10, 10), &screens), Some(0));
-        assert_eq!(monitor_at((1919, 1199), &screens), Some(0));
-        assert_eq!(monitor_at((1920, 0), &screens), Some(1));
-        assert_eq!(monitor_at((2500, 900), &screens), Some(1));
-        // Below the short screen, and left of both.
-        assert_eq!(monitor_at((2500, 1100), &screens), None);
-        assert_eq!(monitor_at((-5, 10), &screens), None);
-        assert_eq!(monitor_at((10, 10), &[]), None);
+    fn names_one_window_per_screen() {
+        assert_eq!(label_for(0), "notch");
+        assert_eq!(label_for(1), "notch-1");
+        assert!(is_notch_label("notch") && is_notch_label("notch-2"));
+        assert!(!is_notch_label("settings") && !is_notch_label("command-bar"));
+    }
+
+    #[test]
+    fn puts_the_primary_screen_first_then_left_to_right() {
+        let primary = MonitorGeometry {
+            x: 0,
+            y: 0,
+            width: 1920,
+            height: 1200,
+            scale: 1.25,
+        };
+        let right = MonitorGeometry {
+            x: 1920,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+        };
+        let left = MonitorGeometry {
+            x: -1280,
+            y: 0,
+            width: 1280,
+            height: 720,
+            scale: 1.0,
+        };
+        assert_eq!(
+            screen_order(primary, &[right, primary, left]),
+            vec![primary, left, right]
+        );
+        assert_eq!(screen_order(primary, &[primary]), vec![primary]);
+        // A primary screen missing from the list still comes first.
+        assert_eq!(screen_order(primary, &[right]), vec![primary, right]);
     }
 
     #[test]

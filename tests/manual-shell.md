@@ -254,3 +254,36 @@ Bản release, không bật cổng debug. Đo từ giây 60 sau khi mở, pill t
 - [x] Gỡ `Run\winbar` do bản release thêm vào.
 - [x] Sticky tắt, vùng làm việc về 47.
 - [x] Tắt bản release, mở lại app dev.
+
+---
+
+# v3: notch trên nhiều màn hình
+
+> Spec: `SPEC-notch-shell.md` §16 · Chạy: 2026-09-18
+> Máy lúc test: màn chính 1920×1200 ở 125%, màn 2 1920×1080 ở 100% (đặt bên phải).
+
+## 1. Cài đặt `pill.monitor`
+
+- [x] ✅ `primary`: một notch, ở màn chính (410×40 px vật lý tại 769,0).
+- [x] ✅ `all`: hai notch cùng lúc — màn chính 410×40 tại 769,0, màn 2 **328×32** tại 2727,0 (màn 2 ở 100% nên số px vật lý nhỏ hơn, kích thước logic vẫn 328×32).
+- [x] ✅ Đổi qua lại trong Cài đặt: cửa sổ được mở thêm / đóng bớt ngay, app vẫn phản hồi.
+- [x] ✅ Hai trang notch chạy độc lập (`notch` và `notch-1`), cùng nội dung.
+
+## 2. Sticky theo từng màn
+
+- [x] ✅ Sticky bật, chế độ `all`: mép trên vùng làm việc màn chính = 40 (32 logic × 1.25), màn 2 = 32 (32 × 1.0).
+- [ ] 👤 Tắt sticky khi đang ở `all`: cả hai màn trả lại chỗ.
+
+## 3. Những lỗi đã gặp và cách sửa (ghi để khỏi lặp lại)
+
+| Hiện tượng | Nguyên nhân | Cách sửa |
+|---|---|---|
+| Cửa sổ notch thứ hai không gọi được lệnh | `capabilities/default.json` chỉ cho phép ba tên cửa sổ cố định | Thêm `notch-*` vào danh sách |
+| Notch màn 2 bị co còn 262×26 | Windows tự co cửa sổ khi nó sang màn có DPI khác | Đặt vị trí trước rồi đặt kích thước, và đặt lại khi có sự kiện đổi DPI |
+| App treo khi bật/tắt "Cả 2 màn" | Mở/đóng cửa sổ chạy trên luồng chính, phải chờ chính vòng lặp sự kiện đang bận | Chuyển việc mở/đóng cửa sổ sang luồng nền (`spawn_blocking`, hoặc luồng theo dõi màn hình) |
+| App treo khi đổi DPI | Gọi đặt lại kích thước ngay trong callback sự kiện của cửa sổ | Xếp hàng chạy sau qua `run_on_main_thread` |
+
+## 4. Chưa kiểm
+
+- [ ] 👤 Rút màn 2 khi đang ở `all`: notch của màn đó biến mất trong ~2 giây; cắm lại thì hiện lại.
+- [ ] 👤 RAM khi bật `all` (dự kiến +~25 MB cho cửa sổ WebView thứ hai) — đo trên bản release.

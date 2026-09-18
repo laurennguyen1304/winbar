@@ -180,12 +180,9 @@ export function Notch({
     lastTarget.current = target;
     const timer = setTimeout(() => {
       // Attached: flush with the top edge, window wider by the flares (SPEC §15).
-      requestNotchLayout(
-        windowSizeFor(target, layout),
-        layout === "attached" ? 0 : topGap,
-        drag.offsetX,
-        expanded,
-      ).catch((err: unknown) => console.error("notch_layout failed", err));
+      requestNotchLayout(windowSizeFor(target, layout), layout === "attached" ? 0 : topGap, drag.offsetX).catch(
+        (err: unknown) => console.error("notch_layout failed", err),
+      );
     }, delay);
     return () => clearTimeout(timer);
     // Depend on the numbers, not the object identities.

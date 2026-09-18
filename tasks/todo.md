@@ -3,34 +3,32 @@
 > Plan: `tasks/plan.md` · Spec: `SPEC-notch-shell.md` §16
 > Lệnh chung: `npm test` · `cargo test --manifest-path src-tauri/Cargo.toml` · `npm run lint` · `npm run tauri dev`
 
-### Task 1: Cài đặt `pill.monitor` + notch theo con trỏ
+### Task 1: Cài đặt `pill.monitor` + một notch mỗi màn hình
 
 **Mô tả:**
-- **Cài đặt:** `pill.monitor` = `primary` | `mouse`, mặc định `primary` (Rust validate + kiểu TS + mục chọn "Màn hình" trong Cài đặt).
-- **Chọn màn hình:** `window::target_geometry()` — `mouse` thì lấy màn chứa con trỏ (`GetCursorPos` + `monitor_from_point`), lỗi thì về màn chính. `apply` và `sticky` dùng chung.
-- **Theo dõi:** luồng có sẵn (`watch_displays`) xem con trỏ 300ms/lần khi cài đặt là `mouse`; chỉ đặt lại vị trí khi **đổi màn** và khi panel **không** mở rộng.
-- **Kẹp `offsetX`** theo bề rộng màn hình mới.
+- **Cài đặt:** `pill.monitor` = `primary` | `all`, mặc định `primary`.
+- **Cửa sổ:** `window::sync_windows` tạo/đóng cửa sổ notch cho khớp danh sách màn hình; mỗi cửa sổ nhớ màn của nó.
+- **Sticky theo cửa sổ:** mỗi notch giữ chỗ trên màn của nó; đóng cửa sổ thì trả chỗ.
+- **Theo dõi màn hình:** 2 giây/lần, cắm/rút màn thì thêm/bớt notch.
 
 **Tiêu chí chấp nhận:**
-- [x] Đặt `mouse`: đưa chuột sang màn 2 thì notch sang màn 2 trong ~0.5 giây; về màn 1 thì quay lại.
-- [ ] Đặt `primary`: notch luôn ở màn chính dù chuột ở đâu.
-- [x] Kéo lệch ở màn rộng rồi sang màn hẹp: notch vẫn nằm trong màn, không lòi ra ngoài.
-- [ ] Panel đang mở: không đổi màn giữa chừng; thu gọn xong mới đổi.
-- [x] Test Rust: chọn màn theo điểm; kẹp offset ở màn có gốc âm/dương.
+- [x] Chọn `all`: mỗi màn một notch, đứng yên, cùng nội dung.
+- [x] Chọn `primary`: chỉ còn notch ở màn chính, cửa sổ thừa đóng lại.
+- [x] `offsetX` kẹp trong từng màn.
+- [x] Test Rust: tên cửa sổ theo màn, thứ tự màn (màn chính trước), kẹp offset ở màn hẹp.
 
 **Kiểm tra:** `cargo test`, clippy, `npm test`, `npm run lint`; thủ công trên hai màn hình.
-- 2026-09-18: bạn tự rê chuột, mình ghi vị trí: chuột sang màn 2 (x=2182) → notch nhảy sang x=2727 trong vòng một nhịp 400ms; về màn 1 → notch về x=769. Kẹp offset ở màn hẹp: test Rust `keeps_a_dragged_notch_inside_a_narrower_second_screen`.
 
 **Phụ thuộc:** không
-**File dự kiến:** `src-tauri/src/window.rs`, `src-tauri/src/sticky.rs`, `src-tauri/src/settings.rs`, `src/shell/settings.ts`, `src/settings/SettingsApp.tsx`, test
 **Quy mô:** M
 
 ### Task 2: Kiểm hai màn hình thật, sticky theo màn, checklist
 
 **Tiêu chí chấp nhận:**
-- [ ] Sticky bật, đổi màn: dải giữ chỗ chuyển sang màn mới, màn cũ được trả lại.
-- [ ] Rút màn 2 khi notch đang ở đó: notch về màn chính trong ~2 giây.
-- [ ] CPU khi bật `mouse` không tăng quá 0.1 điểm so với `primary` (đo bản release).
+- [x] Bật `all`: hai notch hiện cùng lúc, mỗi cái đúng kích thước theo DPI màn đó.
+- [x] Sticky bật: mỗi màn có dải giữ chỗ riêng (40 và 32 px vật lý).
+- [ ] Rút màn 2: notch của màn đó biến mất trong ~2 giây; cắm lại thì hiện lại.
+- [ ] RAM tăng thêm khi bật `all` (đo bản release, ghi vào checklist).
 - [ ] `tests/manual-shell.md` thêm phần v3.
 
 **Phụ thuộc:** Task 1

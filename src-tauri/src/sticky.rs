@@ -1,16 +1,17 @@
-//! Sticky mode (SPEC-notch-shell §15 V4): reserves a full-width strip at the top of the primary monitor with a
-//! Windows AppBar, so maximised windows start below the collapsed notch. The notch sits in that strip: below other
-//! top AppBars such as YASB, and put back after each change because Windows moves it below a new strip.
+//! Sticky mode (SPEC-notch-shell §15 V4): reserves a full-width strip at the top of a monitor with a Windows AppBar,
+//! so maximised windows start below the collapsed notch. The notch sits in that strip: below other top AppBars such
+//! as YASB, and put back after each change because Windows moves it below a new strip.
 //!
-//! The frontend knows the notch sizes and sends the strip height through [`notch_sticky`] (`None` = off). The strip
-//! is re-registered when the display changes and removed when the app exits. If the process dies, the shell drops
-//! the AppBar together with its window.
+//! Each notch window keeps its own strip, so with a notch on every screen (SPEC §16) every screen reserves its own.
+//! The frontend sends the strip height through [`notch_sticky`] (`None` = off). The strip is re-registered when the
+//! display changes and removed when the app exits. If the process dies, the shell drops the AppBar with its window.
 
+use std::collections::HashMap;
 use std::sync::Mutex;
 
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 
-use crate::window::{MonitorGeometry, NOTCH_LABEL};
+use crate::window::MonitorGeometry;
 
 /// Physical rectangle (left, top, right, bottom).
 pub type Rect = (i32, i32, i32, i32);
@@ -28,7 +29,8 @@ pub fn reserve_rect(monitor: MonitorGeometry, height: f64) -> Rect {
 
 #[derive(Default)]
 pub struct StickyState {
-    inner: Mutex<Inner>,
+    /// One entry per notch window, by window label.
+    inner: Mutex<HashMap<String, Inner>>,
 }
 
 #[derive(Default)]
@@ -43,33 +45,37 @@ struct Inner {
     top: Option<i32>,
 }
 
-/// Keeps the notch window at `pos` (physical top-left) while sticky mode holds a strip, or releases it (`None`).
+/// Keeps a notch window at `pos` (physical top-left) while sticky mode holds a strip, or releases it (`None`).
 /// Windows moves the window below a newly reserved strip some time after ABM_SETPOS, so re-placing it is not enough:
 /// the move itself is overridden in WM_WINDOWPOSCHANGING. Call before placing the window at `pos`.
 pub fn pin<R: Runtime>(window: &WebviewWindow<R>, pos: Option<(i32, i32)>) {
-    native::set_pin(pos);
-    if pos.is_some() && !native::PIN_INSTALLED.swap(true, std::sync::atomic::Ordering::SeqCst) {
-        let Ok(hwnd) = window.hwnd() else {
-            native::PIN_INSTALLED.store(false, std::sync::atomic::Ordering::SeqCst);
-            return;
-        };
-        let hwnd = hwnd.0 as isize;
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    let hwnd = hwnd.0 as isize;
+    native::set_pin(hwnd, pos);
+    if pos.is_some() && native::needs_install(hwnd) {
         // A subclass must be installed on the thread that owns the window.
         if window
             .run_on_main_thread(move || native::install_pin(hwnd))
             .is_err()
         {
-            native::PIN_INSTALLED.store(false, std::sync::atomic::Ordering::SeqCst);
+            native::forget_install(hwnd);
         }
     }
 }
 
-/// Top edge of the reserved strip while sticky mode holds one.
-pub fn strip_top<R: Runtime>(app: &AppHandle<R>) -> Option<i32> {
-    app.try_state::<StickyState>()?.inner.lock().ok()?.top
+/// Top edge of the strip this notch window holds, if any.
+pub fn strip_top<R: Runtime>(app: &AppHandle<R>, label: &str) -> Option<i32> {
+    app.try_state::<StickyState>()?
+        .inner
+        .lock()
+        .ok()?
+        .get(label)?
+        .top
 }
 
-/// Turns the reserved strip on (`height` in logical px) or off (`None`).
+/// Turns the reserved strip on (`height` in logical px) or off (`None`) for the calling notch window.
 #[tauri::command]
 pub fn notch_sticky<R: Runtime>(
     window: WebviewWindow<R>,
@@ -82,28 +88,44 @@ pub fn notch_sticky<R: Runtime>(
         }
     }
     {
-        let mut inner = state.inner.lock().map_err(|e| e.to_string())?;
+        let mut all = state.inner.lock().map_err(|e| e.to_string())?;
+        let inner = all.entry(window.label().to_string()).or_default();
         inner.height = height;
-        sync(&window, &mut inner, false)?;
+        sync(&window, inner, false)?;
     }
     crate::window::reapply(&window)
 }
 
-/// Re-applies the strip after a display change (resolution, DPI, primary monitor).
+/// Re-applies every strip after a display change (resolution, DPI, monitors coming and going).
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
-    let Some(window) = app.get_webview_window(NOTCH_LABEL) else {
-        return;
-    };
-    if let Ok(mut inner) = app.state::<StickyState>().inner.lock() {
-        let _ = sync(&window, &mut inner, true);
+    for label in crate::window::notch_labels(app) {
+        let Some(window) = app.get_webview_window(&label) else {
+            continue;
+        };
+        if let Ok(mut all) = app.state::<StickyState>().inner.lock() {
+            if let Some(inner) = all.get_mut(&label) {
+                let _ = sync(&window, inner, true);
+            }
+        }
+        let _ = crate::window::reapply(&window);
     }
-    let _ = crate::window::reapply(&window);
 }
 
-/// Gives the space back. Safe to call more than once.
+/// Gives back the strip of one notch window (its screen went away, or the window is closing).
+pub fn forget<R: Runtime>(app: &AppHandle<R>, label: &str) {
+    if let Ok(mut all) = app.state::<StickyState>().inner.lock() {
+        if let Some(mut inner) = all.remove(label) {
+            unregister(&mut inner);
+        }
+    }
+}
+
+/// Gives all the space back. Safe to call more than once.
 pub fn remove<R: Runtime>(app: &AppHandle<R>) {
-    if let Ok(mut inner) = app.state::<StickyState>().inner.lock() {
-        unregister(&mut inner);
+    if let Ok(mut all) = app.state::<StickyState>().inner.lock() {
+        for inner in all.values_mut() {
+            unregister(inner);
+        }
     }
 }
 
@@ -116,7 +138,7 @@ fn sync<R: Runtime>(
         unregister(inner);
         return Ok(());
     };
-    let rect = reserve_rect(crate::window::target_geometry(window)?, height);
+    let rect = reserve_rect(crate::window::screen_of_window(window)?, height);
     if !force && inner.applied == Some(rect) {
         return Ok(());
     }
@@ -143,7 +165,8 @@ fn unregister(inner: &mut Inner) {
 #[cfg(windows)]
 mod native {
     use super::Rect;
-    use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+    use std::collections::{HashMap, HashSet};
+    use std::sync::Mutex;
     use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
     use windows::Win32::UI::Shell::{
         DefSubclassProc, SHAppBarMessage, SetWindowSubclass, ABE_TOP, ABM_NEW, ABM_QUERYPOS,
@@ -151,18 +174,38 @@ mod native {
     };
     use windows::Win32::UI::WindowsAndMessaging::{SWP_NOMOVE, WINDOWPOS, WM_WINDOWPOSCHANGING};
 
-    pub static PIN_INSTALLED: AtomicBool = AtomicBool::new(false);
-    static PINNED: AtomicBool = AtomicBool::new(false);
-    static PIN_X: AtomicI32 = AtomicI32::new(0);
-    static PIN_Y: AtomicI32 = AtomicI32::new(0);
+    /// Pinned position of each notch window, by raw handle, and which ones already carry the subclass.
+    static PINS: Mutex<Option<HashMap<isize, (i32, i32)>>> = Mutex::new(None);
+    static INSTALLED: Mutex<Option<HashSet<isize>>> = Mutex::new(None);
     const PIN_SUBCLASS_ID: usize = 0x5717;
 
-    pub fn set_pin(pos: Option<(i32, i32)>) {
-        if let Some((x, y)) = pos {
-            PIN_X.store(x, Ordering::SeqCst);
-            PIN_Y.store(y, Ordering::SeqCst);
+    fn pins() -> std::sync::MutexGuard<'static, Option<HashMap<isize, (i32, i32)>>> {
+        let mut guard = PINS.lock().unwrap_or_else(|e| e.into_inner());
+        guard.get_or_insert_with(HashMap::new);
+        guard
+    }
+
+    pub fn set_pin(hwnd: isize, pos: Option<(i32, i32)>) {
+        let mut guard = pins();
+        let map = guard.as_mut().expect("initialised above");
+        match pos {
+            Some(p) => map.insert(hwnd, p),
+            None => map.remove(&hwnd),
+        };
+    }
+
+    /// True when this window still needs the subclass; remembers it from here on.
+    pub fn needs_install(hwnd: isize) -> bool {
+        let mut guard = INSTALLED.lock().unwrap_or_else(|e| e.into_inner());
+        guard.get_or_insert_with(HashSet::new).insert(hwnd)
+    }
+
+    pub fn forget_install(hwnd: isize) {
+        if let Ok(mut guard) = INSTALLED.lock() {
+            if let Some(set) = guard.as_mut() {
+                set.remove(&hwnd);
+            }
         }
-        PINNED.store(pos.is_some(), Ordering::SeqCst);
     }
 
     pub fn install_pin(hwnd: isize) {
@@ -180,12 +223,17 @@ mod native {
         _id: usize,
         _data: usize,
     ) -> LRESULT {
-        if msg == WM_WINDOWPOSCHANGING && PINNED.load(Ordering::SeqCst) && lparam.0 != 0 {
-            // SAFETY: for WM_WINDOWPOSCHANGING, lParam points to the WINDOWPOS the move will use.
-            let pos = unsafe { &mut *(lparam.0 as *mut WINDOWPOS) };
-            if pos.flags & SWP_NOMOVE != SWP_NOMOVE {
-                pos.x = PIN_X.load(Ordering::SeqCst);
-                pos.y = PIN_Y.load(Ordering::SeqCst);
+        if msg == WM_WINDOWPOSCHANGING && lparam.0 != 0 {
+            let pinned = pins()
+                .as_ref()
+                .and_then(|m| m.get(&(hwnd.0 as isize)).copied());
+            if let Some((x, y)) = pinned {
+                // SAFETY: for WM_WINDOWPOSCHANGING, lParam points to the WINDOWPOS the move will use.
+                let pos = unsafe { &mut *(lparam.0 as *mut WINDOWPOS) };
+                if pos.flags & SWP_NOMOVE != SWP_NOMOVE {
+                    pos.x = x;
+                    pos.y = y;
+                }
             }
         }
         // SAFETY: forwards the message unchanged to the rest of the subclass chain.
@@ -239,9 +287,11 @@ mod native {
 #[cfg(not(windows))]
 mod native {
     use super::Rect;
-    pub static PIN_INSTALLED: std::sync::atomic::AtomicBool =
-        std::sync::atomic::AtomicBool::new(true);
-    pub fn set_pin(_: Option<(i32, i32)>) {}
+    pub fn set_pin(_: isize, _: Option<(i32, i32)>) {}
+    pub fn needs_install(_: isize) -> bool {
+        false
+    }
+    pub fn forget_install(_: isize) {}
     pub fn install_pin(_: isize) {}
     pub fn register(_: isize) -> Result<(), String> {
         Err("sticky mode needs Windows".into())

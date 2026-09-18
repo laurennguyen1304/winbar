@@ -43,7 +43,7 @@ describe("notchPropsFrom", () => {
       material: "dense",
       offsetX: -320,
       sticky: true,
-      monitor: "mouse",
+      monitor: "all",
     },
     fontScale: 115,
     widgets: [

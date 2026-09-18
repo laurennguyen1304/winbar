@@ -328,18 +328,20 @@ Cài đặt thêm (validate từng trường như §7):
 
 ## 16. Notch trên nhiều màn hình (duyệt 2026-09-18)
 
-Bạn chốt: thêm cài đặt chọn notch nằm ở màn chính, hoặc **nhảy theo chuột** khi có nhiều màn hình.
+Bạn chốt: thêm cài đặt chọn notch chỉ ở màn chính, hoặc **hiện ở tất cả màn hình**.
+(Bản đầu định cho notch nhảy theo chuột; bạn bỏ vì màn hình bị nháy mỗi lần đổi chỗ.)
 
 | Cài đặt | Giá trị | Mặc định |
 |---|---|---|
-| `pill.monitor` | `primary` (chỉ màn chính) · `mouse` (màn hình đang có con trỏ) | `primary` |
+| `pill.monitor` | `primary` (một notch ở màn chính) · `all` (mỗi màn một notch) | `primary` |
 
-**`mouse` hoạt động thế nào**
+**`all` hoạt động thế nào**
 
-- winbar xem con trỏ đang ở màn nào, mỗi 300ms một lần. Đổi màn thì notch chuyển sang mép trên màn đó.
-- Chỉ chuyển khi **đổi màn**, không chạy theo từng bước chuột, nên không nháy.
-- `pill.offsetX` tính từ giữa màn hình đang đứng, và bị kẹp trong màn đó: kéo lệch ở màn rộng rồi sang màn hẹp thì notch tự lùi vào trong.
-- Panel đang mở thì **không** chuyển màn giữa chừng; chuyển sau khi thu gọn, để không bị giật khi đang đọc.
-- Sticky: dải giữ chỗ nằm trên màn hình notch đang đứng; đổi màn thì trả chỗ ở màn cũ, giữ chỗ ở màn mới.
-- Chỉ có **một** notch; không mở thêm cửa sổ cho màn thứ hai (đỡ tốn RAM, và không có hai notch cùng lúc).
-- Rút màn hình đang đứng: notch về màn chính trong khoảng 2 giây (đã có sẵn cơ chế theo dõi màn hình).
+- Mỗi màn hình có **một cửa sổ notch riêng**, đứng yên ở mép trên màn đó. Không có chuyện notch chạy qua lại.
+- Các notch hiện **cùng nội dung** (cùng widget, cùng nhạc đang phát). Mở panel ở màn nào cũng được; mở ở màn này không mở ở màn kia.
+- `pill.offsetX` (chỗ bạn kéo) tính từ giữa **từng màn**, và bị kẹp trong màn đó.
+- Sticky: mỗi notch giữ chỗ trên màn của nó.
+- "Ẩn notch tạm thời" ở khay: ẩn/hiện **tất cả**.
+- Cắm thêm hoặc rút màn hình: trong khoảng 2 giây winbar tự thêm/bớt notch cho khớp.
+- Đổi cài đặt: `primary` → `all` mở thêm cửa sổ ngay; `all` → `primary` đóng bớt.
+- **Tốn thêm RAM:** mỗi màn thêm một cửa sổ WebView, khoảng +25 MB. Chỉ bật khi cần.

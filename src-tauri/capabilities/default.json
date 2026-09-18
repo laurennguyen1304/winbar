@@ -4,6 +4,7 @@
   "description": "Capability for the notch, Settings and command bar windows",
   "windows": [
     "notch",
+    "notch-*",
     "settings",
     "command-bar"
   ],

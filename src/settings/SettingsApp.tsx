@@ -187,7 +187,7 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
             </Row>
             <Row
               title="Màn hình"
-              description="Máy nhiều màn hình: giữ notch ở màn chính, hoặc cho notch sang màn đang có con trỏ chuột"
+              description="Máy nhiều màn hình: chỉ một notch ở màn chính, hoặc mỗi màn một notch"
             >
               <Choice
                 label="Màn hình"
@@ -195,7 +195,7 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
                 onChange={(monitor) => setPill({ monitor })}
                 options={[
                   { value: "primary", label: "Màn chính" },
-                  { value: "mouse", label: "Theo chuột" },
+                  { value: "all", label: "Cả 2 màn" },
                 ]}
               />
             </Row>

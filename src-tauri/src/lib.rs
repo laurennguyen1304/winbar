@@ -25,6 +25,22 @@ pub fn run() {
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
         .manage(command_bar::icons::IconsState::default())
+        .on_window_event(|window, event| {
+            // Windows rescales a window when it lands on a screen with another DPI; put the notch back to its size.
+            // The work is queued: touching the window inside tao's own event callback re-enters its window procedure.
+            if matches!(event, tauri::WindowEvent::ScaleFactorChanged { .. })
+                && window::is_notch_label(window.label())
+            {
+                let app = window.app_handle().clone();
+                let handle = app.clone();
+                let label = window.label().to_string();
+                let _ = app.run_on_main_thread(move || {
+                    if let Some(notch) = handle.get_webview_window(&label) {
+                        let _ = window::reapply(&notch);
+                    }
+                });
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             window::notch_layout,
             sticky::notch_sticky,
@@ -66,7 +82,7 @@ pub fn run() {
             app.manage(command_bar::history::HistoryState::load(app.handle())?);
             hotkeys::apply(app.handle(), &initial.hotkeys.command_bar);
             startup::sync_autostart(app.handle(), initial.launch_at_startup);
-            window::create(app.handle())?;
+            window::sync_windows(app.handle()).map_err(|e| e.to_string())?;
             command_bar::create(app.handle())?;
             command_bar::apps::warm_up(app.handle());
             media::start(app.handle());

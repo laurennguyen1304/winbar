@@ -29,7 +29,7 @@ pub struct PillSettings {
     pub offset_x: i32,
     /// Reserve the strip above maximised windows with a Windows AppBar (SPEC §15 V4).
     pub sticky: bool,
-    /// `primary` keeps the notch on the main screen; `mouse` moves it to the screen holding the cursor (SPEC §16).
+    /// `primary`: one notch on the main screen. `all`: a notch on every screen (SPEC §16).
     pub monitor: String,
 }
 
@@ -246,7 +246,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             material: r.choice(pill, "material", &["liquid", "dense"], &d.pill.material),
             offset_x: r.signed(pill, "offsetX", -4000, 4000, d.pill.offset_x),
             sticky: r.boolean(pill, "sticky", d.pill.sticky),
-            monitor: r.choice(pill, "monitor", &["primary", "mouse"], &d.pill.monitor),
+            monitor: r.choice(pill, "monitor", &["primary", "all"], &d.pill.monitor),
         },
         font_scale: r.int(root, "fontScale", 85, 130, 5, d.font_scale),
         widgets: read_widgets(root.and_then(|o| o.get("widgets")), r.warnings),
@@ -431,6 +431,16 @@ pub fn apply<R: Runtime>(
     if previous.launch_at_startup != next.launch_at_startup {
         crate::startup::sync_autostart(app, next.launch_at_startup);
     }
+    if previous.pill.monitor != next.pill.monitor {
+        // One notch on the main screen, or one per screen (SPEC §16). Opening and closing windows waits for the event
+        // loop, so it must not run on the main thread — this command does.
+        let handle = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Err(e) = crate::window::sync_windows(&handle) {
+                eprintln!("winbar notch: could not update the notch windows: {e}");
+            }
+        });
+    }
     app.emit(SETTINGS_CHANGED, &next)
         .map_err(|e| e.to_string())?;
     Ok(next)
@@ -522,8 +532,8 @@ mod tests {
 
     #[test]
     fn reads_the_monitor_choice() {
-        let (s, w) = from_value(&json!({ "pill": { "monitor": "mouse" } }));
-        assert_eq!(s.pill.monitor, "mouse");
+        let (s, w) = from_value(&json!({ "pill": { "monitor": "all" } }));
+        assert_eq!(s.pill.monitor, "all");
         assert!(w.is_empty());
         let (s, w) = from_value(&json!({ "pill": { "monitor": "second" } }));
         assert_eq!(s.pill.monitor, "primary");
