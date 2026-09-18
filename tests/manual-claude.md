@@ -82,7 +82,26 @@ Xem thêm `SPEC-claude.md` §13.1.
 
 ## 7. Hiệu năng (tiêu chí 11)
 
-_(điền sau khi đo)_
+Đo trên bản release, cùng một lần chạy, bật rồi tắt layout — nên **chênh lệch** mới là cái giá của module; số tuyệt
+đối không so được giữa các lần chạy (lần này có mở cổng debug và máy đang chạy phiên Claude thật).
+
+### Lần 1 — commit `a6c4bb2`: **KHÔNG ĐẠT**
+
+| | RAM (private WS) | CPU, panel đóng |
+|---|---|---|
+| Bật layout Claude | 138,1–148,4 MB | **2,180%** (102 s) |
+| Tắt | 137,7–138,1 MB | 0,522% (93 s) |
+
+- [x] RAM tăng ~0–3 MB — đạt (yêu cầu ≤ 12 MB).
+- [ ] ❌ CPU tăng **+1,66 điểm phần trăm**, yêu cầu ≤ +0,02%. **Vượt 83 lần.**
+
+**Nguyên nhân:** luồng theo dõi đọc lại **cả danh sách** mỗi lần có thay đổi, mà danh sách đó gồm việc parse **156
+file** phiên của app Claude Desktop — vài lần mỗi giây trong lúc một phiên đang chạy tool. Chính spec §4 đã ghi
+"quét mỗi 60 giây", tôi viết thiếu phần cache.
+
+### Lần 2 — sau khi cache lịch sử Desktop (commit `f86ac2f`)
+
+_(điền sau khi đo lại)_
 
 ## 8. Chưa làm / giới hạn đã biết
 
