@@ -117,7 +117,10 @@ fn read_state_file(path: &Path, orca_root: &str, now_ms: u64) -> Option<Session>
         project,
         phase,
         tool: (phase == Phase::Tool && !state.label.is_empty()).then(|| state.label.clone()),
-        cwd: (!state.cwd.is_empty()).then(|| state.cwd.clone()),
+        // Only a real directory is offered to open. `cwd` comes from a file someone else's hook writes, and a row
+        // click hands it to ShellExecute — which would happily launch an executable. A session's working directory
+        // is a folder, so anything else is not one.
+        cwd: (!state.cwd.is_empty() && Path::new(&state.cwd).is_dir()).then(|| state.cwd.clone()),
         // 0 means the hook never recorded a start, which is the usual case.
         started_at: (state.started_at > 0).then(|| state.started_at.saturating_mul(1000)),
         last_active_at,
@@ -183,7 +186,7 @@ fn read_desktop_file(path: &Path, now_ms: u64) -> Option<Session> {
         project: None,
         phase: Phase::Idle,
         tool: None,
-        cwd: (!file.cwd.is_empty()).then_some(file.cwd),
+        cwd: (!file.cwd.is_empty() && Path::new(&file.cwd).is_dir()).then_some(file.cwd),
         started_at: None,
         last_active_at: file.last_activity_at,
         turns: Some(file.completed_turns),
@@ -255,6 +258,49 @@ mod tests {
             list[0].started_at, None,
             "the hook writes 0, so there is no start time"
         );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn only_a_real_folder_is_offered_to_open() {
+        // A row click hands cwd to ShellExecute, and this file is written by someone else's hook — so a path that
+        // is not a directory (an executable, a file, something long gone) must not become a clickable row.
+        let dir = temp_dir("cwd");
+        let exe = dir.join("payload.exe");
+        fs::write(&exe, b"MZ").expect("writes");
+        write(
+            &dir,
+            "a.json",
+            &state_json("a", "idle", &exe.to_string_lossy(), "cli", NOW / 1000),
+        );
+        write(
+            &dir,
+            "b.json",
+            &state_json(
+                "b",
+                "idle",
+                "C:\\definitely\\not\\here-9f2c",
+                "cli",
+                NOW / 1000,
+            ),
+        );
+        write(
+            &dir,
+            "c.json",
+            &state_json("c", "idle", &dir.to_string_lossy(), "cli", NOW / 1000),
+        );
+
+        let list = read_live(&dir, "C:\\orca", NOW);
+        let cwd_of = |id: &str| list.iter().find(|s| s.id == id).and_then(|s| s.cwd.clone());
+        assert_eq!(
+            cwd_of("a"),
+            None,
+            "an executable is not a working directory"
+        );
+        assert_eq!(cwd_of("b"), None, "a folder that is gone is not one either");
+        assert!(cwd_of("c").is_some(), "a real folder still opens");
+        // The rows themselves stay; only the click is withheld.
+        assert_eq!(list.len(), 3);
         let _ = fs::remove_dir_all(&dir);
     }
 

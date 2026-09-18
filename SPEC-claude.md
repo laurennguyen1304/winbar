@@ -349,6 +349,7 @@ trạng thái, và mã lỗi.
 | Chèn header qua token dị dạng | Từ chối chuỗi có ký tự điều khiển; token hỏng bị coi như chưa đăng nhập |
 | Nhận chứng chỉ giả | Không đụng tới `WINHTTP_OPTION_SECURITY_FLAGS`, nên giữ nguyên kiểm tra chứng chỉ mặc định của Windows |
 | Rò handle khi lỗi | Mọi handle thuộc `Handle` tự đóng; có test gọi host không tồn tại |
+| Bấm một dòng chạy nhầm chương trình | `cwd` đến từ file do hook **bên thứ ba** ghi, và bấm dòng sẽ đưa nó cho `ShellExecute`. Chỉ nhận **thư mục có thật**; file, chương trình, hay đường dẫn đã mất thì dòng vẫn hiện nhưng không bấm được |
 
 | **Chưa chặn được** | Vì sao |
 |---|---|
