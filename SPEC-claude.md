@@ -23,7 +23,7 @@ chạy y nguyên. Mọi thứ dưới đây là đọc file có sẵn và gọi 
 
 ## 3. Nguồn dữ liệu (đã kiểm trên máy 2026-09-18)
 
-### 3.1 Phiên CLI — `~/.claude/statusbar/state.d/*.json`
+### 3.1 Phiên đang sống — `~/.claude/statusbar/state.d/*.json`
 
 Hook `claude-status-bar/hooks/lifecycle.js` **đã chạy sẵn** trên máy (khai báo trong `~/.claude/settings.json`),
 ghi một file cho mỗi phiên còn sống, xóa khi `SessionEnd`. Máy đang có 6 file. Định dạng thật:
@@ -40,13 +40,22 @@ ghi một file cho mỗi phiên còn sống, xóa khi `SessionEnd`. Máy đang c
 - `state.json` ở thư mục cha là phiên vừa hoạt động gần nhất — chính là cái pill hiển thị.
 - File cũ hơn 24 giờ là rác do crash (hook tự dọn khi có phiên mới, winbar cũng bỏ qua).
 
-### 3.2 Phiên app Desktop — `%APPDATA%\Claude\`
+**Ba điều quan trọng, đã kiểm trên 6 phiên thật của máy:**
+
+1. **Thư mục này chứa cả hai loại phiên.** `entrypoint` ∈ `cli` · `claude-desktop`; máy đang có 4 `cli` và
+   2 `claude-desktop`. Badge trên card lấy từ đây, **không** phải từ việc file nằm ở thư mục nào.
+2. **`termProgram` luôn là `Orca`** — kể cả hai phiên `claude-desktop`. Trường này vô dụng để phân biệt, **không dùng**.
+3. **`startedAt` bằng `0` ở 5/6 phiên** (chỉ phiên vừa khởi động mới có số thật). Nên cột "thời gian" của mockup
+   phải là **hoạt động lần cuối** (`ts`), chỉ hiện "đã chạy Xm" khi `startedAt > 0`.
+
+### 3.2 Lịch sử phiên app Desktop — `%APPDATA%\Claude\`
 
 `claude-code-sessions\**\local_*.json` (114 file) và `local-agent-mode-sessions\**\local_*.json` (42 file).
 Chỉ đọc phần metadata, **không bao giờ đọc nội dung hội thoại**: `sessionId`, `title`, `lastActivityAt` (ms),
 `completedTurns`, `cwd`, `isArchived`. Phiên đã archive thì bỏ.
 
-Các phiên này **không có trạng thái live** — chỉ biết lần hoạt động cuối. Card phải nói rõ điều đó.
+Đây là **lịch sử**, không phải phiên đang sống: không có trạng thái, chỉ có tiêu đề và lần hoạt động cuối.
+Phiên Desktop *đang sống* thì đã nằm ở §3.1 với `entrypoint = claude-desktop`. Card phải nói rõ sự khác nhau.
 
 ### 3.3 Hạn mức — `api.anthropic.com/api/oauth/usage`
 
@@ -66,15 +75,35 @@ Gọi `GET` với `Authorization: Bearer …` và `anthropic-beta: oauth-2025-04
 mục có `percent` cao nhất trong `limits` theo nhóm (`session` cho 5 giờ, `weekly` cho 7 ngày). Các mục
 `weekly_scoped` có `scope.model.display_name` thành dòng phụ "theo model".
 
+### 3.4 Orca: `project` là tên **worktree**, không phải tên project
+
+Bạn làm việc qua Orca, nên gần hết phiên nằm trong `~/orca/workspaces/<project>/<worktree>`. Hook chỉ lấy
+`basename(cwd)` làm `project`, nên danh sách thật của máy lúc này ra:
+
+| `project` hook ghi | `cwd` thật | Thực ra là |
+|---|---|---|
+| `firefish` | `~/orca/workspaces/winbar/firefish` | project **winbar** |
+| `makara` | `~/orca/workspaces/qikify-theme-v3/makara` | project **qikify-theme-v3** |
+| `fangtooth` | `~/orca/workspaces/qikify-theme-v3/fangtooth` | **cùng** project qikify-theme-v3 |
+| `brain` | `~/brain` | project brain (không qua Orca) |
+
+Nếu hiện nguyên `project`, card sẽ là ba tên cá và bạn không thể biết `firefish` là winbar, cũng không thấy
+`makara` với `fangtooth` là hai worktree của **cùng một** project.
+
+**Cách xử lý:** khi `cwd` khớp `<gốc Orca>/workspaces/<project>/<worktree>`, hiện **`winbar · firefish`** —
+project đậm, worktree mờ. Ngoài Orca thì giữ nguyên tên thư mục. Gốc Orca đọc từ biến môi trường `ORCA_HOME`
+nếu có, mặc định `~/orca`; không khớp thì không đoán gì thêm. Phần tách chuỗi này là hàm thuần, có test.
+
 ## 4. Quyết định kỹ thuật
 
 | Việc | Cách làm | Vì sao |
 |---|---|---|
-| Theo dõi phiên CLI | Xem `mtime` của thư mục `state.d` mỗi **1 giây**; chỉ đọc lại file khi nó đổi | Một lần `stat` rẻ hơn hẳn đọc 6 file; pill cần cập nhật gần như tức thì |
+| Theo dõi phiên đang sống | Xem `mtime` của thư mục `state.d` mỗi **1 giây**; chỉ đọc lại file khi nó đổi | Một lần `stat` rẻ hơn hẳn đọc 6 file; pill cần cập nhật gần như tức thì |
 | Gọi HTTPS | **WinHTTP** qua crate `windows` (feature `Win32_Networking_WinHttp`) | `reqwest` đã có trong cây phụ thuộc nhưng **không có TLS backend**; bật `rustls-tls` sẽ kéo thêm cả rustls + ring và làm build lâu hơn nhiều. App vốn đã chỉ chạy Windows và đã dùng nhiều Win32 |
 | Cache hạn mức | `%APPDATA%\winbar\claude-usage.json`, TTL **120 giây**, làm mới mỗi 5 phút khi panel mở | Endpoint không công khai, phải tôn trọng rate limit (capability map) |
 | Token | Đọc lại từ `.credentials.json` mỗi lần gọi, giữ trong bộ nhớ đúng lúc gọi | Không sao chép token sang chỗ khác, không ghi ra đĩa, **không bao giờ ghi log** |
-| Phiên Desktop | Quét khi panel mở và mỗi 60 giây, không quét khi panel đóng | 156 file; không đáng quét liên tục |
+| Lịch sử Desktop | Quét khi panel mở và mỗi 60 giây, không quét khi panel đóng | 156 file; không đáng quét liên tục |
+| Tên project qua Orca | Tách `cwd` theo `<gốc>/workspaces/<project>/<worktree>` (§3.4) | Không có nó thì card chỉ toàn tên cá |
 | Ảnh trạng thái | Bộ ảnh kèm app + thư mục người dùng, xem §5.4 | Bạn muốn tự thêm ảnh mà không phải build lại |
 
 ## 5. Hành vi
@@ -90,18 +119,23 @@ mục có `percent` cao nhất trong `limits` theo nhóm (`session` cho 5 giờ,
 | `tool` | `Cooking · <tool>` | `--claude` |
 | `permission` | `wait for you` | `--warn` |
 
-Dòng phụ: `<project> · <thời gian trôi>` và `5h <pct>%` khi đã có số hạn mức (như mockup).
+Dòng phụ: `<project> · <worktree>` (§3.4) và `5h <pct>%` khi đã có số hạn mức (như mockup). Pill hẹp nên khi
+thiếu chỗ thì bỏ worktree trước, giữ tên project.
 Không có phiên nào: widget tự ẩn khỏi pill (`shell.setHidden`), giống media khi không phát gì.
 
 ### 5.2 Card "Phiên Claude"
 
-Theo mockup: mỗi dòng có ảnh trạng thái (26px), tên project + badge `cli`/`desktop`, dòng trạng thái, thời gian
+Theo mockup: mỗi dòng có ảnh trạng thái (26px), tên + badge `cli`/`desktop`, dòng trạng thái, thời gian
 bên phải. Nhãn card ghi số phiên đang mở.
 
-- **Phiên CLI** (§3.1) lên trước, sắp theo §5.3.
-- **Phiên Desktop** (§3.2) xuống dưới, tối đa 3 dòng, badge `desktop`, dòng trạng thái ghi `<n> lượt · <thời gian>`;
+- **Phiên đang sống** (§3.1) lên trước, sắp theo §5.3; badge lấy từ `entrypoint`: `cli` hoặc `desktop`.
+- Tên dòng: `<project> · <worktree>` theo §3.4 khi ở trong Orca, còn lại là tên thư mục.
+- Cột phải: "hoạt động 2 phút trước"; chỉ khi `startedAt > 0` mới ghi "đã chạy 12m".
+- Phiên `idle` quá **2 giờ** xuống mục "đã lâu không hoạt động" ở cuối, chữ mờ — vẫn còn file nhưng gần như
+  chắc chắn bạn đã quên nó (máy đang có một phiên idle 22 giờ).
+- **Lịch sử Desktop** (§3.2) là một mục riêng ở dưới, tối đa 3 dòng, ghi `<n> lượt · <thời gian>`;
   **không** giả vờ có trạng thái live.
-- Bấm một dòng: mở thư mục project (`cwd`) bằng lệnh `open_path` sẵn có.
+- Bấm một dòng: mở thư mục (`cwd`) bằng lệnh `open_path` sẵn có.
 - Không có phiên nào: "Không có phiên Claude nào đang mở".
 
 ### 5.3 Phiên nào là "sôi động nhất"
@@ -151,7 +185,8 @@ Tắt được trong Cài đặt.
 ### 5.7 Trong command bar
 
 Provider `claude`, nhóm "Claude", tiền tố `cl`:
-- Mỗi phiên CLI một dòng: Enter mở thư mục project.
+- Mỗi phiên đang sống một dòng: Enter mở thư mục. Tìm được theo **cả** tên project lẫn tên worktree, nên gõ
+  "winbar" hay "firefish" đều ra.
 - Một dòng "Hạn mức Claude · 5h 52% · 7d 24%": Enter mở notch tab Claude.
 - `remember: false` cho dòng phiên (phiên là thứ thoáng qua, nhớ lại sẽ trỏ vào phiên đã chết).
 
@@ -163,16 +198,18 @@ export type ClaudePhase = "idle" | "thinking" | "tool" | "permission";
 
 export interface ClaudeSession {
   id: string;
-  /** "cli" đọc từ statusbar hook; "desktop" đọc từ app Claude Desktop. */
-  source: "cli" | "desktop";
-  /** Tên project (CLI) hoặc tiêu đề phiên (Desktop). */
+  /** Từ `entrypoint` của hook. "history" là phiên cũ của app Desktop (§3.2), không còn sống. */
+  source: "cli" | "desktop" | "history";
+  /** Tên hiện trên dòng: worktree trong Orca, hoặc tên thư mục, hoặc tiêu đề phiên Desktop. */
   title: string;
+  /** Project chứa worktree, khi cwd nằm trong Orca (§3.4). */
+  project?: string;
   /** Desktop không có trạng thái live: luôn là "idle". */
   phase: ClaudePhase;
   /** Tên tool khi phase = "tool". */
   tool?: string;
   cwd?: string;
-  /** Epoch ms. */
+  /** Epoch ms; thiếu ở hầu hết phiên vì hook ghi 0 (§3.1). */
   startedAt?: number;
   lastActiveAt: number;
   /** Desktop: số lượt đã xong. */
@@ -238,7 +275,7 @@ trạng thái, và mã lỗi.
 
 | Mức | Nội dung |
 |---|---|
-| Rust | đọc `state.d` (file hỏng, file cũ 24h, thiếu trường); sắp thứ tự phiên; chọn cửa sổ hạn mức từ 3 dạng payload thật; cache hết hạn; quét thư mục ảnh (file quá lớn, đuôi lạ) |
+| Rust | đọc `state.d` (file hỏng, file cũ 24h, thiếu trường, `startedAt = 0`); tách tên project/worktree của Orca (trong Orca, ngoài Orca, `ORCA_HOME` khác, đường dẫn kỳ quặc); sắp thứ tự phiên; chọn cửa sổ hạn mức từ 3 dạng payload thật; cache hết hạn; quét thư mục ảnh (file quá lớn, đuôi lạ) |
 | TS thuần | chữ/màu theo trạng thái; "Reset sau 2h 14m"; luân phiên ảnh |
 | Component | card phiên (rỗng, chỉ CLI, CLI + Desktop), card hạn mức (bình thường, lỗi auth, lỗi mạng, chưa đăng nhập) |
 | Command bar | provider trả đúng dòng |
@@ -248,7 +285,9 @@ trạng thái, và mã lỗi.
 
 1. Mở một phiên Claude ở cửa sổ khác: trong 1 giây pill đổi sang `Thinking`/`Cooking · <tool>`.
 2. Phiên chờ duyệt quyền: pill chuyển `wait for you` màu vàng và nổi lên đầu danh sách.
-3. Card phiên hiện đúng các phiên CLI đang sống + tối đa 3 phiên Desktop, bấm vào mở đúng thư mục.
+3. Card phiên hiện đúng các phiên đang sống (cả `cli` lẫn `claude-desktop`) + tối đa 3 dòng lịch sử Desktop,
+   bấm vào mở đúng thư mục.
+3b. Phiên trong Orca hiện `winbar · firefish`, và hai worktree của cùng project nhìn ra được là cùng project.
 4. Card hạn mức khớp với số thật của tài khoản (so với `/usage` trong Claude Code).
 5. Rút mạng: card giữ số cũ và nói rõ là số cũ; cắm lại thì tự cập nhật.
 6. Đổi tên/xóa `.credentials.json`: card báo "Chưa đăng nhập", **không** gọi mạng, không crash.
@@ -265,6 +304,7 @@ trạng thái, và mã lỗi.
 |---|---|---|
 | Endpoint usage không công khai, có thể đổi hoặc bị chặn | **Cao** | Parser chịu được thiếu trường; lỗi thì giữ cache và nói rõ; không bao giờ làm app treo |
 | Định dạng `state.d` là của hook yasb, đổi hook là hỏng parser | Trung bình | Bỏ qua file không parse được thay vì hỏng cả danh sách; test với file thiếu trường |
+| Orca đổi cách xếp thư mục worktree | Thấp | Không khớp thì hiện tên thư mục như cũ, không đoán; hàm tách chuỗi có test |
 | Token lộ ra log hoặc ảnh chụp màn hình | **Cao** | Không log; không đưa token vào bất kỳ struct nào phát ra frontend; checklist có mục kiểm |
 | WinHTTP viết tay sai, rò handle | Trung bình | Một hàm GET duy nhất, đóng handle bằng `Drop`; test với URL sai và không có mạng |
 | Poll 1 giây làm tốn CPU | Trung bình | Chỉ `stat` một thư mục; đo ở task cuối như các module trước |
