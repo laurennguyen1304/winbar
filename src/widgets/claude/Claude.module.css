@@ -149,3 +149,139 @@
   font-size: 13px;
   color: var(--text-faint);
 }
+
+/* --- Hạn mức --- */
+
+.meters {
+  display: flex;
+  gap: 14px;
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.meterHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.meterLabel {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.meterValue {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.meterValue small {
+  font-size: 14px;
+}
+
+.track {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.track > i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--claude);
+  transition: width var(--motion-quick-fade);
+}
+
+.track > i[data-level="high"] {
+  background: var(--warn);
+}
+
+.track > i[data-level="critical"] {
+  background: var(--danger);
+}
+
+.reset {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.perModel {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.refresh {
+  all: unset;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.refresh:hover {
+  color: var(--text);
+}
+
+.refresh:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.noteError {
+  color: var(--danger);
+}
+
+/* --- pill --- */
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pillText {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pillPhase {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.pillProject {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pillLimit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  margin-left: auto;
+}

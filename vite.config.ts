@@ -42,7 +42,12 @@ export default defineConfig(() => ({
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
-    // The first test of a file pays for importing Radix/Tailwind components (several seconds on this machine).
-    testTimeout: 15_000,
+    // The first test of a file pays for importing Radix/Tailwind components (several seconds on this machine),
+    // and SettingsApp pulls in the most — it has timed out at 15s under load, taking 20.5s.
+    //
+    // Note for whoever reads a run summary: this machine intermittently fails to spawn a worker
+    // ("spawn EPERM", one file dropped). Vitest reports it as `Errors 1 error` and a non-zero exit, but the
+    // "Tests N passed" line still looks green — so check the exit code, not just that line.
+    testTimeout: 30_000,
   },
 }));

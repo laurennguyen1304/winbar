@@ -15,6 +15,7 @@ const { native } = vi.hoisted(() => ({
 }));
 
 vi.mock("./native", () => ({
+  NO_USAGE: { perModel: [], fetchedAt: 0 },
   listSessions: () => Promise.resolve(native.sessions),
   extraIcons: () => Promise.resolve(native.icons),
   getUsage: () => Promise.resolve({ perModel: [], fetchedAt: 0 }),

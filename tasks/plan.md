@@ -39,7 +39,7 @@ Task 1 và Task 2 độc lập nhau; Task 2 rủi ro cao nhất (endpoint không
 - [x] Task 1: Rust — phiên đang sống, lịch sử Desktop, tên project theo Orca
 - [x] Task 2: Rust — hạn mức qua WinHTTP, parser, cache
 - [x] Task 3: Card "Phiên Claude" + ảnh trạng thái luân phiên
-- [ ] Task 4: Card "Hạn mức" + nội dung pill + tự ẩn khi không có phiên
+- [x] Task 4: Card "Hạn mức" + nội dung pill + tự ẩn khi không có phiên
 
 ### Checkpoint: bạn dùng thử
 

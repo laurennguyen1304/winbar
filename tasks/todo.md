@@ -72,14 +72,20 @@ shell). Đã viết lại để token không rời khỏi tiến trình Python. 
 **Phụ thuộc:** Task 1
 **Quy mô:** M
 
-### Task 4: Card "Hạn mức" + nội dung pill + tự ẩn
+### Task 4: Card "Hạn mức" + nội dung pill + tự ẩn ✅
 
 **Tiêu chí chấp nhận:**
-- [ ] Card hiện 5 giờ / 7 ngày, giờ reset đếm ngược, dòng theo model khi có.
-- [ ] Màu đổi theo ngưỡng 75% / 90%; lỗi auth và lỗi mạng hiện đúng câu, số cũ ghi rõ là cũ.
-- [ ] Pill hiện trạng thái phiên sôi động nhất + `5h <pct>%`; `permission` ra màu vàng.
-- [ ] Không có phiên nào: widget tự ẩn khỏi pill.
-- [ ] Test component cho cả 4 trạng thái lỗi.
+- [x] Trên app thật: **5 giờ 6%** (Reset sau 4h 40m) · **7 ngày 30%** (Reset sau 8h 40m) · **Fable 10%**.
+- [x] Pill khi thu gọn: **"Cooking · Bash · winbar · 5h 6%"** kèm ảnh động; `permission` ra màu `--warn`.
+- [x] Màu đổi theo ngưỡng 75% / 90% (test component đọc `data-level`).
+- [x] Lỗi mạng giữ số cũ và ghi "số từ 8 phút trước"; `no-login` và `auth` hiện đúng câu, không bịa số.
+- [x] Không có phiên sống nào: `ClaudeBackground` gọi `setHidden(true)`; có phiên thì gọi lại `false`.
+- [x] Test: 21 test mới; tổng TS 436, Rust 200, lint sạch.
+
+**Một việc sửa ngoài kế hoạch:** `SettingsApp.test.tsx` hết giờ ở 15 s (chạy mất 20,5 s) nên nâng `testTimeout`
+lên 30 s. Trong lúc đó phát hiện suite thỉnh thoảng **rớt một file test** — hóa ra là `spawn EPERM` của vitest khi
+máy tải nặng, và vitest **có** báo (`Errors 1 error`, exit code 1); chỉ là dòng "Tests N passed" vẫn xanh nên dễ
+nhầm. Đã ghi chú trong `vite.config.ts`: xem exit code, đừng chỉ nhìn dòng đó.
 
 **Phụ thuộc:** Task 2 (và Task 1 cho pill)
 **Quy mô:** M

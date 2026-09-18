@@ -1,14 +1,23 @@
 // One Claude store for the whole notch page, so the card and the pill read the same sessions.
 import { useSyncExternalStore } from "react";
-import { extraIcons, listSessions, onSessionsChanged, type ClaudeSession } from "./native";
+import {
+  extraIcons,
+  getUsage,
+  listSessions,
+  onSessionsChanged,
+  NO_USAGE,
+  type ClaudeSession,
+  type ClaudeUsage,
+} from "./native";
 
 export interface ClaudeView {
   sessions: ClaudeSession[];
   /** Extra images per phase, added by the user. Empty until the first read. */
   icons: Readonly<Record<string, string[]>>;
+  usage: ClaudeUsage;
 }
 
-const EMPTY: ClaudeView = { sessions: [], icons: {} };
+const EMPTY: ClaudeView = { sessions: [], icons: {}, usage: NO_USAGE };
 
 let view: ClaudeView = EMPTY;
 const listeners = new Set<() => void>();
@@ -25,6 +34,13 @@ export function refresh(): Promise<void> {
     .catch((err: unknown) => console.error("claude_sessions failed", err));
 }
 
+/** Re-reads the limits. Rust serves a cached answer unless `force` asks for a fresh one. */
+export function refreshUsage(force = false): Promise<void> {
+  return getUsage(force)
+    .then((usage) => set({ ...view, usage }))
+    .catch((err: unknown) => console.error("claude_usage failed", err));
+}
+
 /** Re-reads the user's icon folder. Called when the panel opens, so a new file shows up without a restart. */
 export function refreshIcons(): Promise<void> {
   return extraIcons()
@@ -38,6 +54,7 @@ function start() {
   onSessionsChanged(() => void refresh());
   void refresh();
   void refreshIcons();
+  void refreshUsage();
 }
 
 function subscribe(listener: () => void) {
