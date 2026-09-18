@@ -1,4 +1,5 @@
 import {
+  Activity,
   Calculator,
   Check,
   EmptyPage,
@@ -34,6 +35,7 @@ function Grip(props: SVGProps<SVGSVGElement>) {
 // The only place that imports iconoir-react, so the icon set can be swapped in one file.
 const ICONS = {
   sparks: Sparks,
+  activity: Activity,
   search: Search,
   settings: Settings,
   collapse: NavArrowUp,

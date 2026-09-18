@@ -33,13 +33,14 @@
 - **Đăng ký** widget trong `src/widgets/index.ts`.
 
 **Tiêu chí chấp nhận:**
-- [ ] Card hiện số trong 1 giây, đổi sau mỗi 2 giây.
-- [ ] Rời card (đóng panel, đổi tab): không còn lệnh đo nào.
-- [ ] Lỗi đo: hiện "—", không vỡ bố cục.
-- [ ] Nút mở Task Manager; command bar gõ "task" / "quan ly tac vu" ra đúng dòng.
-- [ ] Test: hook, ngưỡng màu, định dạng, component, provider.
+- [x] Card hiện số trong 1 giây, đổi sau mỗi 2 giây.
+- [x] Rời card (đóng panel, đổi tab): không còn lệnh đo nào.
+- [x] Lỗi đo: hiện "—", không vỡ bố cục.
+- [x] Nút mở Task Manager; command bar gõ "task" / "quan ly tac vu" ra đúng dòng.
+- [x] Test: hook, ngưỡng màu, định dạng, component, provider.
 
 **Kiểm tra:** `npm test`, `npm run lint`; ảnh chụp card trên app thật.
+- 2026-09-18: card hiện CPU 31% và RAM 25.4 / 31.6 GB, thanh RAM chuyển vàng khi trên 75%. Bộ hẹn giờ 2 giây chỉ tồn tại khi panel mở (đếm setInterval đang sống: [2000] khi mở, [] khi đóng). Ảnh chụp: card đúng bố cục mockup.
 
 **Phụ thuộc:** Task 1
 **File dự kiến:** `src/widgets/system/*`, `src/widgets/index.ts`
