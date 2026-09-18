@@ -15,6 +15,11 @@ use tauri::{
 
 pub const NOTCH_LABEL: &str = "notch";
 
+/// How often the cursor is checked while the notch follows the mouse (SPEC §16).
+const CURSOR_POLL: Duration = Duration::from_millis(300);
+/// How often the display setup is checked (resolution, DPI, monitors coming and going).
+const DISPLAY_POLL: Duration = Duration::from_secs(2);
+
 /// Monitor geometry in physical pixels plus its scale factor.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MonitorGeometry {
@@ -71,6 +76,8 @@ pub struct LayoutRequest {
 #[derive(Default)]
 pub struct NotchState {
     pub layout: Mutex<Option<LayoutRequest>>,
+    /// The panel is open: the notch stays where it is, even if the cursor moves to another screen (SPEC §16).
+    pub expanded: AtomicBool,
     /// "Ẩn notch tạm thời" from the tray: layout calls keep sizing the window but never show it.
     pub hidden: AtomicBool,
 }
@@ -80,21 +87,72 @@ pub fn primary_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<Monitor
         .primary_monitor()
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "no primary monitor".to_string())?;
+    Ok(geometry_of(&monitor))
+}
+
+fn geometry_of(monitor: &tauri::Monitor) -> MonitorGeometry {
     let pos = monitor.position();
     let size = monitor.size();
-    Ok(MonitorGeometry {
+    MonitorGeometry {
         x: pos.x,
         y: pos.y,
         width: size.width,
         height: size.height,
         scale: monitor.scale_factor(),
+    }
+}
+
+/// Monitor holding this physical point, if any.
+pub fn monitor_at(point: (i32, i32), monitors: &[MonitorGeometry]) -> Option<usize> {
+    monitors.iter().position(|m| {
+        let (x, y) = point;
+        x >= m.x && x < m.x + m.width as i32 && y >= m.y && y < m.y + m.height as i32
     })
+}
+
+/// Screen the notch belongs on: the one under the cursor when `pill.monitor` is `mouse`, else the primary one.
+pub fn target_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
+    if follows_mouse(window.app_handle()) {
+        if let Some(geometry) = cursor_geometry(window) {
+            return Ok(geometry);
+        }
+    }
+    primary_geometry(window)
+}
+
+fn follows_mouse<R: Runtime>(app: &AppHandle<R>) -> bool {
+    app.try_state::<crate::settings::SettingsState>()
+        .is_some_and(|s| s.get().pill.monitor == "mouse")
+}
+
+/// Geometry of the monitor under the cursor; `None` when the cursor cannot be read or sits outside every monitor.
+fn cursor_geometry<R: Runtime>(window: &WebviewWindow<R>) -> Option<MonitorGeometry> {
+    let point = cursor_position()?;
+    let monitors = window.available_monitors().ok()?;
+    let geometries: Vec<MonitorGeometry> = monitors.iter().map(geometry_of).collect();
+    monitor_at(point, &geometries).map(|i| geometries[i])
+}
+
+#[cfg(windows)]
+fn cursor_position() -> Option<(i32, i32)> {
+    use windows::Win32::Foundation::POINT;
+    use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
+
+    let mut point = POINT::default();
+    // SAFETY: `point` is an owned struct that outlives the call.
+    unsafe { GetCursorPos(&mut point) }.ok()?;
+    Some((point.x, point.y))
+}
+
+#[cfg(not(windows))]
+fn cursor_position() -> Option<(i32, i32)> {
+    None
 }
 
 fn apply<R: Runtime>(window: &WebviewWindow<R>, req: LayoutRequest) -> Result<(), String> {
     let strip_top = crate::sticky::strip_top(window.app_handle());
     let p = place_notch(
-        primary_geometry(window)?,
+        target_geometry(window)?,
         req.width,
         req.height,
         req.top_gap,
@@ -134,6 +192,7 @@ pub fn notch_layout<R: Runtime>(
     height: f64,
     top_gap: f64,
     offset_x: f64,
+    expanded: bool,
 ) -> Result<(), String> {
     if !(width.is_finite() && height.is_finite() && top_gap.is_finite() && offset_x.is_finite())
         || width <= 0.0
@@ -149,6 +208,7 @@ pub fn notch_layout<R: Runtime>(
         top_gap,
         offset_x,
     };
+    state.expanded.store(expanded, Ordering::Relaxed);
     apply(&window, req)?;
     *state.layout.lock().map_err(|e| e.to_string())? = Some(req);
     if !state.hidden.load(Ordering::Relaxed) && !window.is_visible().map_err(|e| e.to_string())? {
@@ -196,15 +256,27 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>>
 pub fn watch_displays<R: Runtime>(app: AppHandle<R>) {
     std::thread::spawn(move || {
         let mut last: Option<MonitorGeometry> = None;
+        let mut since_display_check = Duration::ZERO;
         loop {
-            std::thread::sleep(Duration::from_secs(2));
+            std::thread::sleep(CURSOR_POLL);
+            since_display_check += CURSOR_POLL;
             let Some(window) = app.get_webview_window(NOTCH_LABEL) else {
                 continue;
             };
-            let Ok(geometry) = primary_geometry(&window) else {
+            // The cursor is cheap to read; the display setup is only worth checking now and then.
+            let follows = follows_mouse(&app);
+            if !follows && since_display_check < DISPLAY_POLL {
+                continue;
+            }
+            if since_display_check >= DISPLAY_POLL {
+                since_display_check = Duration::ZERO;
+            }
+            let Ok(geometry) = target_geometry(&window) else {
                 continue;
             };
-            if last.is_some_and(|g| g != geometry) {
+            // Moving the notch out from under the open panel would be jarring, so wait until it collapses.
+            let expanded = app.state::<NotchState>().expanded.load(Ordering::Relaxed);
+            if last.is_some_and(|g| g != geometry) && !expanded {
                 let req = app
                     .state::<NotchState>()
                     .layout
@@ -219,8 +291,10 @@ pub fn watch_displays<R: Runtime>(app: AppHandle<R>) {
                 }
                 let handle = app.clone();
                 let _ = app.run_on_main_thread(move || crate::sticky::refresh(&handle));
+                last = Some(geometry);
+            } else if last.is_none() || !expanded {
+                last = Some(geometry);
             }
-            last = Some(geometry);
         }
     });
 }
@@ -324,6 +398,51 @@ mod tests {
         // Floating: the gap is counted from the strip's top.
         assert_eq!(place_notch(m, 340.0, 40.0, 8.0, 0.0, Some(47)).y, 57);
         assert_eq!(place_notch(m, 340.0, 40.0, 8.0, 0.0, None).y, 10);
+    }
+
+    #[test]
+    fn finds_the_monitor_holding_a_point() {
+        let screens = [
+            MonitorGeometry {
+                x: 0,
+                y: 0,
+                width: 1920,
+                height: 1200,
+                scale: 1.25,
+            },
+            MonitorGeometry {
+                x: 1920,
+                y: 0,
+                width: 1920,
+                height: 1080,
+                scale: 1.0,
+            },
+        ];
+        assert_eq!(monitor_at((10, 10), &screens), Some(0));
+        assert_eq!(monitor_at((1919, 1199), &screens), Some(0));
+        assert_eq!(monitor_at((1920, 0), &screens), Some(1));
+        assert_eq!(monitor_at((2500, 900), &screens), Some(1));
+        // Below the short screen, and left of both.
+        assert_eq!(monitor_at((2500, 1100), &screens), None);
+        assert_eq!(monitor_at((-5, 10), &screens), None);
+        assert_eq!(monitor_at((10, 10), &[]), None);
+    }
+
+    #[test]
+    fn keeps_a_dragged_notch_inside_a_narrower_second_screen() {
+        let second = MonitorGeometry {
+            x: 1920,
+            y: 0,
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+        };
+        // Dragged 900px right of centre on a wide screen, then moved to this narrower one.
+        let p = place_notch(second, 368.0, 40.0, 0.0, 900.0, None);
+        assert_eq!(p.x + p.width as i32, second.x + second.width as i32);
+        assert!(p.x >= second.x);
+        let left = place_notch(second, 368.0, 40.0, 0.0, -900.0, None);
+        assert_eq!(left.x, second.x);
     }
 
     #[test]

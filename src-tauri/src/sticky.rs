@@ -116,7 +116,7 @@ fn sync<R: Runtime>(
         unregister(inner);
         return Ok(());
     };
-    let rect = reserve_rect(crate::window::primary_geometry(window)?, height);
+    let rect = reserve_rect(crate::window::target_geometry(window)?, height);
     if !force && inner.applied == Some(rect) {
         return Ok(());
     }

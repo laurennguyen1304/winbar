@@ -186,6 +186,20 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
               </div>
             </Row>
             <Row
+              title="Màn hình"
+              description="Máy nhiều màn hình: giữ notch ở màn chính, hoặc cho notch sang màn đang có con trỏ chuột"
+            >
+              <Choice
+                label="Màn hình"
+                value={view.pill.monitor}
+                onChange={(monitor) => setPill({ monitor })}
+                options={[
+                  { value: "primary", label: "Màn chính" },
+                  { value: "mouse", label: "Theo chuột" },
+                ]}
+              />
+            </Row>
+            <Row
               title="Sticky"
               description="Notch nằm trong dải giữ chỗ phía trên, cửa sổ phóng to bắt đầu dưới dải. Có YASB ở cạnh trên thì dải và notch nằm ngay dưới YASB"
             >

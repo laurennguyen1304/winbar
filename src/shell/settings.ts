@@ -32,6 +32,8 @@ export interface Settings {
     offsetX: number;
     /** Reserve the strip above maximised windows (Windows AppBar). */
     sticky: boolean;
+    /** `primary`: main screen only. `mouse`: follow the screen the cursor is on (SPEC §16). */
+    monitor: "primary" | "mouse";
   };
   fontScale: number;
   widgets: WidgetSetting[];
@@ -59,6 +61,7 @@ export const DEFAULT_SETTINGS: Settings = {
     material: "liquid",
     offsetX: 0,
     sticky: false,
+    monitor: "primary",
   },
   fontScale: 100,
   widgets: [],

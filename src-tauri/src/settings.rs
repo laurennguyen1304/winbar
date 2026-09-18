@@ -29,6 +29,8 @@ pub struct PillSettings {
     pub offset_x: i32,
     /// Reserve the strip above maximised windows with a Windows AppBar (SPEC §15 V4).
     pub sticky: bool,
+    /// `primary` keeps the notch on the main screen; `mouse` moves it to the screen holding the cursor (SPEC §16).
+    pub monitor: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -87,6 +89,7 @@ impl Default for Settings {
                 material: "liquid".into(),
                 offset_x: 0,
                 sticky: false,
+                monitor: "primary".into(),
             },
             font_scale: 100,
             widgets: Vec::new(),
@@ -243,6 +246,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             material: r.choice(pill, "material", &["liquid", "dense"], &d.pill.material),
             offset_x: r.signed(pill, "offsetX", -4000, 4000, d.pill.offset_x),
             sticky: r.boolean(pill, "sticky", d.pill.sticky),
+            monitor: r.choice(pill, "monitor", &["primary", "mouse"], &d.pill.monitor),
         },
         font_scale: r.int(root, "fontScale", 85, 130, 5, d.font_scale),
         widgets: read_widgets(root.and_then(|o| o.get("widgets")), r.warnings),
@@ -514,6 +518,16 @@ mod tests {
             ("attached", "liquid")
         );
         assert_eq!(w.len(), 2);
+    }
+
+    #[test]
+    fn reads_the_monitor_choice() {
+        let (s, w) = from_value(&json!({ "pill": { "monitor": "mouse" } }));
+        assert_eq!(s.pill.monitor, "mouse");
+        assert!(w.is_empty());
+        let (s, w) = from_value(&json!({ "pill": { "monitor": "second" } }));
+        assert_eq!(s.pill.monitor, "primary");
+        assert_eq!(w.len(), 1);
     }
 
     #[test]
