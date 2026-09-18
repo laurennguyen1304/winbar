@@ -32,8 +32,7 @@ trên luồng nền thì hết (0/20 lỗi). Đây cũng là lý do nhiều app 
 | Chữ | Được | Kéo HTML5 bình thường của Chromium, không cần gì thêm |
 | **File ảnh** | Chưa chắc | Cần Windows `DoDragDrop` + `CF_HDROP`. Chromium có `DownloadURL` nhưng WebView2 nhúng thường không nối phần này |
 
-Hai hướng cho ảnh: thêm crate `tauri-plugin-drag` 2.1.1 (Tauri 2, cập nhật 05/2026, ~156 dòng), hoặc bỏ kéo ảnh và
-chỉ giữ bấm-để-copy + "Mở thư mục chứa". 👤 Bạn quyết; việc kéo thật bằng chuột cũng cần bạn thử tay ở Task 4.
+**Bạn chọn:** thêm `tauri-plugin-drag` 2.1.1 — sẽ thêm ở Task 4, lúc dùng tới. 👤 Kéo thật bằng chuột vẫn cần bạn thử tay ở Task 4.
 
 **Phụ thuộc:** không
 **Quy mô:** M

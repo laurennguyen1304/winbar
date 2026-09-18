@@ -49,9 +49,8 @@ Không thêm thư viện cho phần bắt clipboard; dùng lại crate `windows`
 | Ảnh | `CF_DIB` → WIC (đã dùng cho ảnh bìa media) → PNG gốc + thumbnail 160px |
 | App đang copy | `GetForegroundWindow` + `QueryFullProcessImageNameW` (feature đã bật) |
 
-**Kéo item ra app khác** là điểm chưa chắc (§12, §14): WebView2 kéo chữ ra ngoài thì được, nhưng kéo **file ảnh**
-thì cần kéo kiểu Windows. Task 1 sẽ thử; nếu WebView2 không làm được, phải thêm crate `tauri-plugin-drag`
-(**sẽ hỏi bạn trước**), hoặc bỏ kéo ảnh và chỉ giữ kéo chữ.
+**Kéo item ra app khác** đã chốt sau Task 1: chữ dùng kéo HTML5 sẵn có của WebView2; **file ảnh** cần kéo kiểu
+Windows (`DoDragDrop` + `CF_HDROP`) nên dùng crate `tauri-plugin-drag` 2.1.1 — **bạn đã đồng ý 18/09/2026**.
 
 ## 4. Lệnh
 
@@ -125,7 +124,7 @@ Khi bỏ qua vì lớp 2 hoặc 3, card hiện dòng mờ "Đã bỏ qua một m
 - Text / link / code: kéo ra là chuỗi (`text/plain`).
 - Ảnh: kéo ra là **file ảnh gốc** trên đĩa.
 - Trong lúc kéo, panel không tự thu gọn.
-- Nếu Task 1 cho thấy WebView2 không kéo được file: hỏi bạn về `tauri-plugin-drag` (§14).
+- File ảnh kéo bằng `tauri-plugin-drag` (chốt sau Task 1); chữ vẫn là kéo HTML5 thường.
 
 ### 5.6 Trong command bar
 
@@ -228,7 +227,7 @@ Như các module trước. Không bao giờ `println!`/`console.log` nội dung 
 
 | Rủi ro | Mức | Cách xử lý |
 |---|---|---|
-| Kéo file ảnh ra ngoài không làm được trong WebView2 | **Cao** | Thử ngay Task 1; phương án: crate `tauri-plugin-drag` (hỏi bạn), hoặc chỉ kéo chữ + nút "Mở file ảnh" |
+| ~~Kéo file ảnh ra ngoài không làm được trong WebView2~~ | — | Đã chốt: dùng `tauri-plugin-drag` 2.1.1 (bạn đồng ý 18/09/2026) |
 | Nhận nhầm nội dung thường là key rồi bỏ qua | Trung bình | Mẫu bám vào tiền tố/độ dài/độ lộn xộn; test nhiều chuỗi dễ nhầm (hash git, base64 ngắn, câu tiếng Việt) |
 | Bỏ sót nội dung nhạy cảm | Cao | 4 lớp; lớp 1 theo đúng cờ Windows; có nút tạm dừng; ghi rõ giới hạn trong checklist |
 | Ảnh làm phình RAM/đĩa | Trung bình | Chỉ giữ thumbnail trong bộ nhớ; ảnh gốc nằm trên đĩa; giới hạn 20 MB mỗi ảnh, 50 mục, 1–2 ngày |
@@ -238,7 +237,7 @@ Như các module trước. Không bao giờ `println!`/`console.log` nội dung 
 ## 13. Giới hạn khi làm
 
 - **Luôn:** test trước khi commit; mỗi task một commit; kiểm trên app thật; giữ nội dung clipboard ra khỏi log và ảnh chụp.
-- **Hỏi trước:** thêm crate (gồm `tauri-plugin-drag`); thêm feature ngoài `Win32_System_DataExchange`; đổi hạn giữ quá 2 ngày.
+- **Hỏi trước:** thêm crate (`tauri-plugin-drag` đã được đồng ý); thêm feature `windows` ngoài `Win32_System_DataExchange`, `Win32_System_Memory`, `Win32_System_Ole`; đổi hạn giữ quá 2 ngày.
 - **Không:** đọc clipboard khi đang tạm dừng; gửi nội dung đi đâu; ghi nội dung ra log.
 
 ## 14. Quyết định đã chốt và câu hỏi còn mở
@@ -252,4 +251,3 @@ Cần bạn duyệt cùng spec:
 - Bật feature `Win32_System_DataExchange` cho crate `windows`.
 - **Mục ghim không bị dọn và không tính vào 50 mục** — mình đề xuất vậy, bạn OK không?
 - File copy từ Explorer (CF_HDROP): v1 **bỏ qua**, chỉ text và ảnh. Có cần không?
-- Nếu WebView2 không kéo được file ảnh ra ngoài: thêm crate `tauri-plugin-drag`, hay bỏ kéo ảnh (chỉ kéo chữ, kèm nút mở file)?

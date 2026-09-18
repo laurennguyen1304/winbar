@@ -15,7 +15,7 @@ kéo ra app khác, và **không lưu** thứ nhạy cảm. Đây là module lớ
 - **Phần thuần tách riêng:** phân loại, cắt preview, dọn theo số mục/hạn giữ, nhận diện key/token — tất cả trong `model.rs` và `secrets.rs`, có test, không cần Windows.
 - **Lưu trữ:** `%APPDATA%\winbar\clipboard\index.json` + `images/<id>.png` + `thumbs/<id>.png`; ghi tạm rồi đổi tên, như các file khác.
 - **Riêng tư:** nội dung không bao giờ ra log; mục bị bỏ qua không ghi xuống đĩa; item clipboard không vào "Gần đây" của command bar.
-- **Kéo ra ngoài:** chưa chắc WebView2 làm được với file ảnh → **Task 1 thử trước**, rồi mới quyết (nếu cần thêm crate `tauri-plugin-drag` thì hỏi bạn).
+- **Kéo ra ngoài:** chữ dùng kéo HTML5 của WebView2; file ảnh cần `DoDragDrop` + `CF_HDROP` nên dùng crate `tauri-plugin-drag` 2.1.1 (bạn đồng ý sau Task 1), thêm ở Task 4.
 
 ## Thứ tự và phụ thuộc
 
@@ -43,7 +43,7 @@ Task 1 (spike: bắt clipboard + thử kéo ra ngoài)
 
 | Rủi ro | Mức | Cách xử lý |
 |---|---|---|
-| Kéo file ảnh ra ngoài không làm được trong WebView2 | Cao | Thử ngay Task 1; phương án dự phòng: chỉ kéo chữ + nút mở file ảnh |
+| ~~Kéo file ảnh ra ngoài~~ | — | Đã chốt sau Task 1: `tauri-plugin-drag` 2.1.1 |
 | Bỏ sót nội dung nhạy cảm | Cao | 4 lớp lọc (spec §5.4); test nhiều mẫu thật; nút tạm dừng |
 | Nhận nhầm nội dung thường là key | Trung bình | Test cả chuỗi dễ nhầm: hash git, base64 ngắn, câu tiếng Việt |
 | RAM tăng vì ảnh | Trung bình | Chỉ giữ thumbnail trong bộ nhớ; ảnh gốc trên đĩa; ở chế độ 2 màn RAM đã 146–149 MB nên phải đo kỹ |
