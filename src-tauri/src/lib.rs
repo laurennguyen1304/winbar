@@ -5,6 +5,7 @@ mod settings;
 mod settings_window;
 mod startup;
 mod sticky;
+mod system;
 mod tray;
 mod window;
 
@@ -19,6 +20,7 @@ pub fn run() {
         .manage(window::NotchState::default())
         .manage(sticky::StickyState::default())
         .manage(media::MediaStore::default())
+        .manage(system::SystemState::default())
         .manage(hotkeys::HotkeyState::default())
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
@@ -31,6 +33,8 @@ pub fn run() {
             media::media_control,
             media::media_seek,
             media::media_select,
+            system::system_stats,
+            system::open_task_manager,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
             command_bar::command_bar_save_position,

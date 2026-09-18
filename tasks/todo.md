@@ -12,12 +12,13 @@
 - **`system/mod.rs`:** lệnh `system_stats` (giữ mốc trước; mốc cũ hơn 10 giây thì tự đo nhanh 150ms), lệnh `open_task_manager`.
 
 **Tiêu chí chấp nhận:**
-- [ ] `system_stats` trả số hợp lý: CPU 0–100, RAM đã dùng < tổng.
-- [ ] Gọi hai lần cách 2 giây: CPU khớp mức tải thật (so với Task Manager, lệch ≤ 5 điểm).
-- [ ] `open_task_manager` mở đúng; gọi lần hai không mở thêm cửa sổ.
-- [ ] Test Rust cho toàn bộ `model.rs`.
+- [x] `system_stats` trả số hợp lý: CPU 0–100, RAM đã dùng < tổng.
+- [x] Gọi hai lần cách 2 giây: CPU khớp mức tải thật (so với Task Manager, lệch ≤ 5 điểm).
+- [x] `open_task_manager` mở đúng; gọi lần hai không mở thêm cửa sổ.
+- [x] Test Rust cho toàn bộ `model.rs`.
 
 **Kiểm tra:** `cargo test`, clippy; thủ công qua CDP.
+- 2026-09-18: so với bộ đếm Windows 4 lần: CPU lệch ≤ 3.5 điểm (12.0 vs 13, 24.9 vs 22.6), RAM lệch ≤ 0.05 GB (26.18 vs 26.22 / 31.56 GB). `open_task_manager` mở đúng, gọi lần hai không mở thêm. ⚠️ Không đóng được Task Manager từ script (tiến trình quyền cao) → việc mở Task Manager chuyển sang mục 👤.
 
 **Phụ thuộc:** không
 **File dự kiến:** `src-tauri/Cargo.toml`, `src-tauri/src/system/{mod,model,stats}.rs`, `src-tauri/src/lib.rs`
