@@ -312,7 +312,7 @@ Mockup: `design/notch-upgrade-mockup.html`. Bạn chốt sau khi xem mockup:
 | V3 | **Kéo ngang** | Nhấn giữ notch và kéo; di quá 6px mới tính là kéo (bấm để mở vẫn dùng được). Chỉ trượt dọc mép trên, không hít vào giữa. Lưu `pill.offsetX` (px logic tính từ giữa màn hình). Cài đặt có nút "Về giữa" |
 | V4 | **Sticky** (`pill.sticky`) | Giữ chỗ phía trên bằng Windows AppBar, cao bằng notch thu gọn, hết chiều ngang. **Notch nằm trong dải đó** (sửa 2026-09-17: Windows dời cửa sổ notch xuống dưới dải mới, nên đặt lại sau mỗi lần giữ chỗ). Có AppBar khác ở cạnh trên (YASB) thì dải và notch nằm ngay dưới nó. Cửa sổ phóng to bắt đầu dưới dải; panel mở rộng vẫn nổi đè. **Mặc định tắt** |
 | V5 | Chiều cao | Chốt trên máy (2026-09-17): pill S/M/L cao **32/36/40**, rộng giữ 300/340/400. Alert vẫn +150×+4 |
-| V6 | Emoji trạng thái Claude | Nhận thêm file theo trạng thái; định dạng WebP động (hoặc APNG), gấp đôi cỡ hiển thị, nền trong suốt |
+| V6 | Ảnh trạng thái Claude | **Đổi 2026-09-18 (bạn chốt):** không dùng GIF nữa. Mỗi trạng thái có **nhiều ảnh động**, notch **đổi qua lại** giữa chúng. Giữ lại 2 ảnh động ban đầu. Định dạng WebP động (hoặc APNG), gấp đôi cỡ hiển thị, nền trong suốt. Chi tiết (số ảnh, nhịp đổi, đổi ngẫu nhiên hay theo thứ tự) chốt trong spec `claude-sessions` |
 
 Cài đặt thêm (validate từng trường như §7):
 
