@@ -1,7 +1,7 @@
 # Implementation Plan: system
 
 > Spec: `SPEC-system.md` (bản 2, 2026-09-18) · Mockup: `design/winbar-mockup.html` (card "Hệ thống")
-> Danh sách task: `tasks/todo.md`. Trạng thái plan: **đang thực hiện**. Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/` (xong).
+> Danh sách task: `tasks/todo.md`. Trạng thái plan: **xong (2026-09-18)**. Trước đó: `tasks/notch-shell/`, `tasks/command-bar/`, `tasks/notch-shell-v2/`, `tasks/media/` (xong).
 
 ## Tổng quan
 
@@ -17,9 +17,9 @@ Command bar có thêm một dòng "Mở Task Manager".
 
 ## Danh sách task
 
-- [ ] Task 1: Rust đọc CPU/RAM + mở Task Manager (`system_stats`, `open_task_manager`)
-- [ ] Task 2: Card "Hệ thống" + hook đo + search provider
-- [ ] Task 3: Đo hiệu năng, checklist thủ công, so số với Task Manager
+- [x] Task 1: Rust đọc CPU/RAM + mở Task Manager (`system_stats`, `open_task_manager`)
+- [x] Task 2: Card "Hệ thống" + hook đo + search provider
+- [x] Task 3: Đo hiệu năng, checklist thủ công, so số với Task Manager
 
 ## Rủi ro
 

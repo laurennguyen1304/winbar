@@ -49,9 +49,9 @@
 ### Task 3: Đo, checklist thủ công, so số
 
 **Tiêu chí chấp nhận:**
-- [ ] So số với Task Manager: CPU lệch ≤ 5 điểm, RAM lệch ≤ 0.3 GB.
-- [ ] Bản release: panel đóng CPU như trước module; panel mở thêm ≤ 0.5%; RAM tăng ≤ 5 MB.
-- [ ] `tests/manual-system.md` theo tiêu chí §11 của spec.
+- [x] So số với Task Manager: CPU lệch ≤ 5 điểm, RAM lệch ≤ 0.3 GB.
+- [x] Bản release: panel đóng CPU như trước module; panel mở thêm ≤ 0.5%; RAM tăng ≤ 5 MB.
+- [x] `tests/manual-system.md` theo tiêu chí §11 của spec.
 
 **Phụ thuộc:** Task 2
 **Quy mô:** S
