@@ -32,7 +32,7 @@ Task 1 (spike: bắt clipboard + thử kéo ra ngoài)
 
 - [x] Task 1: Spike — bắt `WM_CLIPBOARDUPDATE` + thử kéo chữ/ảnh ra app khác
 - [x] Task 2: Rust — lưu trữ, dọn, lọc nhạy cảm, lệnh và sự kiện
-- [ ] Task 3: Card "Clipboard" trong panel
+- [x] Task 3: Card "Clipboard" trong panel
 
 ### Checkpoint: bạn dùng thử
 

@@ -235,6 +235,24 @@ pub fn clipboard_list(state: tauri::State<'_, ClipboardState>) -> Result<Vec<Cli
     Ok(state.store.lock().map_err(|e| e.to_string())?.list())
 }
 
+/// The thumbnail of one picture, as a PNG data URL. Sent per item rather than with the whole list, which would
+/// carry a megabyte of pictures for a full history.
+#[tauri::command]
+pub fn clipboard_thumb(
+    state: tauri::State<'_, ClipboardState>,
+    id: String,
+) -> Result<String, String> {
+    let path = state
+        .store
+        .lock()
+        .map_err(|e| e.to_string())?
+        .find(&id)
+        .and_then(|s| s.item.image.as_ref().map(|i| i.thumb.clone()))
+        .ok_or_else(|| format!("no picture for item {id}"))?;
+    let bytes = std::fs::read(&path).map_err(|e| format!("cannot read {path}: {e}"))?;
+    Ok(crate::command_bar::icons::data_url(&bytes))
+}
+
 /// The full text of one item, for copying or dragging it out.
 #[tauri::command]
 pub fn clipboard_text(

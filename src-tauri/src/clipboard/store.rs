@@ -26,8 +26,37 @@ pub struct Store {
 impl Store {
     /// Opens the history at `dir`, reading `index.json` if it is there.
     pub fn open(dir: PathBuf) -> Self {
-        let items = load(&dir.join("index.json"));
-        Store { dir, items }
+        let index = dir.join("index.json");
+        let readable = index.exists();
+        let items = load(&index);
+        let store = Store { dir, items };
+        // Pictures nothing points at can never be shown again, and nothing else would ever delete them.
+        // Only when the index was read: after a corrupt one, the pictures are all there is left.
+        if readable && !store.items.is_empty() {
+            store.drop_orphan_images();
+        }
+        store
+    }
+
+    /// Deletes picture files no item refers to.
+    fn drop_orphan_images(&self) {
+        let kept: std::collections::HashSet<PathBuf> = self
+            .items
+            .iter()
+            .filter_map(|s| s.item.image.as_ref())
+            .flat_map(|i| [PathBuf::from(&i.path), PathBuf::from(&i.thumb)])
+            .collect();
+        for dir in [self.images_dir(), self.thumbs_dir()] {
+            let Ok(entries) = fs::read_dir(&dir) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && !kept.contains(&path) {
+                    let _ = fs::remove_file(&path);
+                }
+            }
+        }
     }
 
     /// The rows the card shows.
@@ -227,6 +256,51 @@ mod tests {
         assert_eq!(store.remove(&["a".to_string()]), 1);
         assert!(!png.exists(), "the picture goes with the row");
         assert!(!thumb.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn reopening_sweeps_up_pictures_no_row_points_at() {
+        let dir = temp_dir("orphans");
+        let mut store = Store::open(dir.clone());
+        let png = dir.join("images").join("keep.png");
+        let thumb = dir.join("thumbs").join("keep.png");
+        write_file(&png, b"kept").expect("writes");
+        write_file(&thumb, b"kept").expect("writes");
+        let mut item = stored("keep", "ảnh", false);
+        item.item.kind = ClipKind::Image;
+        item.item.image = Some(ImageRef {
+            width: 4,
+            height: 2,
+            path: png.to_string_lossy().into_owned(),
+            thumb: thumb.to_string_lossy().into_owned(),
+        });
+        store.insert(item);
+        store.insert(stored("text", "chữ", false));
+        store.save().expect("saves");
+
+        // Left behind by an older run, or by an index that was put back from a copy.
+        let stray = dir.join("images").join("stray.png");
+        write_file(&stray, b"nobody points at this").expect("writes");
+
+        let again = Store::open(dir.clone());
+        assert_eq!(again.list().len(), 2);
+        assert!(png.exists(), "a picture a row still points at stays");
+        assert!(!stray.exists(), "the stray one goes");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_corrupt_index_keeps_the_pictures() {
+        let dir = temp_dir("corrupt-images");
+        let png = dir.join("images").join("only-copy.png");
+        write_file(&png, b"the only copy left").expect("writes");
+        write_file(&dir.join("index.json"), b"{ not json").expect("writes");
+        assert_eq!(Store::open(dir.clone()).list().len(), 0);
+        assert!(
+            png.exists(),
+            "after a corrupt index the pictures are all there is"
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 

@@ -54,6 +54,7 @@ pub fn run() {
             system::open_task_manager,
             clipboard::clipboard_list,
             clipboard::clipboard_text,
+            clipboard::clipboard_thumb,
             clipboard::clipboard_copy,
             clipboard::clipboard_pin,
             clipboard::clipboard_remove,

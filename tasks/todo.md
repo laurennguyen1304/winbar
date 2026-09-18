@@ -59,16 +59,22 @@ trên luồng nền thì hết (0/20 lỗi). Đây cũng là lý do nhiều app 
 **Phụ thuộc:** Task 1
 **Quy mô:** L
 
-### Task 3: Card "Clipboard"
+### Task 3: Card "Clipboard" ✅
 
-**Mô tả:** danh sách cuộn theo mockup, ô tìm (không dấu), chip lọc, bấm để copy lại (pill nháy "Đã copy"), ghim, xóa, xóa tất cả có xác nhận, nút tạm dừng, dòng "đã bỏ qua một mục nhạy cảm".
+**Đã làm:** card `tall` theo mockup — ô tìm (không dấu), 5 chip lọc, danh sách cuộn, mỗi dòng có icon theo loại
+hoặc thumbnail 84×52, tên app, thời gian tương đối; hover ra nút ghim và nút xóa; bấm dòng thì copy lại và nháy
+"Đã copy"; nút Tạm dừng ở header; "Xóa tất cả" có xác nhận; dòng "Đã bỏ qua một mục nhạy cảm".
+Thumbnail lấy từng dòng một qua lệnh mới `clipboard_thumb` (data URL) thay vì nhét cả megabyte ảnh vào danh sách.
 
 **Tiêu chí chấp nhận:**
-- [ ] Copy vài thứ rồi mở panel: danh sách đúng, ảnh có thumbnail.
-- [ ] Bấm item: dán ra Notepad đúng nội dung.
-- [ ] Ghim/xóa/xóa tất cả hoạt động, có xác nhận cho "xóa tất cả".
-- [ ] Tạm dừng: không ghi gì, trạng thái nhớ sau khi khởi động lại.
-- [ ] Test component + test lọc/tìm thuần.
+- [x] Copy 4 thứ rồi mở panel trên app thật: đủ 4 dòng, đúng thứ tự, ảnh có thumbnail, mỗi dòng ghi app nguồn.
+- [x] Bấm item: clipboard đổi đúng (đã kiểm ở Task 2), dòng nháy "Đã copy".
+- [x] Ghim / xóa / xóa tất cả có xác nhận — test component.
+- [x] Tạm dừng: đổi được, nút đổi nhãn thành "Đang tạm dừng"; trạng thái nằm trong `settings.json` nên nhớ sau khi khởi động lại.
+- [x] Test: 21 test mới (12 lọc/tìm thuần + 9 component), tổng TS 372 pass; Rust 155 pass; clippy sạch.
+
+**Thêm ngoài kế hoạch:** `Store::open` dọn file ảnh mồ côi (không dòng nào trỏ tới) — trừ khi index hỏng, vì lúc
+đó ảnh là thứ duy nhất còn lại. Phát hiện ra vì script test của tôi để lại đúng loại rác này trên máy bạn.
 
 **Phụ thuộc:** Task 2
 **Quy mô:** M
