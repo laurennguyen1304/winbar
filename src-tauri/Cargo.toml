@@ -38,7 +38,11 @@ windows = { version = "0.61", features = [
   "Win32_Graphics_Imaging",
   "Win32_Storage_EnhancedStorage",
   "Win32_System_Com",
+  # Clipboard widget: format listener and clipboard formats (SPEC-clipboard §3).
+  "Win32_System_DataExchange",
   "Win32_System_LibraryLoader",
+  "Win32_System_Memory",
+  "Win32_System_Ole",
   "Win32_System_Search",
   # System widget: CPU times and memory (SPEC-system §3).
   "Win32_System_SystemInformation",

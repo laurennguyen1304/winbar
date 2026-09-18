@@ -11,7 +11,7 @@ kéo ra app khác, và **không lưu** thứ nhạy cảm. Đây là module lớ
 
 ## Quyết định kiến trúc
 
-- **Bắt clipboard trong Rust:** `AddClipboardFormatListener` trên cửa sổ notch chính (đã có subclass cho sticky), nhận `WM_CLIPBOARDUPDATE`. Đọc clipboard ngay trên luồng cửa sổ, rồi đẩy việc nặng (ảnh, ghi đĩa) sang luồng nền.
+- **Bắt clipboard trong Rust:** `AddClipboardFormatListener` trên một **cửa sổ message-only riêng** (notch bị đóng/mở lại khi đổi màn hình nên không gắn vào đó được), nhận `WM_CLIPBOARDUPDATE`. Luồng cửa sổ **chỉ báo hiệu**; một luồng đọc chờ 60 ms rồi mới mở clipboard — mở ngay trong handler làm app đang copy bị lỗi (xem Task 1).
 - **Phần thuần tách riêng:** phân loại, cắt preview, dọn theo số mục/hạn giữ, nhận diện key/token — tất cả trong `model.rs` và `secrets.rs`, có test, không cần Windows.
 - **Lưu trữ:** `%APPDATA%\winbar\clipboard\index.json` + `images/<id>.png` + `thumbs/<id>.png`; ghi tạm rồi đổi tên, như các file khác.
 - **Riêng tư:** nội dung không bao giờ ra log; mục bị bỏ qua không ghi xuống đĩa; item clipboard không vào "Gần đây" của command bar.
@@ -30,7 +30,7 @@ Task 1 (spike: bắt clipboard + thử kéo ra ngoài)
 
 ## Danh sách task
 
-- [ ] Task 1: Spike — bắt `WM_CLIPBOARDUPDATE` + thử kéo chữ/ảnh ra app khác
+- [x] Task 1: Spike — bắt `WM_CLIPBOARDUPDATE` + thử kéo chữ/ảnh ra app khác
 - [ ] Task 2: Rust — lưu trữ, dọn, lọc nhạy cảm, lệnh và sự kiện
 - [ ] Task 3: Card "Clipboard" trong panel
 

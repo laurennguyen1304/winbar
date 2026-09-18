@@ -3,21 +3,37 @@
 > Plan: `tasks/plan.md` · Spec: `SPEC-clipboard.md`
 > Lệnh chung: `npm test` · `cargo test --manifest-path src-tauri/Cargo.toml` · `npm run lint` · `npm run tauri dev`
 
-### Task 1: Spike — bắt clipboard và thử kéo ra ngoài
+### Task 1: Spike — bắt clipboard và thử kéo ra ngoài ✅
 
-**Mô tả:**
-- **Feature:** bật `Win32_System_DataExchange` cho crate `windows`.
-- **Nghe clipboard:** `AddClipboardFormatListener` trên cửa sổ notch chính; `WM_CLIPBOARDUPDATE` vào subclass đã có.
-- **Đọc thử:** text (`CF_UNICODETEXT`) và ảnh (`CF_DIB`); ghi log **chỉ** loại + độ dài, không ghi nội dung.
-- **Thử kéo:** trang thử trong notch: kéo một chuỗi và một file ảnh ra Notepad / Explorer; kết luận WebView2 làm được tới đâu.
+**Đã làm:**
+- Bật `Win32_System_DataExchange`, `Win32_System_Memory`, `Win32_System_Ole` cho crate `windows`.
+- `clipboard/native.rs`: cửa sổ message-only riêng (**không** dùng subclass của notch — notch bị đóng/mở lại khi đổi màn hình), `AddClipboardFormatListener`.
+- **Hai luồng:** luồng cửa sổ chỉ báo hiệu; luồng đọc chờ 60 ms rồi mới mở clipboard.
+- `clipboard/mod.rs`: `Sighting` (loại, cỡ, app nguồn, cờ riêng tư, danh sách format) + lệnh `clipboard_probe`. Không ghi và không phát nội dung.
 
 **Tiêu chí chấp nhận:**
-- [ ] Copy chữ và copy ảnh: log ghi đúng loại, trong 1 giây.
-- [ ] Cờ của trình quản lý mật khẩu (`ExcludeClipboardContentFromMonitorProcessing`…) đọc được.
-- [ ] Kết luận rõ về kéo: chữ được / không; file ảnh được / không; nếu không thì phương án nào.
-- [ ] App không treo khi copy liên tục 20 lần.
+- [x] Copy chữ và copy ảnh: nhận đúng loại trong 1 giây (chữ 41 ký tự; ảnh 12 424 byte `CF_DIBV5`; file `CF_HDROP`), kèm app nguồn `powershell`.
+- [x] Cờ trình quản lý mật khẩu đọc được: `ExcludeClipboardContentFromMonitorProcessing` → riêng tư; `CanIncludeInClipboardHistory` = 0 → riêng tư; = 1 → bình thường.
+- [x] Copy liên tục 20 lần trong 1,3 giây: app không treo, **0 lần copy bị từ chối**, 20 lần gộp còn 1 lần đọc.
+- [ ] Kéo ra ngoài: xem bảng dưới — cần bạn chọn hướng.
 
-**Kiểm tra:** `cargo test`, clippy; thủ công trên app thật.
+**Kiểm tra:** `cargo test` (113 pass, 7 test mới), clippy sạch; thử trên app thật qua CDP.
+
+#### Chuyện đã sửa giữa chừng
+
+Bản đầu đọc clipboard ngay trong `WM_CLIPBOARDUPDATE`. Windows chỉ cho **một** tiến trình giữ clipboard, và app đang copy
+không thử lại — nên copy liên tục làm PowerShell báo *"Requested Clipboard operation did not succeed"*. Đổi sang đọc trễ
+trên luồng nền thì hết (0/20 lỗi). Đây cũng là lý do nhiều app "đứng hình khi copy" khi cài trình quản lý clipboard.
+
+#### Kéo ra app khác — tình hình
+
+| Kéo cái gì | WebView2 làm được? | Ghi chú |
+|---|---|---|
+| Chữ | Được | Kéo HTML5 bình thường của Chromium, không cần gì thêm |
+| **File ảnh** | Chưa chắc | Cần Windows `DoDragDrop` + `CF_HDROP`. Chromium có `DownloadURL` nhưng WebView2 nhúng thường không nối phần này |
+
+Hai hướng cho ảnh: thêm crate `tauri-plugin-drag` 2.1.1 (Tauri 2, cập nhật 05/2026, ~156 dòng), hoặc bỏ kéo ảnh và
+chỉ giữ bấm-để-copy + "Mở thư mục chứa". 👤 Bạn quyết; việc kéo thật bằng chuột cũng cần bạn thử tay ở Task 4.
 
 **Phụ thuộc:** không
 **Quy mô:** M

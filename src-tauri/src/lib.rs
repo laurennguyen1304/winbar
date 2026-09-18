@@ -1,3 +1,4 @@
+mod clipboard;
 mod command_bar;
 mod hotkeys;
 mod media;
@@ -21,6 +22,7 @@ pub fn run() {
         .manage(sticky::StickyState::default())
         .manage(media::MediaStore::default())
         .manage(system::SystemState::default())
+        .manage(clipboard::ClipboardProbe::default())
         .manage(hotkeys::HotkeyState::default())
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
@@ -51,6 +53,7 @@ pub fn run() {
             media::media_select,
             system::system_stats,
             system::open_task_manager,
+            clipboard::clipboard_probe,
             command_bar::command_bar_hide,
             command_bar::command_bar_resize,
             command_bar::command_bar_save_position,
@@ -86,6 +89,7 @@ pub fn run() {
             command_bar::create(app.handle())?;
             command_bar::apps::warm_up(app.handle());
             media::start(app.handle());
+            clipboard::start(app.handle());
             tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());
             Ok(())
