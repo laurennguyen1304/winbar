@@ -15,8 +15,8 @@ trình duyệt (YouTube, SoundCloud…), Apple Music, VLC… miễn là app báo
 - Nhạc đang phát thì card "Đang phát" hiện ảnh bìa, tên bài, nghệ sĩ, album, tiến độ, và nút ⏮ ⏯ ⏭.
 - Tôi bấm hoặc kéo trên thanh tiến độ để tua.
 - Có nhiều app cùng có nhạc thì notch theo app Windows đang chọn; tôi đổi sang app khác ngay trong card.
-- Tôi chọn Media làm pill ưu tiên: pill hiện ảnh bìa nhỏ, tên bài, nghệ sĩ và cột sóng nhạc khi đang phát.
-- Ở mode always, nửa media có ảnh bìa, tên bài, nghệ sĩ và nút ⏯.
+- Tôi chọn Media làm pill ưu tiên: pill hiện ảnh bìa nhỏ, tên bài, nghệ sĩ và ba nút ⏮ ⏯ ⏭ bấm được ngay.
+- Ở mode always, nửa media có ảnh bìa, tên bài, nghệ sĩ và ba nút ⏮ ⏯ ⏭.
 - Không có app nào có nhạc thì media biến mất hẳn: không card trống, pill nhường widget kế tiếp.
 
 ## 2. Phạm vi
@@ -30,8 +30,8 @@ trình duyệt (YouTube, SoundCloud…), Apple Music, VLC… miễn là app báo
 | Điều khiển | Phát/tạm dừng, bài kế, bài trước, tua; nút mờ và không bấm được khi app không cho |
 | Nhiều app | Theo phiên Windows chọn; đổi tay bằng nút ‹ › hoặc lăn chuột trên card (§5.3) |
 | Card | Theo mockup: ảnh bìa 140, nền card là ảnh bìa làm mờ, thanh tiến độ tua được |
-| Pill ưu tiên | Ảnh bìa 24, tên bài, nghệ sĩ, cột sóng nhạc (đứng yên khi tạm dừng) |
-| Pill always | Ảnh bìa 40, tên bài, nghệ sĩ, nút ⏯ |
+| Pill ưu tiên | Ảnh bìa 24, tên bài, nghệ sĩ, nút ⏮ ⏯ ⏭ |
+| Pill always | Ảnh bìa 40, tên bài, nghệ sĩ, nút ⏮ ⏯ ⏭ |
 | Tự ẩn | Không có phiên nào thì ẩn card, pill và nửa always |
 | Mở rộng hợp đồng widget | `ShellApi.setHidden` (§6), cần cho tự ẩn; dùng lại được cho các widget sau |
 
@@ -75,13 +75,13 @@ Như notch-shell: `npm test` · `cargo test --manifest-path src-tauri/Cargo.toml
 | Chỗ | Nội dung | Khi tạm dừng | Khi không có ảnh bìa |
 |---|---|---|---|
 | Card | Nhãn "Đang phát" + tên app (và ‹ › nếu có ≥2 app); ảnh bìa 140; tên bài 16px, nghệ sĩ, album; thanh tiến độ + `1:42 / 4:03`; ⏮ ⏯ ⏭ | nút hiện ▶ | ô gradient + nốt nhạc; nền card không có ảnh |
-| Pill ưu tiên | ảnh bìa 24 · tên bài · nghệ sĩ (mờ) · cột sóng | cột sóng đứng yên | ô gradient nhỏ |
-| Nửa always | ảnh bìa 40 · tên bài / nghệ sĩ · nút ⏯ | nút hiện ▶ | ô gradient |
+| Pill ưu tiên | ảnh bìa 24 · tên bài · nghệ sĩ (mờ) · **nút ⏮ ⏯ ⏭** | nút giữa thành ▶ | ô gradient nhỏ |
+| Nửa always | ảnh bìa 40 · tên bài / nghệ sĩ · nút ⏮ ⏯ ⏭ | nút giữa thành ▶ | ô gradient |
 
 - Thời gian: `m:ss`, từ 1 giờ trở lên là `h:mm:ss`.
 - Tên dài cắt bằng `…`, không chạy chữ.
 - Đổi bài: ảnh bìa và chữ mờ dần 150ms (M10 bản v1, không trượt).
-- Cột sóng là CSS animation, chỉ chạy khi đang phát. Nó dừng khi Windows bật giảm chuyển động.
+- **Đổi 2026-09-18 (bạn chốt):** bỏ cột sóng ở trạng thái thu gọn, thay bằng ba nút điều khiển ngay trên notch. Nhờ vậy notch không vẽ lại liên tục: CPU khi panel đóng về mức nghỉ (~0.02%).
 - Bấm nút trên pill hoặc nửa always **không** mở panel (như các nút widget khác).
 
 ### 5.3 Nhiều app
@@ -225,7 +225,7 @@ export function positionNow(s: TimelineSnapshot, now: number): number | null {
 6. Spotify và YouTube cùng mở: theo phiên Windows chọn; ‹ › và lăn chuột đổi được. Tắt app đang chọn thì quay về phiên còn lại.
 7. Tắt hết app phát nhạc: trong 1 giây card, pill media và nửa always biến mất; pill hiện widget kế tiếp.
 8. App không có ảnh bìa: hiện ô gradient + nốt nhạc, không vỡ bố cục.
-9. Pill media khi đang phát: cột sóng chạy. Tạm dừng: đứng yên.
+9. Pill media: ba nút ⏮ ⏯ ⏭ bấm được ngay khi notch thu gọn, và bấm nút **không** mở panel.
 10. Hiệu năng (bản release, nhạc đang phát, panel đóng): CPU < 1%. RAM tăng ≤ 15 MB so với trước module.
 11. `npm test`, `cargo test`, clippy, `npm run lint` qua; checklist thủ công chạy xong.
 
@@ -235,7 +235,7 @@ export function positionNow(s: TimelineSnapshot, now: number): number | null {
 |---|---|---|
 | Sự kiện WinRT chạy trên luồng lạ, dễ deadlock với main thread | Trung bình | Luồng WinRT riêng; handler chỉ gom thay đổi rồi phát sự kiện, không gọi ngược vào cửa sổ. Spike ở Task 1 |
 | App báo vị trí thất thường (trình duyệt) | Trung bình | Chỉ nhận vị trí khi thời điểm báo mới hơn; frontend tự ước lượng giữa hai lần báo |
-| Cột sóng chạy liên tục tốn CPU/GPU ở pill | Trung bình | Chỉ `transform`; đo ở tiêu chí 10; nếu vượt thì hạ xuống 3 thanh hoặc chỉ chạy khi hover |
+| ~~Cột sóng chạy liên tục tốn CPU~~ | — | Đã bỏ cột sóng (2026-09-18); pill giờ chỉ có nút, không có animation |
 | Ảnh bìa lớn làm tăng RAM | Thấp | Thu nhỏ 280px trong Rust, chỉ giữ ảnh bài hiện tại |
 | `setHidden` đụng logic pill/always đã ổn định | Thấp | Test shell riêng ở Task đầu; không đổi hành vi khi không widget nào ẩn |
 

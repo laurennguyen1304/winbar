@@ -48,24 +48,45 @@ beforeEach(() => {
 });
 
 describe("MediaPill", () => {
-  it("shows artwork, title and artist, with bouncing bars while playing", () => {
+  it("shows artwork, title, artist and the three controls", () => {
     render(<MediaPill />);
     act(() => receiveForTest(state()));
     expect(screen.getByText("Midnight City")).toBeInTheDocument();
     expect(screen.getByText("M83")).toBeInTheDocument();
     expect(screen.getByTestId("art-placeholder")).toBeInTheDocument();
-    expect(screen.getByTestId("media-eq")).toHaveAttribute("data-playing");
+    expect(screen.getByRole("button", { name: "Bài trước" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tạm dừng" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bài kế" })).toBeInTheDocument();
+    // No visualiser any more (bạn chốt 2026-09-18).
+    expect(screen.queryByTestId("media-eq")).not.toBeInTheDocument();
+  });
+
+  it("runs previous, play-pause and next from the pill", () => {
+    render(<MediaPill />);
     act(() => receiveForTest(state({ status: "paused" })));
-    expect(screen.getByTestId("media-eq")).not.toHaveAttribute("data-playing");
+    fireEvent.click(screen.getByRole("button", { name: "Bài trước" }));
+    fireEvent.click(screen.getByRole("button", { name: "Phát" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bài kế" }));
+    expect(calls).toEqual(["previous", "playPause", "next"]);
+  });
+
+  it("greys out what the app does not allow", () => {
+    render(<MediaPill />);
+    act(() => receiveForTest(state({ can: { playPause: true, next: false, previous: false, seek: false } })));
+    expect(screen.getByRole("button", { name: "Bài kế" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bài trước" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Bài kế" }));
+    expect(calls).toEqual([]);
   });
 });
 
 describe("MediaMidPill", () => {
-  it("toggles playback from its button", () => {
+  it("has the same three controls", () => {
     render(<MediaMidPill />);
     act(() => receiveForTest(state({ status: "paused" })));
     fireEvent.click(screen.getByRole("button", { name: "Phát" }));
-    expect(calls).toEqual(["playPause"]);
+    fireEvent.click(screen.getByRole("button", { name: "Bài kế" }));
+    expect(calls).toEqual(["playPause", "next"]);
   });
 });
 

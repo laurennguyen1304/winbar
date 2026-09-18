@@ -65,7 +65,8 @@ Hai nguồn thử cùng chạy (`powershell.exe`, `powershell.exe#2`):
 ## 6. Tự ẩn và tự lên pill (tiêu chí 7, 9; spec §5.6)
 
 - [x] ✅ Tắt nguồn thử: phiên biến mất sau 93–112ms; card biến mất khỏi panel, bố cục dồn lại.
-- [x] ✅ Media là pill (bản dev tạm đặt ưu tiên Media): pill 32/36/40 đúng; cột sóng chạy khi phát, đứng yên khi dừng.
+- [x] ✅ Media là pill (bản dev tạm đặt ưu tiên Media): pill 32/36/40 đúng.
+- [ ] 👤 Sau khi bỏ cột sóng (2026-09-18): ba nút ⏮ ⏯ ⏭ trên pill bấm được, không mở panel.
 - [x] ✅ Always: nửa media (ảnh 40, tên, nghệ sĩ, ⏸) + vạch ngăn + widget kia.
 - [x] ✅ Widget ưu tiên trống (tự ẩn) và có nhạc: media lên pill; hết nhạc: pill mặc định "winbar" (test `MediaPill.test.tsx`).
 - [ ] 👤 Bản release (không có widget demo): mở nhạc thì media tự lên pill, tắt nhạc thì về "winbar".
@@ -118,7 +119,7 @@ So ảnh chụp app (card, pill 32/36/40, always) với `design/winbar-mockup.ht
 
 - [x] ✅ Card: nhãn "Đang phát" + tên app, ảnh bìa 140 bo 16, tên bài 16px đậm, nghệ sĩ, album mờ, thanh tiến độ 4px, giờ mono, ⏮ ⏯ (nút tròn sáng 38px) ⏭.
 - [x] ✅ Nền card là ảnh bìa mờ 34px, độ đục 0.38, như mockup.
-- [x] ✅ Pill: ảnh 24 bo 6, tên bài, nghệ sĩ mờ, cột sóng 4 thanh màu `--media`.
+- [x] ⚠️ Pill: ảnh 24 bo 6, tên bài, nghệ sĩ mờ. Khác mockup: bỏ cột sóng, thay bằng ba nút điều khiển (bạn chốt 2026-09-18).
 - [x] ✅ Always: ảnh 40 bo 9, hai dòng chữ, nút ⏯.
 - [x] ⚠️ Khác có chủ đích:
   - chưa có hiệu ứng trượt khi đổi bài (M10 bản v1: chỉ mờ dần);

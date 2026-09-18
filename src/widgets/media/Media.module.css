@@ -251,62 +251,38 @@
   color: var(--text-faint);
 }
 
-.eq {
+/* Controls on the collapsed notch: small, tight, and never opening the panel. */
+.pillControls {
   display: flex;
+  align-items: center;
   gap: 2px;
-  align-items: flex-end;
-  height: 14px;
   flex-shrink: 0;
 }
 
-.eq > i {
-  width: 3px;
-  background: var(--media);
-  border-radius: 2px;
-  transform-origin: bottom;
-  transform: scaleY(0.35);
+.pillButton {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--text-sub);
+  cursor: pointer;
 }
 
-.eq > i:nth-child(1) {
-  height: 60%;
+.pillButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
 }
 
-.eq > i:nth-child(2) {
-  height: 100%;
+.pillButton:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
-.eq > i:nth-child(3) {
-  height: 40%;
-}
-
-.eq > i:nth-child(4) {
-  height: 80%;
-}
-
-/*
- * Bars move in steps, all on the same beat (even bars reversed), so the notch redraws about 3 times a second instead
- * of 60: 0.27% CPU instead of 1.15% on the reference machine while music plays (tests/manual-media.md §7).
- */
-.eq[data-playing] > i {
-  animation: media-eq 1.2s steps(4, jump-none) infinite alternate;
-}
-
-.eq[data-playing] > i:nth-child(even) {
-  animation-direction: alternate-reverse;
-}
-
-@keyframes media-eq {
-  from {
-    transform: scaleY(0.35);
-  }
-  to {
-    transform: scaleY(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .eq[data-playing] > i {
-    animation: none;
-    transform: scaleY(0.7);
-  }
+.pillButton:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: -2px;
 }

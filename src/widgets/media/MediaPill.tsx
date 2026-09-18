@@ -1,17 +1,47 @@
 import { Icon } from "../../shell/Icon";
 import { Artwork } from "./Artwork";
-import { mediaControl } from "./native";
+import { mediaControl, type MediaAction, type MediaTrack } from "./native";
 import { artFor, useMedia } from "./store";
 import styles from "./Media.module.css";
 
-/** Four bars that bounce while playing and rest when paused (mockup `.eq`). */
-function Equalizer({ playing }: { playing: boolean }) {
+const run = (action: MediaAction) => () =>
+  mediaControl(action).catch((err: unknown) => console.error(`media ${action} failed`, err));
+
+/**
+ * Previous, play-pause and next, right on the collapsed notch (bạn chốt 2026-09-18). Buttons are controls, so the
+ * shell never opens the panel when one is clicked.
+ */
+function Controls({ track, size }: { track: MediaTrack; size: number }) {
+  const playing = track.status === "playing";
   return (
-    <span className={styles.eq} data-playing={playing || undefined} data-testid="media-eq" aria-hidden>
-      <i />
-      <i />
-      <i />
-      <i />
+    <span className={styles.pillControls}>
+      <button
+        type="button"
+        className={styles.pillButton}
+        disabled={!track.can.previous}
+        aria-label="Bài trước"
+        onClick={run("previous")}
+      >
+        <Icon name="skipPrev" size={size} />
+      </button>
+      <button
+        type="button"
+        className={styles.pillButton}
+        disabled={!track.can.playPause}
+        aria-label={playing ? "Tạm dừng" : "Phát"}
+        onClick={run("playPause")}
+      >
+        <Icon name={playing ? "pause" : "play"} size={size} />
+      </button>
+      <button
+        type="button"
+        className={styles.pillButton}
+        disabled={!track.can.next}
+        aria-label="Bài kế"
+        onClick={run("next")}
+      >
+        <Icon name="skipNext" size={size} />
+      </button>
     </span>
   );
 }
@@ -29,17 +59,16 @@ export function MediaPill() {
         {track.artist && <span className={styles.pillArtist}>{track.artist}</span>}
       </span>
       <span className={styles.grow} />
-      <Equalizer playing={track.status === "playing"} />
+      <Controls track={track} size={15} />
     </>
   );
 }
 
-/** Media half of the always pill: artwork, title / artist and play-pause (the button never opens the panel). */
+/** Media half of the always pill: artwork, title / artist and the same three controls. */
 export function MediaMidPill() {
   const media = useMedia();
   const track = media.state.current;
   if (!track) return null;
-  const playing = track.status === "playing";
   return (
     <>
       <span className={styles.midTrack} key={track.trackKey}>
@@ -49,15 +78,7 @@ export function MediaMidPill() {
           {track.artist && <span className={styles.midArtist}>{track.artist}</span>}
         </span>
       </span>
-      <button
-        type="button"
-        className={styles.iconButton}
-        disabled={!track.can.playPause}
-        aria-label={playing ? "Tạm dừng" : "Phát"}
-        onClick={() => mediaControl("playPause").catch((err: unknown) => console.error("media play/pause failed", err))}
-      >
-        <Icon name={playing ? "pause" : "play"} size={16} />
-      </button>
+      <Controls track={track} size={17} />
     </>
   );
 }
