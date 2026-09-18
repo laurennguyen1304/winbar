@@ -101,7 +101,24 @@ file** phiên của app Claude Desktop — vài lần mỗi giây trong lúc m�
 
 ### Lần 2 — sau khi cache lịch sử Desktop (commit `f86ac2f`)
 
-_(điền sau khi đo lại)_
+| | RAM (private WS) | CPU, panel đóng |
+|---|---|---|
+| Bật layout Claude | 136,8–141,6 MB | **0,625%** (96 s) |
+| Tắt | 137,0–137,3 MB | 0,442% (102 s) |
+
+- [x] ✅ RAM tăng **~0 MB** (yêu cầu ≤ 12 MB).
+- [x] ✅ CPU: từ **+1,66** xuống **+0,183** điểm phần trăm — giảm **9 lần**.
+- [ ] ⚠️ Vẫn **trên** mức tôi tự đặt là +0,02%. Xem phần dưới.
+
+**+0,183 điểm phần trăm là gì:** khoảng **2% của một nhân**, và chỉ trong lúc một phiên Claude **đang chạy tool**
+(lúc đó file trạng thái bị ghi lại một hai lần mỗi giây). Phiên nằm im thì gần như bằng 0.
+
+**Hai tiêu chí của tôi mâu thuẫn nhau.** Tiêu chí 1 đòi pill đổi trạng thái **trong 1 giây**, nên phải xem thư mục
+mỗi giây. Tiêu chí 11 đòi CPU tăng **≤ 0,02%**. Một vòng lặp 1 giây không thể rẻ đến thế — con số 0,02% tôi viết
+lúc chưa đo là quá chặt. Đây là chỗ cần bạn quyết, không phải chỗ để tôi tự nới tiêu chí cho đạt.
+
+Còn có thể giảm tiếp: hiện tại mỗi lần đổi, Rust đọc danh sách một lần rồi giao diện gọi `claude_sessions` đọc
+**lần nữa**. Gửi kèm danh sách trong sự kiện sẽ bỏ được một nửa.
 
 ## 8. Chưa làm / giới hạn đã biết
 
