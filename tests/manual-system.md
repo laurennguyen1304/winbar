@@ -72,7 +72,7 @@ Bản release, Spotify đang phát (pill hiện media, cột sóng chạy).
 ## 8. Tự động (tiêu chí 7)
 
 - [x] ✅ `npm test`: 37 file, 349 test.
-- [x] ✅ `cargo test`: 103 test. `cargo clippy -D warnings`: sạch.
+- [x] ✅ `cargo test`: 102 test. `cargo clippy -D warnings`: sạch.
 - [x] ✅ `npm run lint`: sạch.
 - [x] ✅ `npm run tauri build -- --no-bundle`: `winbar.exe` 4.83 MB (+25 KB so với trước module).
 
