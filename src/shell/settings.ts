@@ -45,6 +45,15 @@ export interface Settings {
     fileSearch: "auto" | "everything" | "windows" | "off";
     webSearch: "google" | "youtube" | "reddit" | "x";
   };
+  claude: {
+    /** Off means winbar reads nothing about Claude at all. */
+    enabled: boolean;
+    /** Seconds between status images; 0 holds the first one still. */
+    iconRotateSeconds: number;
+    /** Warn on the pill when the 5-hour limit passes this; 0 turns it off. */
+    usageWarnPercent: number;
+    showDesktopSessions: boolean;
+  };
   clipboard: {
     /** How long an unpinned item is kept, in days. */
     retentionDays: 1 | 2;
@@ -89,6 +98,7 @@ export const DEFAULT_SETTINGS: Settings = {
   launchAtStartup: true,
   commandBar: { position: null, fileSearch: "auto", webSearch: "google" },
   clipboard: { retentionDays: 1, ignoredApps: DEFAULT_IGNORED_APPS, paused: false },
+  claude: { enabled: true, iconRotateSeconds: 6, usageWarnPercent: 90, showDesktopSessions: true },
 };
 
 /** Stored order and flags win; widgets that no longer exist are dropped; new widgets are appended, enabled. */

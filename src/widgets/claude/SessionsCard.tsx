@@ -22,11 +22,13 @@ function useNow(intervalMs = TICK_MS): number {
 function Row({
   session,
   extra,
+  rotateMs,
   now,
   dim,
 }: {
   session: ClaudeSession;
   extra: Readonly<Record<string, string[]>>;
+  rotateMs: number;
   now: number;
   dim?: boolean;
 }) {
@@ -46,7 +48,7 @@ function Row({
       disabled={!session.cwd}
       title={session.cwd ?? session.title}
     >
-      <ClaudeIcon phase={session.phase} extra={extra} />
+      <ClaudeIcon phase={session.phase} extra={extra} rotateMs={rotateMs} />
       <span className={styles.rowText}>
         <span className={styles.rowTitle}>
           {session.project && <span className={styles.project}>{session.project}</span>}
@@ -64,7 +66,8 @@ function Row({
 
 /** "Phiên Claude" card: what is running now, what has gone quiet, and recent Desktop sessions (SPEC §5.2). */
 export function SessionsCard() {
-  const { sessions, icons } = useClaude();
+  const { sessions, icons, options } = useClaude();
+  const rotateMs = options.iconRotateSeconds * 1000;
   const now = useNow();
   const { live, quiet, history } = groupSessions(sessions);
 
@@ -81,15 +84,15 @@ export function SessionsCard() {
       ) : (
         <div className={styles.list}>
           {live.map((s) => (
-            <Row key={s.id} session={s} extra={icons} now={now} />
+            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} />
           ))}
           {quiet.length > 0 && <p className={styles.groupLabel}>Đã lâu không hoạt động</p>}
           {quiet.map((s) => (
-            <Row key={s.id} session={s} extra={icons} now={now} dim />
+            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} dim />
           ))}
           {history.length > 0 && <p className={styles.groupLabel}>Phiên Desktop gần đây</p>}
           {history.map((s) => (
-            <Row key={s.id} session={s} extra={icons} now={now} dim />
+            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} dim />
           ))}
         </div>
       )}

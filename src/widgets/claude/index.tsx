@@ -1,6 +1,7 @@
 // Claude widgets (SPEC-claude): `claude-sessions` owns the list and the pill, `claude-usage` the limits.
 import type { WidgetDefinition } from "../../shell/widget-contract";
 import { ClaudeBackground, ClaudePill } from "./ClaudePill";
+import { createClaudeProvider } from "./search";
 import { SessionsCard } from "./SessionsCard";
 import { UsageCard } from "./UsageCard";
 
@@ -13,6 +14,7 @@ export const claudeSessionsWidget: WidgetDefinition = {
   Pill: ClaudePill,
   // Hides the widget from the pill while nothing is running, the way media does when nothing is playing.
   Background: ClaudeBackground,
+  searchProvider: createClaudeProvider(),
 };
 
 export const claudeUsageWidget: WidgetDefinition = {

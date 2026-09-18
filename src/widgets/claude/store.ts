@@ -1,5 +1,7 @@
 // One Claude store for the whole notch page, so the card and the pill read the same sessions.
 import { useSyncExternalStore } from "react";
+import { DEFAULT_SETTINGS } from "../../shell/settings";
+import { loadSettings, onSettingsChanged } from "../../shell/native";
 import {
   extraIcons,
   getUsage,
@@ -15,9 +17,16 @@ export interface ClaudeView {
   /** Extra images per phase, added by the user. Empty until the first read. */
   icons: Readonly<Record<string, string[]>>;
   usage: ClaudeUsage;
+  /** The Claude part of Settings, so the card and the pill do not each fetch it. */
+  options: (typeof DEFAULT_SETTINGS)["claude"];
 }
 
-const EMPTY: ClaudeView = { sessions: [], icons: {}, usage: NO_USAGE };
+const EMPTY: ClaudeView = {
+  sessions: [],
+  icons: {},
+  usage: NO_USAGE,
+  options: DEFAULT_SETTINGS.claude,
+};
 
 let view: ClaudeView = EMPTY;
 const listeners = new Set<() => void>();
@@ -52,6 +61,10 @@ function start() {
   if (started) return;
   started = true;
   onSessionsChanged(() => void refresh());
+  onSettingsChanged((settings) => set({ ...view, options: settings.claude }));
+  loadSettings()
+    .then((settings) => settings && set({ ...view, options: settings.claude }))
+    .catch((err: unknown) => console.error("loadSettings failed", err));
   void refresh();
   void refreshIcons();
   void refreshUsage();

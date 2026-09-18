@@ -94,11 +94,21 @@ nhầm. Đã ghi chú trong `vite.config.ts`: xem exit code, đừng chỉ nhìn
 
 - [ ] Bạn kiểm: trạng thái có khớp thực tế không, số hạn mức có đúng không, notch có bị dài ra không
 
-### Task 5: Provider command bar + mục Cài đặt
+### Task 5: Provider command bar + mục Cài đặt ✅
 
 **Tiêu chí chấp nhận:**
-- [ ] `cl` ra danh sách phiên + một dòng hạn mức; tìm được theo cả tên project lẫn worktree.
-- [ ] Cài đặt: bật/tắt layout Claude, thời gian luân phiên ảnh, ngưỡng cảnh báo, hiện lịch sử Desktop.
+- [x] Cài đặt trên app thật: mục "Claude" đủ 4 dòng, có trong thanh bên.
+- [x] Provider: `cl` ra phiên + dòng hạn mức; tìm theo project (`winbar`, `qikify`), theo worktree (`firefish`),
+      và theo tool (`bash`); dòng lịch sử Desktop **không** vào; mọi dòng `remember: false` — 8 test.
+- [x] Tắt layout thì Rust không đọc gì: `claude_sessions` trả rỗng, `claude_usage` không mở credentials, luồng
+      theo dõi bỏ qua cả việc liệt kê thư mục.
+- [x] Cảnh báo hạn mức: đẩy pill alert một lần cho mỗi chu kỳ reset, tắt được bằng ngưỡng 0.
+- [ ] 👤 **Cần bạn thử tay:** bấm Ctrl+Space rồi gõ `cl`. Tôi không kiểm được trên máy — xem ghi chú dưới.
+
+**Vì sao không tự kiểm được command bar:** cửa sổ command bar khi đang ẩn bị WebView2 bóp cổ, một lệnh IPC mất
+**3–7,7 giây** (từ cửa sổ notch chỉ ~20 ms), nên **mọi** provider timeout ở mốc 1,5 giây — kể cả `files` và
+`clipboard` vốn đã chạy tốt. Không phải lỗi code. Hiện cửa sổ lên thì cần thêm quyền `window:allow-show`, mà thêm
+quyền chỉ để test thì không đáng.
 
 **Phụ thuộc:** Checkpoint
 **Quy mô:** M

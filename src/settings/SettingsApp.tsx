@@ -5,6 +5,7 @@ import { PillPreview } from "../shell/PillPreview";
 import { registry } from "../shell/registry";
 import { mergeWidgets, moveWidget, type Settings } from "../shell/settings";
 import { useSettings } from "../shell/use-settings";
+import { ClaudeSection } from "./ClaudeSection";
 import { ClipboardSection } from "./ClipboardSection";
 import { CommandBarSection } from "./CommandBarSection";
 import { HotkeySection } from "./HotkeySection";
@@ -22,6 +23,7 @@ const SECTIONS = [
   { id: "hotkey", label: "Phím tắt" },
   { id: "command-bar", label: "Command bar" },
   { id: "clipboard", label: "Clipboard" },
+  { id: "claude", label: "Claude" },
   { id: "general", label: "Chung" },
 ] as const;
 
@@ -337,6 +339,8 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
           <CommandBarSection value={view.commandBar} onChange={(commandBar) => save({ ...view, commandBar })} />
 
           <ClipboardSection value={view.clipboard} onChange={(clipboard) => save({ ...view, clipboard })} />
+
+          <ClaudeSection value={view.claude} onChange={(claude) => save({ ...view, claude })} />
 
           <section id="set-general">
             <h2 className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Chung</h2>

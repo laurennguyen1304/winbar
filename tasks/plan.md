@@ -43,7 +43,7 @@ Task 1 và Task 2 độc lập nhau; Task 2 rủi ro cao nhất (endpoint không
 
 ### Checkpoint: bạn dùng thử
 
-- [ ] Task 5: Provider command bar + mục Cài đặt
+- [x] Task 5: Provider command bar + mục Cài đặt
 - [ ] Task 6: Đo hiệu năng, checklist thủ công
 
 ## Rủi ro

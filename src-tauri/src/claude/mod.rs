@@ -80,6 +80,13 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
+/// The Claude settings, or the defaults if they cannot be read.
+fn options<R: Runtime>(app: &AppHandle<R>) -> crate::settings::ClaudeSettings {
+    app.try_state::<crate::settings::SettingsState>()
+        .map(|s| s.get().claude)
+        .unwrap_or_else(|| crate::settings::Settings::default().claude)
+}
+
 /// Extra status images Lauren added, per phase, as data URLs. The three bundled with the app live in the page.
 #[tauri::command]
 pub fn claude_icons(
@@ -89,8 +96,17 @@ pub fn claude_icons(
 }
 
 /// How much of the limit is left. Uses a recent answer unless `force` asks for a fresh one.
+///
+/// With the layout turned off this touches nothing: no credentials file is opened and no request goes out.
 #[tauri::command]
-pub fn claude_usage(state: tauri::State<'_, ClaudeState>, force: Option<bool>) -> Usage {
+pub fn claude_usage<R: Runtime>(
+    app: AppHandle<R>,
+    state: tauri::State<'_, ClaudeState>,
+    force: Option<bool>,
+) -> Usage {
+    if !options(&app).enabled {
+        return Usage::default();
+    }
     usage::fetch(
         &state.home,
         &state.appdata,
@@ -101,8 +117,15 @@ pub fn claude_usage(state: tauri::State<'_, ClaudeState>, force: Option<bool>) -
 
 /// Sessions to show: live ones in order, then recent Desktop history.
 #[tauri::command]
-pub fn claude_sessions(state: tauri::State<'_, ClaudeState>) -> Result<Vec<Session>, String> {
-    let list = state.read(true);
+pub fn claude_sessions<R: Runtime>(
+    app: AppHandle<R>,
+    state: tauri::State<'_, ClaudeState>,
+) -> Result<Vec<Session>, String> {
+    let settings = options(&app);
+    if !settings.enabled {
+        return Ok(Vec::new());
+    }
+    let list = state.read(settings.show_desktop_sessions);
     if let Ok(mut last) = state.last.lock() {
         *last = list.clone();
     }
@@ -121,13 +144,18 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) {
                 let Some(state) = app.try_state::<ClaudeState>() else {
                     continue;
                 };
+                let settings = options(&app);
+                if !settings.enabled {
+                    // Layout off: read nothing at all, not even a directory listing.
+                    continue;
+                }
                 // A handful of directory entries, read without opening a file.
                 let stamp = fingerprint(&sessions::statusbar_dir(&state.home));
                 if stamp == last_stamp {
                     continue;
                 }
                 last_stamp = stamp;
-                let next = state.read(true);
+                let next = state.read(settings.show_desktop_sessions);
                 let changed = state.last.lock().map(|last| *last != next).unwrap_or(true);
                 if changed {
                     if let Ok(mut last) = state.last.lock() {

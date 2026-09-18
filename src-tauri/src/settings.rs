@@ -61,6 +61,20 @@ pub struct CommandBarSettings {
     pub web_search: String,
 }
 
+/// Claude layout (SPEC-claude §7).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeSettings {
+    /// Off means winbar reads nothing about Claude at all: no watcher, no network.
+    pub enabled: bool,
+    /// Seconds between status images; 0 holds the first one still.
+    pub icon_rotate_seconds: u32,
+    /// Warn on the pill when the 5-hour limit passes this; 0 turns the warning off.
+    pub usage_warn_percent: u32,
+    /// Show recent Claude Desktop sessions under the live ones.
+    pub show_desktop_sessions: bool,
+}
+
 /// Clipboard history (SPEC-clipboard §7).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -97,6 +111,7 @@ pub struct Settings {
     pub launch_at_startup: bool,
     pub command_bar: CommandBarSettings,
     pub clipboard: ClipboardSettings,
+    pub claude: ClaudeSettings,
 }
 
 impl Default for Settings {
@@ -131,6 +146,12 @@ impl Default for Settings {
                 retention_days: 1,
                 ignored_apps: DEFAULT_IGNORED_APPS.iter().map(|a| (*a).into()).collect(),
                 paused: false,
+            },
+            claude: ClaudeSettings {
+                enabled: true,
+                icon_rotate_seconds: 6,
+                usage_warn_percent: 90,
+                show_desktop_sessions: true,
             },
         }
     }
@@ -246,6 +267,9 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
     let clipboard = root
         .and_then(|r| r.get("clipboard"))
         .and_then(Value::as_object);
+    let claude = root
+        .and_then(|r| r.get("claude"))
+        .and_then(Value::as_object);
     let mut r = Reader {
         warnings: &mut warnings,
     };
@@ -325,6 +349,32 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
                 r.warnings,
             ),
             paused: r.boolean(clipboard, "paused", d.clipboard.paused),
+        },
+        claude: ClaudeSettings {
+            enabled: r.boolean(claude, "enabled", d.claude.enabled),
+            // Settings offers 0, 4, 6 and 10; anything in range is accepted, because a hand-edited file saying 5
+            // is a reasonable wish, not a mistake. 0 holds the first image still.
+            icon_rotate_seconds: r.int(
+                claude,
+                "iconRotateSeconds",
+                0,
+                60,
+                1,
+                d.claude.icon_rotate_seconds,
+            ),
+            usage_warn_percent: r.int(
+                claude,
+                "usageWarnPercent",
+                0,
+                100,
+                1,
+                d.claude.usage_warn_percent,
+            ),
+            show_desktop_sessions: r.boolean(
+                claude,
+                "showDesktopSessions",
+                d.claude.show_desktop_sessions,
+            ),
         },
     };
     (settings, warnings)
