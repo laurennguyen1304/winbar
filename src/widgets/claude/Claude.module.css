@@ -45,6 +45,10 @@
   opacity: 0.55;
 }
 
+/*
+ * One box for every image, whatever its source size — the set ranges from 48px pixel art to a 256px illustration,
+ * and without a fixed box they render at wildly different sizes.
+ */
 .icon,
 .iconEmpty {
   flex-shrink: 0;
@@ -120,6 +124,14 @@
   background: var(--input-bg);
   color: var(--text-sub);
   flex-shrink: 0;
+}
+
+.statusLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
 }
 
 .status {
@@ -251,31 +263,33 @@
 
 /* --- pill --- */
 
+/*
+ * Fills the shell's pill rather than shrinking to its text. Without this the whole row sat packed against the
+ * left edge with the rest of the pill empty, because `margin-left: auto` had no space to push into.
+ */
 .pill {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.pillText {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
+  gap: 10px;
+  width: 100%;
   min-width: 0;
 }
 
 .pillPhase {
   font-size: 13px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
+/* Takes the middle and gives way first: the phase and the limit are what must always be readable. */
 .pillProject {
   font-size: 12px;
   color: var(--text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .pillLimit {
@@ -283,5 +297,6 @@
   font-size: 11px;
   color: var(--text-faint);
   white-space: nowrap;
+  flex-shrink: 0;
   margin-left: auto;
 }

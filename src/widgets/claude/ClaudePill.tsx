@@ -7,6 +7,8 @@ import { pillUsage } from "./usage";
 import styles from "./Claude.module.css";
 
 const WIDGET_ID = "claude-sessions";
+/** Half of the 48px source art, so the pixel set lands on whole pixels instead of blurring. */
+const ICON_SIZE = 24;
 const WARN_ALERT_ID = "claude-usage-warning";
 
 /** The alert body. Kept small: the pill is narrow and this competes with whatever else wants it. */
@@ -70,16 +72,12 @@ export function ClaudePill() {
 
   return (
     <span className={styles.pill}>
-      <ClaudeIcon phase={session.phase} extra={icons} size={20} />
-      <span className={styles.pillText}>
-        <span className={styles.pillPhase} style={{ color: look.color }}>
-          {look.label}
-        </span>
-        <span className={styles.pillProject}>
-          {/* The pill is narrow: the project is what identifies the session, so the worktree gives way first. */}
-          {session.project ?? session.title}
-        </span>
+      <ClaudeIcon phase={session.phase} extra={icons} size={ICON_SIZE} />
+      <span className={styles.pillPhase} style={{ color: look.color }}>
+        {look.label}
       </span>
+      {/* The pill is narrow: the project identifies the session, so the worktree gives way first. */}
+      <span className={styles.pillProject}>{session.project ?? session.title}</span>
       {limit && <span className={styles.pillLimit}>{limit}</span>}
     </span>
   );

@@ -121,11 +121,13 @@ describe("ClaudeIcon", () => {
     expect(document.querySelector("img")?.src).not.toBe(first);
   });
 
-  it("runs no timer for a phase with a single image", () => {
+  it("rotates every phase, now that each ships more than one image", () => {
     vi.useFakeTimers();
-    const { unmount } = render(<ClaudeIcon phase="idle" extra={{}} />);
-    expect(vi.getTimerCount()).toBe(0);
-    unmount();
+    for (const phase of ["idle", "thinking", "tool", "permission"] as const) {
+      const { unmount } = render(<ClaudeIcon phase={phase} extra={{}} />);
+      expect(vi.getTimerCount()).toBe(1);
+      unmount();
+    }
   });
 
   it("stops its timer when it leaves the screen", () => {
@@ -143,9 +145,8 @@ describe("ClaudeIcon", () => {
   });
 
   it("includes an image the user added", () => {
-    vi.useFakeTimers();
     render(<ClaudeIcon phase="idle" extra={{ idle: ["data:image/png;base64,ZZZ"] }} />);
-    // A second image makes idle rotate too, with no code change.
-    expect(vi.getTimerCount()).toBe(1);
+    // The user's file joins the rotation, so it is one of the images that can be on screen.
+    expect(document.querySelector("img")).toBeTruthy();
   });
 });

@@ -23,8 +23,13 @@ pub use usage::Usage;
 /// The live list changed: a session started, ended, or moved to another phase.
 pub const SESSIONS_CHANGED: &str = "claude-sessions-changed";
 
-/// How often the watcher looks at the directory.
-const WATCH_INTERVAL: Duration = Duration::from_secs(1);
+/// How often the watcher looks while something is happening.
+const WATCH_BUSY: Duration = Duration::from_secs(1);
+/// …and while every session is idle. Lauren asked for this trade (2026-09-19): a couple of seconds of delay is
+/// fine, and a one-second loop is what made the layout cost 0.18 points of CPU while a session ran tools.
+const WATCH_IDLE: Duration = Duration::from_secs(5);
+/// Keep checking at the busy rate for this long after the last change, so a burst is not read at the idle rate.
+const BUSY_FOR: Duration = Duration::from_secs(20);
 
 /// Name, size and modified time of every state file — enough to notice a change without opening any of them.
 ///
@@ -166,8 +171,11 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) {
         .name("claude-sessions".into())
         .spawn(move || {
             let mut last_stamp: Vec<(std::ffi::OsString, u64, u128)> = Vec::new();
+            let mut last_change = std::time::Instant::now();
             loop {
-                std::thread::sleep(WATCH_INTERVAL);
+                // Fast while anything is moving, slow once everything has been quiet for a while.
+                let busy = last_change.elapsed() < BUSY_FOR;
+                std::thread::sleep(if busy { WATCH_BUSY } else { WATCH_IDLE });
                 let Some(state) = app.try_state::<ClaudeState>() else {
                     continue;
                 };
@@ -182,6 +190,7 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) {
                     continue;
                 }
                 last_stamp = stamp;
+                last_change = std::time::Instant::now();
                 let next = state.read(settings.show_desktop_sessions);
                 let changed = state.last.lock().map(|last| *last != next).unwrap_or(true);
                 if changed {

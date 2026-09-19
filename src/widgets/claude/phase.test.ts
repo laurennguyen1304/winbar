@@ -8,6 +8,7 @@ import {
   iconsFor,
   phaseLook,
   pillSession,
+  shouldRotate,
   rowTime,
   runningFor,
 } from "./phase";
@@ -33,18 +34,28 @@ describe("phaseLook", () => {
 });
 
 describe("status images", () => {
-  it("ships two images for the busy phases and one for the rest", () => {
-    expect(BUILT_IN_ICONS.thinking).toHaveLength(2);
-    expect(BUILT_IN_ICONS.tool).toHaveLength(2);
-    expect(BUILT_IN_ICONS.idle).toHaveLength(1);
+  it("gives every phase more than one image, so each one rotates", () => {
+    for (const phase of ["idle", "thinking", "tool", "permission"] as const) {
+      expect(BUILT_IN_ICONS[phase].length).toBeGreaterThan(1);
+    }
+    // Working and waiting must not look the same at a glance.
+    expect(BUILT_IN_ICONS.tool[0]).not.toBe(BUILT_IN_ICONS.permission[0]);
+    expect(BUILT_IN_ICONS.idle[0]).not.toBe(BUILT_IN_ICONS.tool[0]);
   });
 
   it("appends the user's own images after the bundled ones", () => {
     const extra = { idle: ["data:image/png;base64,AAA", "data:image/png;base64,BBB"] };
     const icons = iconsFor("idle", extra);
-    expect(icons).toHaveLength(3);
-    expect(icons.slice(1)).toEqual(extra.idle);
+    expect(icons).toHaveLength(BUILT_IN_ICONS.idle.length + 2);
+    expect(icons.slice(-2)).toEqual(extra.idle);
     expect(iconsFor("tool", extra)).toEqual(BUILT_IN_ICONS.tool);
+  });
+
+  it("only runs a timer when there is more than one image and rotation is on", () => {
+    expect(shouldRotate(3, 6000)).toBe(true);
+    expect(shouldRotate(1, 6000)).toBe(false);
+    expect(shouldRotate(3, 0)).toBe(false);
+    expect(shouldRotate(0, 6000)).toBe(false);
   });
 
   it("cycles through the images and never runs off the end", () => {

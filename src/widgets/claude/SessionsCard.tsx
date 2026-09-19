@@ -9,6 +9,8 @@ import styles from "./Claude.module.css";
 
 /** How often the relative times are refreshed. */
 const TICK_MS = 30_000;
+/** Half of the 48px source art, so the pixel set lands on whole pixels instead of blurring. */
+const ICON_SIZE = 24;
 
 function useNow(intervalMs = TICK_MS): number {
   const [now, setNow] = useState(() => Date.now());
@@ -48,18 +50,21 @@ function Row({
       disabled={!session.cwd}
       title={session.cwd ?? session.title}
     >
-      <ClaudeIcon phase={session.phase} extra={extra} rotateMs={rotateMs} />
+      <ClaudeIcon phase={session.phase} extra={extra} rotateMs={rotateMs} size={ICON_SIZE} />
       <span className={styles.rowText}>
         <span className={styles.rowTitle}>
           {session.project && <span className={styles.project}>{session.project}</span>}
           <span className={styles.worktree}>{session.title}</span>
           <span className={styles.badge}>{session.source === "history" ? "đã xong" : session.source}</span>
         </span>
-        <span className={styles.status} style={{ color: isHistory ? undefined : look.color }}>
-          {status}
+        {/* Status and time share the second line, so neither line is left with an empty half. */}
+        <span className={styles.statusLine}>
+          <span className={styles.status} style={{ color: isHistory ? undefined : look.color }}>
+            {status}
+          </span>
+          <span className={styles.time}>{isHistory ? "" : rowTime(session, now)}</span>
         </span>
       </span>
-      <span className={styles.time}>{isHistory ? "" : rowTime(session, now)}</span>
     </button>
   );
 }

@@ -1,6 +1,10 @@
 // What each session phase reads as, and the small time strings on a row (SPEC-claude §5.1, §5.2). Pure, so tested.
 import claudeFu from "../../assets/claude/claude-fu-transparent.gif";
 import headstone from "../../assets/claude/claude_headstone.png";
+import angry from "../../assets/claude/clawd-angry.png";
+import sleeping from "../../assets/claude/clawd-sleeping.png";
+import sparkles from "../../assets/claude/clawd-sparkles.png";
+import thinkingIcon from "../../assets/claude/clawd-thinking.png";
 import working from "../../assets/claude/working.gif";
 import type { ClaudePhase, ClaudeSession } from "./native";
 
@@ -30,18 +34,29 @@ export function phaseLook(session: Pick<ClaudeSession, "phase" | "tool">): Phase
 /**
  * Images for a phase: the ones bundled with the app, then anything added to the user folder.
  *
- * Only `thinking` and `tool` ship with more than one, so those are the phases that rotate today; adding a file to
- * `%APPDATA%\winbar\claude-icons\idle\` makes idle rotate too, with no code change.
+ * The clawd pixel set is what Lauren chose per phase (2026-09-19): sleeping and angry for idle, sparkles while
+ * working, thinking while waiting on you. The older illustration and gifs keep their place in the rotation —
+ * they are a different style, which is the mismatch worth deciding on separately.
  */
 export const BUILT_IN_ICONS: Record<ClaudePhase, string[]> = {
-  idle: [headstone],
-  thinking: [claudeFu, working],
-  tool: [claudeFu, working],
-  permission: [claudeFu],
+  idle: [sleeping, angry, headstone],
+  thinking: [sparkles, claudeFu, working],
+  tool: [sparkles, claudeFu, working],
+  permission: [thinkingIcon, claudeFu],
 };
 
 export function iconsFor(phase: ClaudePhase, extra: Readonly<Record<string, string[]>>): string[] {
   return [...BUILT_IN_ICONS[phase], ...(extra[phase] ?? [])];
+}
+
+/**
+ * Whether the icon should run a timer at all.
+ *
+ * Every bundled phase now ships more than one image, so in practice this is about the setting — but one image
+ * must never start a timer either, which is what a user folder could still produce.
+ */
+export function shouldRotate(iconCount: number, rotateMs: number): boolean {
+  return iconCount > 1 && rotateMs > 0;
 }
 
 /** Which image to show right now, given how many ticks have passed. Wraps, and never divides by zero. */

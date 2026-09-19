@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { iconAt, iconsFor } from "./phase";
+import { iconAt, iconsFor, shouldRotate } from "./phase";
 import type { ClaudePhase } from "./native";
 import styles from "./Claude.module.css";
 
@@ -27,7 +27,7 @@ export function ClaudeIcon({ phase, extra, size = 26, rotateMs = ROTATE_MS }: Cl
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (icons.length < 2 || rotateMs <= 0) return;
+    if (!shouldRotate(icons.length, rotateMs)) return;
     const id = setInterval(() => setTick((t) => t + 1), rotateMs);
     return () => clearInterval(id);
   }, [icons.length, rotateMs]);

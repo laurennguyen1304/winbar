@@ -5,6 +5,10 @@
 | `claude-fu-transparent.gif` | Lauren đưa vào, dùng từ mockup đầu tiên |
 | `claude_headstone.png` | Lauren đưa vào, dùng từ mockup đầu tiên |
 | `working.gif` | Lauren đưa vào yasb; theo `NOTICE.md` của yasb đây là ảnh người dùng tự thêm, nên dùng lại được |
+| `clawd-sleeping.png` · `clawd-angry.png` · `clawd-sparkles.png` · `clawd-thinking.png` | Lauren đưa vào 19/09/2026 (bộ "clawd" của icons8, 48×48 pixel art) |
+
+Gán theo trạng thái (Lauren chốt 19/09/2026): `idle` → sleeping + angry · `thinking`/`tool` → sparkles ·
+`permission` → thinking.
 
 Ảnh `spark_*.png` và `logo.png` của yasb **không** được sao chép vào đây: chúng thuộc
 [m1ckc3s/claude-status-bar](https://github.com/m1ckc3s/claude-status-bar) (MIT), chưa dùng tới.
