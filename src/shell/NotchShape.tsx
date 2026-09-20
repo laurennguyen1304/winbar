@@ -69,9 +69,10 @@ export function NotchShape({ layout, material, opacity = 0, targetHeight, radius
       <svg ref={svgRef} className={styles.rim} preserveAspectRatio="none">
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#fff" stopOpacity={0.34} />
-            <stop offset="0.45" stopColor="#fff" stopOpacity={0.1} />
-            <stop offset="1" stopColor="#fff" stopOpacity={0.3} />
+            {/* Softer than before: the reference keeps its brightness for the bottom edge, not the rim. */}
+            <stop offset="0" stopColor="#fff" stopOpacity={0.16} />
+            <stop offset="0.45" stopColor="#fff" stopOpacity={0.07} />
+            <stop offset="1" stopColor="#fff" stopOpacity={0.14} />
           </linearGradient>
         </defs>
         <path

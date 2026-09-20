@@ -4,7 +4,8 @@
   --text-sub: rgba(236, 240, 247, 0.72);
   --text-faint: rgba(236, 240, 247, 0.52);
 
-  --notch-bg: rgba(20, 24, 32, 0.9);
+  /* "Đặc" is now a true black, Lauren's choice 20/09: no tint, nothing showing through. */
+  --notch-bg: #010101;
   --notch-border: 1px solid rgba(255, 255, 255, 0.14);
   --notch-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 
