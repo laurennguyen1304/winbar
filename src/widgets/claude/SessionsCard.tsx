@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { openTerminal } from "../../command-bar/native";
 import { Card, CardLabel } from "../../shell/ui";
 import { ClaudeIcon } from "./ClaudeIcon";
-import type { ClaudeSession } from "./native";
+import { openDesktop, type ClaudeSession } from "./native";
 import { ago, groupSessions, phaseLook, rowTime } from "./phase";
 import { refreshIcons, useClaude } from "./store";
 import styles from "./Claude.module.css";
@@ -38,9 +38,12 @@ function Row({
   const isHistory = session.source === "history";
   const status = isHistory ? `${session.turns ?? 0} lượt · ${ago(session.lastActiveAt, now)}` : look.label;
 
-  // The same thing a `cl` row does, so a row means one thing wherever it is clicked.
+  // Where the session actually lives. A Desktop session is in the Desktop app, not in a terminal, so opening a
+  // terminal in its folder was never going to get Lauren back to it (20/09). The `cl` rows do the same.
   const open = () => {
-    if (session.cwd) {
+    if (session.source !== "cli") {
+      void openDesktop().catch((err: unknown) => console.error("claude_open_desktop failed", err));
+    } else if (session.cwd) {
       void openTerminal(session.cwd).catch((err: unknown) => console.error("open_terminal failed", err));
     }
   };
@@ -50,8 +53,9 @@ function Row({
       type="button"
       className={dim ? `${styles.row} ${styles.rowDim}` : styles.row}
       onClick={open}
-      disabled={!session.cwd}
-      title={session.cwd ?? session.title}
+      // A Desktop row needs no folder: it opens the app itself.
+      disabled={session.source === "cli" && !session.cwd}
+      title={session.source !== "cli" ? "Mở Claude Desktop" : (session.cwd ?? session.title)}
     >
       <ClaudeIcon phase={session.phase} extra={extra} rotateMs={rotateMs} size={ICON_SIZE} />
       <span className={styles.rowText}>

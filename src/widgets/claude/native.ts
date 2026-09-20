@@ -58,6 +58,12 @@ export async function getUsage(force = false): Promise<ClaudeUsage> {
 }
 
 /** Extra status images per phase, as data URLs. The bundled ones live in the page, not here. */
+/** Brings Claude Desktop to the front. Rust uses the app's own `claude://` protocol. */
+export async function openDesktop(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("claude_open_desktop");
+}
+
 export async function extraIcons(): Promise<Record<string, string[]>> {
   if (!isTauri()) return {};
   return invoke<Record<string, string[]>>("claude_icons");

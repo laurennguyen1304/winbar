@@ -5,7 +5,7 @@
 import { openNotch, openTerminal } from "../../command-bar/native";
 import { fold } from "../../command-bar/rank";
 import type { SearchProvider, SearchResult } from "../../shell/widget-contract";
-import { getUsage, listSessions, type ClaudeSession } from "./native";
+import { getUsage, listSessions, openDesktop, type ClaudeSession } from "./native";
 import { phaseLook } from "./phase";
 
 /** Shortest query that gets Claude rows without the prefix. */
@@ -18,18 +18,22 @@ function haystack(session: ClaudeSession): string {
 
 function sessionRow(session: ClaudeSession, rank: number): SearchResult {
   const look = phaseLook(session);
+  const desktop = session.source !== "cli";
   const name = session.project ? `${session.project} · ${session.title}` : session.title;
   return {
     id: `claude-${session.id}`,
     title: name,
     subtitle: `${look.label} · Claude`,
     icon: "sparks",
-    verb: "Terminal",
+    verb: desktop ? "Claude" : "Terminal",
     score: 1000 - rank * 10,
     remember: false,
-    // A terminal in the worktree, not Explorer: these rows are for a machine where the work happens at a prompt
-    // (Lauren, 20/09). Without a folder there is nothing to stand in, so the notch is the next best thing.
-    run: () => (session.cwd ? openTerminal(session.cwd) : openNotch("claude")),
+    // Where the session actually lives: a Desktop session opens the Desktop app, a CLI one opens a terminal in
+    // its worktree (Lauren, 20/09 — this machine does its work at a prompt, so Explorer helped nobody).
+    run: () => {
+      if (desktop) return openDesktop();
+      return session.cwd ? openTerminal(session.cwd) : openNotch("claude");
+    },
   };
 }
 

@@ -100,6 +100,19 @@ Xem thêm `SPEC-claude.md` §13.1.
 > chỉ ~20 ms), nên **mọi** provider timeout ở mốc 1,5 giây — kể cả `files` và `clipboard` vốn chạy tốt. Muốn hiện
 > cửa sổ lên phải thêm quyền `window:allow-show`, thêm quyền chỉ để test thì không đáng.
 
+## 6a. Dòng mở đúng nơi phiên đang sống (Lauren hỏi 20/09)
+
+- [x] ✅ Claude Desktop là app **đóng gói MSIX** (`Claude_pzs8sxrjxfjjc!Claude`) và có đăng ký protocol
+      `claude`. Gọi `claude://` khi app đang chạy: **22 tiến trình trước, 22 sau, vẫn một cửa sổ** — nó focus
+      cửa sổ sẵn có chứ không mở thêm.
+- [x] ✅ Gọi `claude_open_desktop` qua app đang chạy: `ok`, không sinh tiến trình mới.
+- [x] ✅ Phiên CLI vẫn ra terminal; phiên Desktop và lịch sử Desktop ra app — có test cho cả card lẫn dòng `cl`.
+- [x] ✅ Dòng Desktop **không cần `cwd`** vẫn bấm được (trước đây bị khoá vì không có thư mục).
+- [ ] 👤 **Cần bạn thử tay:** bấm dòng `Lauren Claude` trong card → Claude Desktop nhảy ra trước.
+
+**Chưa làm được:** nhảy tới **đúng phiên** trong Desktop. File phiên có `sessionId`, nhưng dạng deep link của
+`claude://` không có tài liệu, và tôi không đi dò bừa scheme của app khác. Hiện chỉ mở app.
+
 ## 6b. Notch mang cả Claude lẫn nhạc (Lauren yêu cầu 20/09)
 
 Khi **hai** widget cùng có gì để nói thì pill nới rộng ra chứ không giấu bớt một cái: `duoSize` = rộng pill

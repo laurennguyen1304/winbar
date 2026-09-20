@@ -159,9 +159,13 @@ phiên song song. Quy tắc:
 Card **không** nói phiên nào "đã chết" — winbar không biết chắc điều đó, chỉ biết lần cuối nó báo về.
 - **Lịch sử Desktop** (§3.2) là một mục riêng ở dưới, tối đa 3 dòng, ghi `<n> lượt · <thời gian>`;
   **không** giả vờ có trạng thái live.
-- Bấm một dòng: **mở terminal đứng sẵn trong `cwd`** bằng lệnh `open_terminal` (Lauren chọn 20/09 — máy này làm
-  việc ở dấu nhắc lệnh, Explorer không giúp được gì). Windows Terminal nếu có, không thì PowerShell trong một cửa
-  sổ console mới. Giống hệt việc dòng `cl` trong command bar làm, để một dòng chỉ có một nghĩa.
+- Bấm một dòng: mở **đúng nơi phiên đó đang sống** (Lauren chốt 20/09). Dòng `cl` trong command bar làm y hệt, để
+  một dòng chỉ có một nghĩa:
+  - **Phiên CLI** → `open_terminal`: terminal đứng sẵn trong `cwd`. Windows Terminal nếu tên thư mục cho phép,
+    không thì PowerShell trong console mới. (Máy này làm việc ở dấu nhắc lệnh, Explorer không giúp được gì.)
+  - **Phiên Desktop và lịch sử Desktop** → `claude_open_desktop`: đưa **Claude Desktop** ra trước, qua protocol
+    `claude://` mà chính app đó đăng ký. Phiên Desktop không nằm trong terminal nào cả, nên mở terminal cho nó
+    là vô nghĩa. Dòng Desktop **không cần `cwd`** mới bấm được.
 - Không có phiên nào: "Không có phiên Claude nào đang mở".
 
 ### 5.3 Phiên nào là "sôi động nhất"
@@ -214,7 +218,8 @@ Tắt được trong Cài đặt.
 ### 5.7 Trong command bar
 
 Provider `claude`, nhóm "Claude", tiền tố `cl`:
-- Mỗi phiên đang sống một dòng: Enter **mở terminal trong `cwd`** (động từ trên dòng: "Terminal"). Tìm được theo
+- Mỗi phiên đang sống một dòng: Enter mở đúng nơi phiên đó sống — phiên CLI ra terminal trong `cwd` (động từ
+  "Terminal"), phiên Desktop ra chính app Claude Desktop (động từ "Claude"). Tìm được theo
   **cả** tên project lẫn tên worktree, nên gõ "winbar" hay "firefish" đều ra. Gõ mỗi `cl` là ra hết phiên đang
   sống, vì `cl` là tiền tố của provider.
 - Một dòng "Hạn mức Claude · 5h 52% · 7d 24%": Enter mở notch tab Claude.
@@ -366,6 +371,7 @@ trạng thái, và mã lỗi.
 | Rò handle khi lỗi | Mọi handle thuộc `Handle` tự đóng; có test gọi host không tồn tại |
 | Bấm một dòng chạy nhầm chương trình | `cwd` đến từ file do hook **bên thứ ba** ghi. Chỉ nhận **thư mục có thật trên máy**; file, chương trình, hay đường dẫn đã mất thì dòng vẫn hiện nhưng không bấm được |
 | Đường dẫn thành lệnh thứ hai ở tầng hệ điều hành | `open_terminal` truyền thư mục dạng **mảng tham số**, không qua shell |
+| Dòng Desktop hoàn toàn không đụng tới `cwd` | `claude_open_desktop` mở hằng số `claude://` — không có mẩu dữ liệu nào từ file của hook đi vào lệnh. Đây là hành động an toàn nhất trong module; đo trên máy: app đang chạy thì nó **focus cửa sổ sẵn có**, không mở thêm tiến trình nào |
 | Đường dẫn thành lệnh thứ hai **ở tầng `wt.exe`** | Windows Terminal **tự tách lại** dòng lệnh của nó theo `;`, **kể cả bên trong dấu nháy kép** — đo cả hai cách: thư mục `probe;zzznotacommand` đều làm wt mở cửa sổ tiêu đề `zzznotacommand`. Nháy không cứu được, và wt cũng không nhận thư mục qua thư mục làm việc của tiến trình (thử: nó về thẳng home), nên `-d` là bắt buộc. Vì thế dùng **allowlist**: thư mục chỉ gồm chữ/số/` `/`\`/`/`/`:`/`.`/`-`/`_`/`(`/`)` mới giao cho wt; còn lại sang PowerShell, vốn nhận thư mục **qua tiến trình** và không parse gì cả |
 | Chạy nhầm một `wt.exe` do người khác đặt vào | Gọi terminal bằng **đường dẫn đầy đủ** (`%LOCALAPPDATA%\…\wt.exe`, rồi `%SystemRoot%\…\powershell.exe`), không để Windows tự dò theo `PATH` hay thư mục làm việc |
 | Rò chứng thực NTLM qua đường dẫn mạng | Đường dẫn mạng bị từ chối **trước khi** chạm vào ổ đĩa, ở cả hai chỗ: lúc dựng danh sách (chạy mỗi 2 giây cho mọi phiên) và lúc mở terminal. Chỉ cần `is_dir()` một đường dẫn UNC là Windows đã mở kết nối SMB. Kiểm bằng **prefix của đường dẫn đã parse**, không phải bằng chuỗi: Windows nhận cả hai loại gạch chéo nên `//server/share`, `/\server\share`, `\/server/share` cũng là đường dẫn mạng — cách kiểm "bắt đầu bằng hai dấu \\" cho ba dạng đó lọt hết |

@@ -159,6 +159,17 @@ pub fn claude_usage<R: Runtime>(
     )
 }
 
+/// Brings Claude Desktop to the front.
+///
+/// A Desktop session does not live in a terminal, so opening one for it never made sense. The target is the
+/// constant `claude://`, the protocol the Desktop app registers — nothing from a session file is involved, which
+/// makes this the safest row action in the module. Measured on this machine: with the app already running it
+/// focuses the existing window rather than starting a second one.
+#[tauri::command]
+pub fn claude_open_desktop() -> Result<(), String> {
+    crate::command_bar::launch::open_shell_target("claude://")
+}
+
 /// Sessions to show: live ones in order, then recent Desktop history.
 #[tauri::command]
 pub fn claude_sessions<R: Runtime>(

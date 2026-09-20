@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClaudeSession, ClaudeUsage } from "./native";
 import { createClaudeProvider } from "./search";
 
-const { native } = vi.hoisted(() => ({ native: { opened: [] as string[], tabs: [] as string[] } }));
+const { native } = vi.hoisted(() => ({
+  native: { opened: [] as string[], tabs: [] as string[], desktopOpens: 0 },
+}));
 vi.mock("../../command-bar/native", () => ({
   openTerminal: (path: string) => {
     native.opened.push(path);
@@ -13,7 +15,14 @@ vi.mock("../../command-bar/native", () => ({
     return Promise.resolve();
   },
 }));
-vi.mock("./native", () => ({ listSessions: () => Promise.resolve([]), getUsage: () => Promise.resolve({}) }));
+vi.mock("./native", () => ({
+  listSessions: () => Promise.resolve([]),
+  getUsage: () => Promise.resolve({}),
+  openDesktop: () => {
+    native.desktopOpens += 1;
+    return Promise.resolve();
+  },
+}));
 
 function session(over: Partial<ClaudeSession> & Pick<ClaudeSession, "id">): ClaudeSession {
   return { source: "cli", title: over.id, phase: "idle", lastActiveAt: 0, ...over };
@@ -36,6 +45,22 @@ describe("claude command bar rows", () => {
   beforeEach(() => {
     native.opened = [];
     native.tabs = [];
+    native.desktopOpens = 0;
+  });
+
+  it("sends a Desktop session to the Desktop app, and says so on the row", async () => {
+    // Its own provider: the shared fixture has no live Desktop session, and past ones never reach the bar.
+    const withDesktop = createClaudeProvider(
+      () => Promise.resolve([session({ id: "d", title: "Lauren Claude", source: "desktop" })]),
+      () => Promise.resolve(USAGE),
+    );
+    const rows = await withDesktop.search("", new AbortController().signal);
+    const desktop = rows.find((r) => r.id === "claude-d");
+    expect(desktop?.verb).toBe("Claude");
+    await desktop?.run();
+    expect(native.desktopOpens).toBe(1);
+    // A past Desktop session has no folder anyway, and must not try for a terminal.
+    expect(native.opened).toEqual([]);
   });
 
   it("is the Claude group behind the cl prefix", () => {

@@ -10,6 +10,7 @@ const { native } = vi.hoisted(() => ({
     sessions: [] as ClaudeSession[],
     icons: {} as Record<string, string[]>,
     opened: [] as string[],
+    desktopOpens: 0,
     changed: undefined as (() => void) | undefined,
   },
 }));
@@ -22,6 +23,10 @@ vi.mock("./native", () => ({
   onSessionsChanged: (handler: () => void) => {
     native.changed = handler;
     return () => {};
+  },
+  openDesktop: () => {
+    native.desktopOpens += 1;
+    return Promise.resolve();
   },
 }));
 vi.mock("../../command-bar/native", () => ({
@@ -51,6 +56,7 @@ describe("SessionsCard", () => {
     ];
     native.icons = {};
     native.opened = [];
+    native.desktopOpens = 0;
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
   afterEach(() => {
@@ -77,6 +83,27 @@ describe("SessionsCard", () => {
     render(<SessionsCard />);
     fireEvent.click(await screen.findByTitle("C:\\brain"));
     await waitFor(() => expect(native.opened).toEqual(["C:\\brain"]));
+  });
+
+  it("takes a Desktop row to the Desktop app, never to a terminal", async () => {
+    native.sessions = [
+      session({ id: "d", title: "Lauren Claude", source: "desktop" }),
+      session({ id: "h", title: "Việc cũ", source: "history", turns: 2 }),
+    ];
+    render(<SessionsCard />);
+    // Both the live Desktop session and the past one belong to the app, not to a terminal.
+    const rows = await screen.findAllByTitle("Mở Claude Desktop");
+    expect(rows).toHaveLength(2);
+    fireEvent.click(rows[0]);
+    await waitFor(() => expect(native.desktopOpens).toBe(1));
+    expect(native.opened).toEqual([]);
+  });
+
+  it("leaves a Desktop row clickable even with no folder", async () => {
+    native.sessions = [session({ id: "d", title: "Lauren Claude", source: "desktop" })];
+    render(<SessionsCard />);
+    // A CLI row without a folder stays disabled; a Desktop row needs no folder to open its app.
+    expect(await screen.findByTitle("Mở Claude Desktop")).toBeEnabled();
   });
 
   it("says so when nothing is running", async () => {
