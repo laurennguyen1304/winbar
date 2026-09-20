@@ -230,5 +230,14 @@ Không có `tauri build` thì app vẫn trỏ về `http://localhost:1420`, mà 
   Đã khảo sát: khả thi qua hook `PermissionRequest`, xem trao đổi ngày 18/09.
 - `startedAt` bằng 0 ở hầu hết phiên nên cột thời gian thường là "hoạt động lần cuối", không phải "đã chạy bao lâu".
 - Không biết được phiên nào đã chết thật: hook chỉ xóa file khi `SessionEnd` chạy, mà đóng terminal thì nó không chạy.
-- Không nhảy tới đúng tab Orca của phiên: dữ liệu không có thông tin cửa sổ nào (không PID, không handle, không pane key).
+- **Không nhảy tới đúng tab Orca của phiên** — đã tra kỹ ngày 20/09, không phải chưa thử:
+  - Orca **không đăng ký URI scheme** nào (quét toàn bộ protocol đã đăng ký của máy; Claude Desktop thì có).
+  - Cửa sổ Orca chỉ có tiêu đề `"Orca"`, không mang tên worktree, nên không nhận ra tab qua tiêu đề.
+  - File trạng thái không có PID, handle hay pane key; tab là thứ nội bộ của Orca, không phải cửa sổ của hệ điều hành.
+
+  **Đưa cửa sổ Orca ra trước** thì làm được, và **`claude --resume <id>`** cũng làm được (`sessionId` trong file
+  trạng thái đúng là id của transcript). Lauren cân nhắc rồi **chọn giữ nguyên terminal trống** (20/09): mở lại
+  hội thoại của một phiên **đang chạy** sẽ sinh ra đúng cái cảnh hai phiên trên cùng một worktree mà Lauren
+  tránh, còn focus Orca thì vẫn phải tự tìm tab. Giữ nguyên cũng là phương án ít bề mặt tấn công nhất:
+  `sessionId` không bao giờ đi vào dòng lệnh. Muốn mở lại hội thoại thì gõ `claude -r` trong terminal vừa mở.
 - Endpoint hạn mức không công khai, có thể đổi hoặc bị chặn bất cứ lúc nào.
