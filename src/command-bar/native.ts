@@ -168,6 +168,12 @@ export async function openPath(path: string): Promise<void> {
   await invoke("open_path", { path });
 }
 
+/** A terminal standing in `path`. Rust accepts an existing folder only. */
+export async function openTerminal(path: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("open_terminal", { path });
+}
+
 /** Default browser; Rust accepts http(s) addresses only. */
 export async function openUrl(url: string): Promise<void> {
   if (!isTauri()) return;

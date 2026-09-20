@@ -82,6 +82,7 @@ pub fn run() {
             command_bar::history::history_record,
             command_bar::history::history_list,
             command_bar::launch::open_path,
+            command_bar::launch::open_terminal,
             command_bar::launch::open_url,
             command_bar::launch::reveal_path,
             settings::get_settings,

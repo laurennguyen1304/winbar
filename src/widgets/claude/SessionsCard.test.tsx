@@ -25,7 +25,7 @@ vi.mock("./native", () => ({
   },
 }));
 vi.mock("../../command-bar/native", () => ({
-  openPath: (path: string) => {
+  openTerminal: (path: string) => {
     native.opened.push(path);
     return Promise.resolve();
   },
@@ -73,7 +73,7 @@ describe("SessionsCard", () => {
     expect(screen.getByText("wait for you")).toBeInTheDocument();
   });
 
-  it("opens the folder of the row that was clicked", async () => {
+  it("opens a terminal in the folder of the row that was clicked", async () => {
     render(<SessionsCard />);
     fireEvent.click(await screen.findByTitle("C:\\brain"));
     await waitFor(() => expect(native.opened).toEqual(["C:\\brain"]));

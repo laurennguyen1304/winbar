@@ -71,6 +71,48 @@ pub fn open_path(path: String) -> Result<(), String> {
     return Err(format!("unsupported platform for {}", path.display()));
 }
 
+/// A folder that exists right now. A terminal needs somewhere to stand, so a file is not good enough.
+pub fn existing_dir(path: &str) -> Result<PathBuf, String> {
+    let p = existing_path(path)?;
+    if !p.is_dir() {
+        return Err(format!("not a folder: {path}"));
+    }
+    Ok(p)
+}
+
+/// Opens a terminal standing in a folder: Windows Terminal when it is installed, otherwise PowerShell in a new
+/// console window.
+///
+/// The arguments go as an array, never through a shell. The folder reaches us from a file someone else's hook
+/// writes, so a path holding `&` or a quote must stay a path and not become a second command.
+#[tauri::command]
+pub fn open_terminal(path: String) -> Result<(), String> {
+    let dir = existing_dir(&path)?;
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // Without this a console process spawned from a windowed app has no window to draw in.
+        const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
+
+        if std::process::Command::new("wt.exe")
+            .arg("-d")
+            .arg(&dir)
+            .spawn()
+            .is_ok()
+        {
+            return Ok(());
+        }
+        std::process::Command::new("powershell.exe")
+            .current_dir(&dir)
+            .creation_flags(CREATE_NEW_CONSOLE)
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(not(windows))]
+    Err(format!("unsupported platform for {}", dir.display()))
+}
+
 /// Opens Explorer on the containing folder with the item selected (Ctrl+Enter).
 #[tauri::command]
 pub fn reveal_path(path: String) -> Result<(), String> {
@@ -100,6 +142,19 @@ mod tests {
         std::fs::write(&file, "x").unwrap();
         assert_eq!(existing_path(file.to_str().unwrap()), Ok(file.clone()));
         assert_eq!(existing_path(dir.to_str().unwrap()), Ok(dir.clone()));
+        std::fs::remove_file(file).unwrap();
+    }
+
+    #[test]
+    fn a_terminal_only_opens_in_a_folder() {
+        let dir = std::env::temp_dir();
+        let file = dir.join("winbar-terminal-test.txt");
+        std::fs::write(&file, "x").unwrap();
+        assert_eq!(existing_dir(dir.to_str().unwrap()), Ok(dir.clone()));
+        // A session's `cwd` is meant to be a folder; a file, a missing path or a relative one is not one.
+        assert!(existing_dir(file.to_str().unwrap()).is_err());
+        assert!(existing_dir(r"..\somewhere").is_err());
+        assert!(existing_dir("").is_err());
         std::fs::remove_file(file).unwrap();
     }
 

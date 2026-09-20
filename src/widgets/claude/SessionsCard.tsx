@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { openPath } from "../../command-bar/native";
+import { openTerminal } from "../../command-bar/native";
 import { Card, CardLabel } from "../../shell/ui";
 import { ClaudeIcon } from "./ClaudeIcon";
 import type { ClaudeSession } from "./native";
@@ -38,8 +38,11 @@ function Row({
   const isHistory = session.source === "history";
   const status = isHistory ? `${session.turns ?? 0} lượt · ${ago(session.lastActiveAt, now)}` : look.label;
 
+  // The same thing a `cl` row does, so a row means one thing wherever it is clicked.
   const open = () => {
-    if (session.cwd) void openPath(session.cwd).catch((err: unknown) => console.error("open_path failed", err));
+    if (session.cwd) {
+      void openTerminal(session.cwd).catch((err: unknown) => console.error("open_terminal failed", err));
+    }
   };
 
   return (

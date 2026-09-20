@@ -159,7 +159,9 @@ phiên song song. Quy tắc:
 Card **không** nói phiên nào "đã chết" — winbar không biết chắc điều đó, chỉ biết lần cuối nó báo về.
 - **Lịch sử Desktop** (§3.2) là một mục riêng ở dưới, tối đa 3 dòng, ghi `<n> lượt · <thời gian>`;
   **không** giả vờ có trạng thái live.
-- Bấm một dòng: mở thư mục (`cwd`) bằng lệnh `open_path` sẵn có.
+- Bấm một dòng: **mở terminal đứng sẵn trong `cwd`** bằng lệnh `open_terminal` (Lauren chọn 20/09 — máy này làm
+  việc ở dấu nhắc lệnh, Explorer không giúp được gì). Windows Terminal nếu có, không thì PowerShell trong một cửa
+  sổ console mới. Giống hệt việc dòng `cl` trong command bar làm, để một dòng chỉ có một nghĩa.
 - Không có phiên nào: "Không có phiên Claude nào đang mở".
 
 ### 5.3 Phiên nào là "sôi động nhất"
@@ -212,8 +214,9 @@ Tắt được trong Cài đặt.
 ### 5.7 Trong command bar
 
 Provider `claude`, nhóm "Claude", tiền tố `cl`:
-- Mỗi phiên đang sống một dòng: Enter mở thư mục. Tìm được theo **cả** tên project lẫn tên worktree, nên gõ
-  "winbar" hay "firefish" đều ra.
+- Mỗi phiên đang sống một dòng: Enter **mở terminal trong `cwd`** (động từ trên dòng: "Terminal"). Tìm được theo
+  **cả** tên project lẫn tên worktree, nên gõ "winbar" hay "firefish" đều ra. Gõ mỗi `cl` là ra hết phiên đang
+  sống, vì `cl` là tiền tố của provider.
 - Một dòng "Hạn mức Claude · 5h 52% · 7d 24%": Enter mở notch tab Claude.
 - `remember: false` cho dòng phiên (phiên là thứ thoáng qua, nhớ lại sẽ trỏ vào phiên đã chết).
 

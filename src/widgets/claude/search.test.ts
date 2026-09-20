@@ -4,7 +4,7 @@ import { createClaudeProvider } from "./search";
 
 const { native } = vi.hoisted(() => ({ native: { opened: [] as string[], tabs: [] as string[] } }));
 vi.mock("../../command-bar/native", () => ({
-  openPath: (path: string) => {
+  openTerminal: (path: string) => {
     native.opened.push(path);
     return Promise.resolve();
   },
@@ -66,10 +66,10 @@ describe("claude command bar rows", () => {
   it("says what a session is doing in the subtitle", async () => {
     const [row] = await search("firefish");
     expect(row.subtitle).toBe("Cooking · Bash · Claude");
-    expect(row.verb).toBe("Mở");
+    expect(row.verb).toBe("Terminal");
   });
 
-  it("opens the folder of a session, and the Claude tab for the limits row", async () => {
+  it("opens a terminal in the session folder, and the Claude tab for the limits row", async () => {
     const [session] = await search("firefish");
     await session.run();
     expect(native.opened).toEqual(["C:\\wb"]);

@@ -2,7 +2,7 @@
 //
 // Sessions are not remembered in "Gần đây": a session is a passing thing, and a remembered row would offer to open
 // a project for a session that ended hours ago.
-import { openNotch, openPath } from "../../command-bar/native";
+import { openNotch, openTerminal } from "../../command-bar/native";
 import { fold } from "../../command-bar/rank";
 import type { SearchProvider, SearchResult } from "../../shell/widget-contract";
 import { getUsage, listSessions, type ClaudeSession } from "./native";
@@ -24,10 +24,12 @@ function sessionRow(session: ClaudeSession, rank: number): SearchResult {
     title: name,
     subtitle: `${look.label} · Claude`,
     icon: "sparks",
-    verb: "Mở",
+    verb: "Terminal",
     score: 1000 - rank * 10,
     remember: false,
-    run: () => (session.cwd ? openPath(session.cwd) : openNotch("claude")),
+    // A terminal in the worktree, not Explorer: these rows are for a machine where the work happens at a prompt
+    // (Lauren, 20/09). Without a folder there is nothing to stand in, so the notch is the next best thing.
+    run: () => (session.cwd ? openTerminal(session.cwd) : openNotch("claude")),
   };
 }
 
