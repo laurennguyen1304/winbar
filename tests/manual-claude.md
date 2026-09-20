@@ -80,6 +80,14 @@ Xem thêm `SPEC-claude.md` §13.1.
       đang chạy: thư mục worktree → mở Windows Terminal đúng chỗ (tiêu đề `pwsh @ firefish`), còn một **file**,
       đường dẫn **tương đối** và đường dẫn **không tồn tại** đều bị từ chối. Cửa sổ test đã đóng lại.
 - [ ] 👤 Bấm một dòng trong card notch cũng phải ra terminal y như vậy.
+- [x] ✅ **Rà lại bảo mật 20/09 (Lauren yêu cầu soi lần hai)** — tìm ra **hai lỗ trong code tôi vừa viết**:
+      - Chặn đường dẫn mạng bằng chuỗi `\\` **bị lách** bằng gạch chéo xuôi. Chạy thử với `std::path`:
+        `//server/share`, `/\server\share`, `\/server/share` đều là UNC thật mà cách kiểm cũ cho qua hết.
+        Giờ kiểm bằng prefix của đường dẫn đã parse.
+      - **`wt.exe` tự tách lại dòng lệnh theo `;`.** Thư mục `probe;zzznotacommand` → wt mở cửa sổ tiêu đề
+        `zzznotacommand`, tức nó đã **chạy** nửa sau. Thư mục tên `x;calc.exe` là chạy được chương trình.
+        Thư mục có `;` giờ đi sang PowerShell; đã xác nhận qua app: không có tiến trình WindowsTerminal nào,
+        PowerShell được mở, và `current_dir` đặt đúng thư mục `probe;zzznotacommand`.
 
 > ⚠️ **Không tự kiểm được:** cửa sổ command bar khi ẩn bị WebView2 bóp cổ, một lệnh IPC mất 3–7,7 giây (từ notch
 > chỉ ~20 ms), nên **mọi** provider timeout ở mốc 1,5 giây — kể cả `files` và `clipboard` vốn chạy tốt. Muốn hiện

@@ -153,7 +153,7 @@ fn read_state_file(path: &Path, orca_root: &str, now_ms: u64) -> Option<Session>
 /// `is_dir()` on `\\server\share` makes Windows open an SMB connection. Against a server that asks for
 /// credentials that would hand them over every couple of seconds, for a row nobody clicked.
 fn is_local_dir(cwd: &str) -> bool {
-    !cwd.is_empty() && !cwd.trim_start().starts_with(r"\\") && Path::new(cwd).is_dir()
+    !cwd.is_empty() && !crate::command_bar::launch::is_network_path(cwd) && Path::new(cwd).is_dir()
 }
 
 /// Past Desktop sessions, newest first. Metadata only — never the conversation.
@@ -454,8 +454,15 @@ mod tests {
 
     #[test]
     fn a_network_folder_is_never_offered_and_never_reached_for() {
-        assert!(!is_local_dir(r"\\server\share\work"));
-        assert!(!is_local_dir(r"  \\server\share"));
+        for network in [
+            r"\\server\share\work",
+            r"  \\server\share",
+            "//server/share",
+            r"/\server\share",
+            r"\/server/share",
+        ] {
+            assert!(!is_local_dir(network), "{network:?}");
+        }
         assert!(!is_local_dir(""));
         assert!(!is_local_dir(r"C:\definitely\not\here-9f2c"));
         assert!(is_local_dir(

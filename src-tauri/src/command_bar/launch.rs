@@ -1,7 +1,7 @@
 //! Opening what the command bar found (SPEC-command-bar §9). Every target is checked here, never trusted as sent by
 //! the page: files and folders must be absolute paths that exist.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf, Prefix};
 
 /// An absolute path to a file or folder that exists right now.
 pub fn existing_path(path: &str) -> Result<PathBuf, String> {
@@ -71,10 +71,22 @@ pub fn open_path(path: String) -> Result<(), String> {
     return Err(format!("unsupported platform for {}", path.display()));
 }
 
+/// Whether a path names a place on another machine.
+///
+/// Asked of the parsed path rather than its text. Windows takes both separators, so `//server/share`,
+/// `/\server\share` and `\/server/share` are every bit as much a network path as `\\server\share` — a check for two
+/// leading backslashes waves the first three straight through. Verified against `std::path` on this machine.
+pub fn is_network_path(path: &str) -> bool {
+    matches!(
+        Path::new(path.trim_start()).components().next(),
+        Some(Component::Prefix(prefix)) if matches!(prefix.kind(), Prefix::UNC(..) | Prefix::VerbatimUNC(..))
+    )
+}
+
 /// A folder on this machine that exists right now. A terminal needs somewhere to stand, so a file is not good
-/// enough, and a UNC path is refused before anything touches it — see `open_terminal`.
+/// enough, and a network path is refused before anything touches it — see `open_terminal`.
 pub fn existing_dir(path: &str) -> Result<PathBuf, String> {
-    if path.trim_start().starts_with(r"\\") {
+    if is_network_path(path) {
         return Err(format!("not a local folder: {path}"));
     }
     let p = existing_path(path)?;
@@ -82,6 +94,19 @@ pub fn existing_dir(path: &str) -> Result<PathBuf, String> {
         return Err(format!("not a folder: {path}"));
     }
     Ok(p)
+}
+
+/// Whether Windows Terminal can be trusted with this folder on its command line.
+///
+/// `wt.exe` parses its own command line a second time and splits it on `;`, so a folder named `proj;calc.exe`
+/// arrives as a starting directory **and** a subcommand that runs a program. Passing the folder as its own
+/// argument does not help: the operating system keeps it whole, and wt takes it apart again afterwards.
+///
+/// Measured, not guessed: a folder named `probe;zzznotacommand` opened a Windows Terminal window whose title was
+/// `zzznotacommand` — wt had tried to run it. A semicolon in a folder name is legal on Windows, so the folder
+/// goes to PowerShell instead, which is handed its directory through the process, never through a command line.
+fn safe_for_windows_terminal(dir: &Path) -> bool {
+    !dir.as_os_str().to_string_lossy().contains(';')
 }
 
 /// Full paths of the terminals worth trying, best first.
@@ -104,8 +129,9 @@ fn terminal_candidates() -> Vec<PathBuf> {
 /// Opens a terminal standing in a folder: Windows Terminal when it is installed, otherwise PowerShell in a new
 /// console window.
 ///
-/// The folder goes to the process as an argument, never through a shell. It reaches us from a file someone else's
-/// hook writes, so a path holding `&` or a quote has to stay a path rather than become a second command. A UNC
+/// The folder goes to the process as an argument, never through a shell, and a folder wt would re-parse goes to
+/// PowerShell instead (see `safe_for_windows_terminal`). It reaches us from a file someone else's hook writes, so
+/// a path holding `&` or a quote has to stay a path rather than become a second command. A UNC
 /// path is refused outright: `\\somewhere\share` would have Windows open an SMB connection, and on a server that
 /// asks for it that hands over the machine's credentials for nothing.
 #[tauri::command]
@@ -122,9 +148,13 @@ pub fn open_terminal(path: String) -> Result<(), String> {
             if !exe.is_file() {
                 continue;
             }
-            let windows_terminal = exe.file_name().is_some_and(|n| n == "wt.exe");
+            let is_wt = exe.file_name().is_some_and(|n| n == "wt.exe");
+            if is_wt && !safe_for_windows_terminal(&dir) {
+                // Not a failure worth reporting: the next candidate takes this folder safely.
+                continue;
+            }
             let mut command = std::process::Command::new(&exe);
-            if windows_terminal {
+            if is_wt {
                 // Windows Terminal draws its own window and takes the folder as an argument.
                 command.arg("-d").arg(&dir);
             } else {
@@ -185,7 +215,15 @@ mod tests {
         assert!(existing_dir("").is_err());
         // A UNC path must be turned away by the UNC rule itself, before the filesystem is touched: reaching out
         // to a server that asks for credentials is an attack on its own. The error text tells the rules apart.
-        for unc in [r"\\attacker\share", r"  \\attacker\share"] {
+        for unc in [
+            r"\\attacker\share",
+            r"  \\attacker\share",
+            // Windows takes both separators, so these three are network paths too.
+            "//attacker/share",
+            r"/\attacker\share",
+            r"\/attacker/share",
+            r"\\?\UNC\attacker\share",
+        ] {
             assert_eq!(
                 existing_dir(unc),
                 Err(format!("not a local folder: {unc}")),
@@ -193,6 +231,17 @@ mod tests {
             );
         }
         std::fs::remove_file(file).unwrap();
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn a_folder_windows_terminal_would_re_parse_goes_to_powershell() {
+        // Proven on this machine: a folder named `probe;zzznotacommand` made wt open a window titled
+        // `zzznotacommand`, i.e. it ran the second half. `;` is legal in a Windows folder name.
+        assert!(!safe_for_windows_terminal(Path::new(r"C:\work\proj;calc.exe")));
+        assert!(!safe_for_windows_terminal(Path::new(r"C:\a;b")));
+        assert!(safe_for_windows_terminal(Path::new(r"C:\work\my proj (2)")));
+        assert!(safe_for_windows_terminal(Path::new(r"C:\work\a&b")));
     }
 
     #[test]

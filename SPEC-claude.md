@@ -365,9 +365,10 @@ trạng thái, và mã lỗi.
 | Nhận chứng chỉ giả | Không đụng tới `WINHTTP_OPTION_SECURITY_FLAGS`, nên giữ nguyên kiểm tra chứng chỉ mặc định của Windows |
 | Rò handle khi lỗi | Mọi handle thuộc `Handle` tự đóng; có test gọi host không tồn tại |
 | Bấm một dòng chạy nhầm chương trình | `cwd` đến từ file do hook **bên thứ ba** ghi. Chỉ nhận **thư mục có thật trên máy**; file, chương trình, hay đường dẫn đã mất thì dòng vẫn hiện nhưng không bấm được |
-| Đường dẫn thành lệnh thứ hai | `open_terminal` truyền thư mục cho tiến trình dạng **mảng tham số**, không qua shell. Đường dẫn chứa `&`, `|`, dấu nháy vẫn chỉ là đường dẫn |
+| Đường dẫn thành lệnh thứ hai ở tầng hệ điều hành | `open_terminal` truyền thư mục dạng **mảng tham số**, không qua shell |
+| Đường dẫn thành lệnh thứ hai **ở tầng `wt.exe`** | Windows Terminal **tự tách lại** dòng lệnh của nó theo dấu `;`, nên thư mục tên `proj;calc.exe` vừa là thư mục vừa là lệnh chạy chương trình — đo được, không phải suy đoán: thư mục `probe;zzznotacommand` làm wt mở cửa sổ tiêu đề `zzznotacommand`. Thư mục có `;` giờ đi thẳng sang PowerShell, vốn nhận thư mục **qua tiến trình** chứ không qua dòng lệnh |
 | Chạy nhầm một `wt.exe` do người khác đặt vào | Gọi terminal bằng **đường dẫn đầy đủ** (`%LOCALAPPDATA%\…\wt.exe`, rồi `%SystemRoot%\…\powershell.exe`), không để Windows tự dò theo `PATH` hay thư mục làm việc |
-| Rò chứng thực NTLM qua đường dẫn mạng | `\\server\share` bị từ chối **trước khi** chạm vào ổ đĩa, ở cả hai chỗ: lúc dựng danh sách (chạy mỗi 2 giây cho mọi phiên) và lúc mở terminal. Chỉ cần `is_dir()` một đường dẫn UNC là Windows đã mở kết nối SMB |
+| Rò chứng thực NTLM qua đường dẫn mạng | Đường dẫn mạng bị từ chối **trước khi** chạm vào ổ đĩa, ở cả hai chỗ: lúc dựng danh sách (chạy mỗi 2 giây cho mọi phiên) và lúc mở terminal. Chỉ cần `is_dir()` một đường dẫn UNC là Windows đã mở kết nối SMB. Kiểm bằng **prefix của đường dẫn đã parse**, không phải bằng chuỗi: Windows nhận cả hai loại gạch chéo nên `//server/share`, `/\server\share`, `\/server/share` cũng là đường dẫn mạng — cách kiểm "bắt đầu bằng hai dấu \\" cho ba dạng đó lọt hết |
 
 | **Chưa chặn được** | Vì sao |
 |---|---|
