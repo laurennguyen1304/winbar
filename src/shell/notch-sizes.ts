@@ -34,6 +34,16 @@ export const TOP_GAP_RANGE = { min: 0, max: 48 } as const;
 /** Duration of the size morph (M1). Keep in sync with --motion-resize in design/tokens.css. */
 export const RESIZE_MS = 420;
 
+/**
+ * Pill carrying two widgets at once — a Claude session while music is playing (Lauren, 20/09).
+ *
+ * Widened rather than squeezed: 340 px is already tight for the Claude row on its own, so two of them in the
+ * same width would mean two ellipses and nothing readable.
+ */
+export function duoSize(pill: Size): Size {
+  return { width: pill.width + 240, height: pill.height };
+}
+
 /** Alert pill: wider and slightly taller than the regular pill (SPEC §5.1). */
 export function alertSize(pill: Size): Size {
   return { width: pill.width + 150, height: pill.height + 4 };

@@ -20,6 +20,7 @@ import {
   PILL_SIZES,
   RESIZE_MS,
   alertSize,
+  duoSize,
   panelHeight,
   panelMaxHeight,
   pillRadius,
@@ -29,7 +30,7 @@ import { useNotchDrag } from "./notch-drag";
 import { stickyHeight, windowSizeFor, type NotchLayout, type NotchMaterial } from "./notch-shape";
 import { NotchShape } from "./NotchShape";
 import { Panel } from "./Panel";
-import { pickMidPills, pickPill } from "./pill-content";
+import { pickMidPills, pickPills } from "./pill-content";
 import { registry } from "./registry";
 import { useShellRuntime } from "./shell-context";
 import { useNotchMachine } from "./use-notch-machine";
@@ -104,7 +105,8 @@ export function Notch({
   const [tab, setTab] = useState<TabId>("core");
   // Widgets that hid themselves (ShellApi.setHidden) leave the pill and the panel; their Background keeps running.
   const shown = snapshot.hidden.size === 0 ? widgets : widgets.filter((w) => !snapshot.hidden.has(w.id));
-  const priority = pickPill(shown, priorityWidget);
+  // Up to two: a Claude session and music playing at the same time widen the pill rather than hiding one.
+  const pills = pickPills(shown, priorityWidget);
   const midPills = pickMidPills(shown, priorityWidget);
 
   // Let widgets open/collapse the panel through ShellApi.
@@ -155,7 +157,9 @@ export function Notch({
       ? alwaysSize
       : visual === "alert"
         ? alertSize(pillSize)
-        : pillSize;
+        : pills.length > 1
+          ? duoSize(pillSize)
+          : pillSize;
   const panel: Size = { width: panelWidth, height: panelHeight(contentHeight, window.screen.height) };
   const block = expanded ? panel : collapsed;
   const radius = expanded ? PANEL_RADIUS : pillRadius(collapsed);
@@ -246,12 +250,20 @@ export function Notch({
         </Fragment>
       );
     });
-  } else if (priority?.Pill) {
-    pillContent = (
-      <WidgetBoundary title={priority.title} fallback={defaultPill}>
-        <priority.Pill />
-      </WidgetBoundary>
-    );
+  } else if (pills.length > 0) {
+    pillContent = pills.map((w, i) => {
+      const Pill = w.Pill as NonNullable<typeof w.Pill>;
+      return (
+        <Fragment key={w.id}>
+          {i > 0 && <span className={styles.divider} aria-hidden data-testid="pill-divider" />}
+          <span className={styles.midBlock} data-testid={`pill-${w.id}`}>
+            <WidgetBoundary title={w.title} fallback={defaultPill}>
+              <Pill />
+            </WidgetBoundary>
+          </span>
+        </Fragment>
+      );
+    });
   } else {
     pillContent = defaultPill;
   }

@@ -116,6 +116,24 @@ describe("Notch", () => {
       expect(screen.getByText("pill media")).toBeInTheDocument();
     });
 
+    it("widens the pill to carry a Claude session and music at once", () => {
+      renderWith("click", [media, claude]);
+      expect(screen.getByTestId("pill-media")).toBeInTheDocument();
+      expect(screen.getByTestId("pill-claude-sessions")).toBeInTheDocument();
+      expect(screen.getByTestId("pill-divider")).toBeInTheDocument();
+      expect(notch()).toHaveStyle({ width: "580px", height: "36px" });
+    });
+
+    it("narrows back to one pill when the music stops", () => {
+      renderWith("click", [media, claude]);
+      // What the media widget itself does when nothing is playing.
+      act(() => shell.api.setHidden("media", true));
+      expect(screen.queryByTestId("pill-media")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("pill-divider")).not.toBeInTheDocument();
+      expect(screen.getByTestId("pill-claude-sessions")).toBeInTheDocument();
+      expect(notch()).toHaveStyle({ width: "340px", height: "36px" });
+    });
+
     it("always mode keeps only the other half, without a divider", () => {
       renderWith("always", [media, clipboard]);
       expect(screen.getByTestId("mid-divider")).toBeInTheDocument();

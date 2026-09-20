@@ -4,6 +4,7 @@ import {
   PANEL_WIDTHS,
   PILL_SIZES,
   alertSize,
+  duoSize,
   panelHeight,
   panelMaxHeight,
   pillRadius,
@@ -22,6 +23,13 @@ describe("notch sizes", () => {
 
   it("derives the alert pill from the regular pill", () => {
     expect(alertSize(PILL_SIZES.m)).toEqual({ width: 490, height: 40 });
+  });
+
+  it("widens the pill when it carries two widgets, and keeps its height", () => {
+    expect(duoSize(PILL_SIZES.m)).toEqual({ width: 580, height: 36 });
+    expect(duoSize(PILL_SIZES.s)).toEqual({ width: 540, height: 32 });
+    // Still narrower than the always-mode bar, which is a different, two-line shape.
+    expect(duoSize(PILL_SIZES.l).width).toBeLessThan(ALWAYS_SIZES.l.width);
   });
 
   it("rounds pill ends fully", () => {

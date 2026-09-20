@@ -100,6 +100,20 @@ Xem thêm `SPEC-claude.md` §13.1.
 > chỉ ~20 ms), nên **mọi** provider timeout ở mốc 1,5 giây — kể cả `files` và `clipboard` vốn chạy tốt. Muốn hiện
 > cửa sổ lên phải thêm quyền `window:allow-show`, thêm quyền chỉ để test thì không đáng.
 
+## 6b. Notch mang cả Claude lẫn nhạc (Lauren yêu cầu 20/09)
+
+Khi **hai** widget cùng có gì để nói thì pill nới rộng ra chứ không giấu bớt một cái: `duoSize` = rộng pill
++ 240, cao giữ nguyên. Widget không có gì để nói đã tự rút khỏi pill từ trước (`setHidden`), nên hai cái cùng
+hiện đúng là hai việc đang chạy thật.
+
+- [x] ✅ Đo trên app đang chạy, bật thêm một widget thứ hai rồi tắt đi (không đụng vào nhạc của bạn):
+      `300px` một widget → `540px` hai widget, có vạch ngăn → `300px` khi widget kia biến mất.
+      Cài đặt đã khôi phục y nguyên (so khớp từng trường với bản sao lưu).
+- [x] ✅ Ảnh chụp `pill-duo.png`: nửa trái Claude (icon, `Cooking · Bash`, `winbar`, `5h 6%`), vạch ngăn, nửa phải
+      widget thứ hai. Hai nửa chia đều.
+- [ ] 👤 **Cần bạn thử tay:** vừa chạy Claude vừa bật nhạc thật → pill phải nới ra và hiện cả hai. Tôi không tự
+      bật nhạc trên máy bạn vì sẽ chen vào thứ bạn đang nghe.
+
 ## 7. Hiệu năng (tiêu chí 11)
 
 Đo trên bản release, cùng một lần chạy, bật rồi tắt layout — nên **chênh lệch** mới là cái giá của module; số tuyệt

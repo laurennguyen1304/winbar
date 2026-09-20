@@ -75,7 +75,8 @@ Format:        npm run format      (prettier) ; cargo fmt --manifest-path src-ta
 
 | Trạng thái | Khi nào | Kích thước mặc định | Nội dung |
 |---|---|---|---|
-| `pill` | Mode `hover`/`click`, đang thu gọn, không có alert | 340×36 | `Pill` của widget ưu tiên |
+| `pill` | Mode `hover`/`click`, đang thu gọn, không có alert, **một** widget có gì để nói | 340×36 | `Pill` của widget ưu tiên |
+| `pill` (đôi) | Như trên nhưng **hai** widget cùng có gì để nói — ví dụ đang chạy Claude và đang bật nhạc | rộng pill + 240, cao như pill | `Pill` của 2 widget, ưu tiên trước, ngăn bằng vạch dọc. Widget không có gì để nói tự rút khỏi pill (`ShellApi.setHidden`), nên đây đúng là lúc có hai việc đang diễn ra thật. Nới ra chứ không bóp lại: 340px vốn đã chật cho riêng dòng Claude (Lauren, 20/09) |
 | `alert` | Mode `hover`/`click`, đang thu gọn, có alert | rộng pill + 150, cao pill + 4 | Alert đầu hàng đợi, kèm nút hành động |
 | `always` | Mode `always`, đang thu gọn | 620×64 | `MidPill` của 2 widget: ưu tiên trước, rồi widget kế tiếp; nếu có alert thì hiện alert |
 | `expanded` | Người dùng mở | rộng 780, cao theo nội dung (tối đa 80% chiều cao màn hình, phần dư cuộn) | Thanh tab + card của các widget đang bật |

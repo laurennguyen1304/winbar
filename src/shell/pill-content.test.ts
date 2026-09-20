@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickMidPills, pickPill } from "./pill-content";
+import { pickMidPills, pickPill, pickPills } from "./pill-content";
 import type { WidgetDefinition } from "./widget-contract";
 
 const C = () => null;
@@ -27,6 +27,31 @@ describe("pickPill", () => {
 
   it("is undefined when no widget has pill content", () => {
     expect(pickPill([w("clipboard")], undefined)).toBeUndefined();
+  });
+});
+
+describe("pickPills", () => {
+  const widgets = [w("media", { pill: true }), w("claude-sessions", { pill: true }), w("clipboard")];
+
+  it("carries both when a Claude session and music are on at once, priority first", () => {
+    expect(pickPills(widgets, "claude-sessions").map((x) => x.id)).toEqual(["claude-sessions", "media"]);
+    expect(pickPills(widgets, "media").map((x) => x.id)).toEqual(["media", "claude-sessions"]);
+  });
+
+  it("carries one when only one widget has anything to say", () => {
+    // A widget with nothing to show has already taken itself out of the list (ShellApi.setHidden).
+    expect(pickPills([w("media", { pill: true }), w("clipboard")], "claude-sessions").map((x) => x.id)).toEqual([
+      "media",
+    ]);
+  });
+
+  it("never carries a third", () => {
+    const three = [...widgets, w("system", { pill: true })];
+    expect(pickPills(three, "system")).toHaveLength(2);
+  });
+
+  it("is empty when nothing has pill content", () => {
+    expect(pickPills([w("clipboard")], undefined)).toEqual([]);
   });
 });
 
