@@ -4,7 +4,7 @@ import { Card, CardLabel } from "../../shell/ui";
 import { ClaudeIcon } from "./ClaudeIcon";
 import { openDesktop, type ClaudeSession } from "./native";
 import { ago, groupSessions, phaseLook, rowTime } from "./phase";
-import { refreshIcons, useClaude } from "./store";
+import { refreshHistory, refreshIcons, useClaude } from "./store";
 import styles from "./Claude.module.css";
 
 /** How often the relative times are refreshed. */
@@ -78,14 +78,17 @@ function Row({
 
 /** "Phiên Claude" card: what is running now, what has gone quiet, and recent Desktop sessions (SPEC §5.2). */
 export function SessionsCard() {
-  const { sessions, icons, options } = useClaude();
+  const { sessions, history: past, icons, options } = useClaude();
   const rotateMs = options.iconRotateSeconds * 1000;
   const now = useNow();
-  const { live, quiet, history } = groupSessions(sessions);
+  const { live, quiet } = groupSessions(sessions);
+  const history = past;
 
-  // A file dropped into the icons folder shows up the next time the panel opens, without a restart.
+  // Both only matter while the card is on screen: a file dropped into the icons folder shows up without a
+  // restart, and the Desktop history is too expensive to keep up to date behind a closed panel.
   useEffect(() => {
     void refreshIcons();
+    void refreshHistory().catch((err: unknown) => console.error("claude_history failed", err));
   }, []);
 
   return (

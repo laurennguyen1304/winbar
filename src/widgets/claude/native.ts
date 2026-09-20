@@ -58,6 +58,17 @@ export async function getUsage(force = false): Promise<ClaudeUsage> {
 }
 
 /** Extra status images per phase, as data URLs. The bundled ones live in the page, not here. */
+/**
+ * Past Desktop sessions, for the card.
+ *
+ * Deliberately not part of `listSessions`: that one runs every time a session moves, and this one costs a walk
+ * over every session the Desktop app has ever kept.
+ */
+export async function listHistory(): Promise<ClaudeSession[]> {
+  if (!isTauri()) return [];
+  return invoke<ClaudeSession[]>("claude_history");
+}
+
 /** Brings Claude Desktop to the front. Rust uses the app's own `claude://` protocol. */
 export async function openDesktop(): Promise<void> {
   if (!isTauri()) return;

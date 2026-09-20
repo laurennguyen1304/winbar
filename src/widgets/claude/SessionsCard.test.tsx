@@ -8,6 +8,8 @@ import { resetForTests } from "./store";
 const { native } = vi.hoisted(() => ({
   native: {
     sessions: [] as ClaudeSession[],
+    history: [] as ClaudeSession[],
+    historyReads: 0,
     icons: {} as Record<string, string[]>,
     opened: [] as string[],
     desktopOpens: 0,
@@ -18,6 +20,10 @@ const { native } = vi.hoisted(() => ({
 vi.mock("./native", () => ({
   NO_USAGE: { perModel: [], fetchedAt: 0 },
   listSessions: () => Promise.resolve(native.sessions),
+  listHistory: () => {
+    native.historyReads += 1;
+    return Promise.resolve(native.history);
+  },
   extraIcons: () => Promise.resolve(native.icons),
   getUsage: () => Promise.resolve({ perModel: [], fetchedAt: 0 }),
   onSessionsChanged: (handler: () => void) => {
@@ -54,6 +60,8 @@ describe("SessionsCard", () => {
       }),
       session({ id: "b", title: "brain", phase: "permission", cwd: "C:\\brain" }),
     ];
+    native.history = [];
+    native.historyReads = 0;
     native.icons = {};
     native.opened = [];
     native.desktopOpens = 0;
@@ -86,10 +94,8 @@ describe("SessionsCard", () => {
   });
 
   it("takes a Desktop row to the Desktop app, never to a terminal", async () => {
-    native.sessions = [
-      session({ id: "d", title: "Lauren Claude", source: "desktop" }),
-      session({ id: "h", title: "Việc cũ", source: "history", turns: 2 }),
-    ];
+    native.sessions = [session({ id: "d", title: "Lauren Claude", source: "desktop" })];
+    native.history = [session({ id: "h", title: "Việc cũ", source: "history", turns: 2 })];
     render(<SessionsCard />);
     // Both the live Desktop session and the past one belong to the app, not to a terminal.
     const rows = await screen.findAllByTitle("Mở Claude Desktop");
@@ -106,6 +112,21 @@ describe("SessionsCard", () => {
     expect(await screen.findByTitle("Mở Claude Desktop")).toBeEnabled();
   });
 
+  it("asks for the Desktop history once, and never again while sessions move", async () => {
+    native.history = [session({ id: "past", title: "Việc cũ", source: "history", turns: 1 })];
+    render(<SessionsCard />);
+    await screen.findByText("firefish");
+    await waitFor(() => expect(native.historyReads).toBe(1));
+
+    // The pill path runs on every change. Rescanning every old Desktop session behind it was 86% of what
+    // this module cost on the release build (measured 20/09), so it must not happen here.
+    for (let i = 0; i < 5; i += 1) {
+      native.changed?.();
+    }
+    await waitFor(() => expect(screen.getByText("firefish")).toBeInTheDocument());
+    expect(native.historyReads).toBe(1);
+  });
+
   it("says so when nothing is running", async () => {
     native.sessions = [];
     render(<SessionsCard />);
@@ -116,6 +137,9 @@ describe("SessionsCard", () => {
     native.sessions = [
       session({ id: "live", title: "firefish" }),
       session({ id: "ghost", title: "makara", stale: true }),
+    ];
+    // Past Desktop sessions arrive from their own command now, asked for once when the card appears.
+    native.history = [
       session({ id: "past", title: "Việc cũ", source: "history", turns: 4, lastActiveAt: Date.now() - 3_600_000 }),
     ];
     render(<SessionsCard />);

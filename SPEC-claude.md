@@ -334,10 +334,11 @@ trạng thái, và mã lỗi.
 9. Không có phiên nào: widget tự ẩn khỏi pill.
 10. Riêng tư: log không có token, không có đường dẫn đầy đủ, không có tiêu đề phiên.
 11. Hiệu năng (bản release): RAM tăng ≤ 12 MB; CPU khi panel đóng ≤ mức trước module + 0,02%.
-    **Đã đo và KHÔNG đạt phần CPU.** Thực tế: **+0,00** điểm phần trăm khi mọi phiên nằm im, **+0,081** khi có
-    một phiên đang chạy tool. Con số 0,02% là tôi viết khi chưa đo; ~15 ms CPU mỗi lần pill đổi trạng thái (một
-    vòng IPC + một lần React vẽ lại) là sàn của một pill sống. Chi tiết và ba giả thuyết sai:
-    `tests/manual-claude.md` §7. **Cần bạn quyết** nới tiêu chí hay cho pill cập nhật thưa hơn.
+    RAM: **~0 MB**, đạt. CPU: **+0,00** khi mọi phiên nằm im; khi có phiên đang chạy tool thì **+0,021 trung
+    bình** (bốn lần: +0,017 / +0,030 / +0,015 / +0,023) — **quanh ngưỡng, chưa phải lần nào cũng đạt**.
+    Từng là +1,66 → +0,183 → +0,081 → +0,021. Chi phí thật không nằm ở việc phát sự kiện mà ở **quét lại 157
+    file lịch sử Desktop mỗi 60 giây trong luồng nền** (~86% tổng chi phí), nay đã tách khỏi đường của pill.
+    Toàn bộ số đo và **năm giả thuyết sai** của tôi: `tests/manual-claude.md` §7.
 12. `npm test`, `cargo test`, clippy, `npm run lint` qua; checklist thủ công chạy xong.
 
 ## 12. Rủi ro

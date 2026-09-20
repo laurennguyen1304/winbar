@@ -92,14 +92,19 @@ impl ClaudeState {
         })
     }
 
-    fn read(&self, with_history: bool) -> Vec<Session> {
-        let now = now_ms();
-        let mut list =
-            sessions::collect(&self.claude_dir, &self.orca_root, &self.appdata, now, false);
-        if with_history {
-            list.extend(self.history(now));
-        }
-        list
+    /// The live sessions, and nothing else.
+    ///
+    /// This is what the pill runs on and what the watcher compares. It never touches the Desktop app's old
+    /// sessions: measured 20/09, rescanning those 157 files once a minute from the background thread was
+    /// **86% of everything this module cost** — +0,088 points with it, +0,012 without.
+    fn read_live(&self) -> Vec<Session> {
+        sessions::collect(
+            &self.claude_dir,
+            &self.orca_root,
+            &self.appdata,
+            now_ms(),
+            false,
+        )
     }
 
     /// Recent Desktop sessions, scanned at most once a minute.
@@ -170,7 +175,7 @@ pub fn claude_open_desktop() -> Result<(), String> {
     crate::command_bar::launch::open_shell_target("claude://")
 }
 
-/// Sessions to show: live ones in order, then recent Desktop history.
+/// The live sessions, in order. Past Desktop ones come from `claude_history` instead.
 #[tauri::command]
 pub fn claude_sessions<R: Runtime>(
     app: AppHandle<R>,
@@ -180,11 +185,28 @@ pub fn claude_sessions<R: Runtime>(
     if !settings.enabled {
         return Ok(Vec::new());
     }
-    let list = state.read(settings.show_desktop_sessions);
+    let list = state.read_live();
     if let Ok(mut last) = state.last.lock() {
         *last = list.clone();
     }
     Ok(list)
+}
+
+/// Recent Desktop sessions, for the card only.
+///
+/// Split off from `claude_sessions` on purpose. The pill asks for the live list every time a session moves,
+/// and none of those reads should drag 157 old Desktop files along behind them. The card asks for this once,
+/// when the panel opens, and the answer is cached for a minute anyway.
+#[tauri::command]
+pub fn claude_history<R: Runtime>(
+    app: AppHandle<R>,
+    state: tauri::State<'_, ClaudeState>,
+) -> Vec<Session> {
+    let settings = options(&app);
+    if !settings.enabled || !settings.show_desktop_sessions {
+        return Vec::new();
+    }
+    state.history(now_ms())
 }
 
 /// Watches the status directory and pushes a change to the page, so the frontend never polls.
@@ -214,8 +236,15 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) {
                 }
                 last_stamp = stamp;
                 last_change = std::time::Instant::now();
-                let next = state.read(settings.show_desktop_sessions);
-                let changed = state.last.lock().map(|last| *last != next).unwrap_or(true);
+                let next = state.read_live();
+                // Only when the page would look different. A session running tools rewrites its file a couple
+                // of times a second and almost none of those writes change anything you can see.
+                let now = now_ms();
+                let changed = state
+                    .last
+                    .lock()
+                    .map(|last| !model::looks_same(&last, &next, now))
+                    .unwrap_or(true);
                 if changed {
                     if let Ok(mut last) = state.last.lock() {
                         *last = next;

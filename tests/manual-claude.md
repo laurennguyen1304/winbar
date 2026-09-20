@@ -224,6 +224,47 @@ Không có `tauri build` thì app vẫn trỏ về `http://localhost:1420`, mà 
 **không có giao diện nào cả** (RAM 89 MB thay vì 135 MB, CPU gần 0 ở cả hai nửa). Phải dùng
 `npm run tauri build -- --no-bundle`.
 
+### Lần 4 — tìm đúng chỗ tốn CPU (20/09)
+
+Lauren bảo sửa. Tôi đoán sai **hai lần nữa** trước khi chịu đo:
+
+1. *"Phát sự kiện quá nhiều vì so cả `lastActiveAt`"* — sửa thành so **thứ nhìn thấy được** (phase, tool, tên,
+   thứ tự, và **mức làm tròn của chuỗi thời gian** mà trang sẽ hiển thị). Kết quả: **+0,082**, y nguyên.
+   Rig của tôi đổi phase mỗi 500 ms nên mọi lần ghi đều là thay đổi thật — rig sai, không phải app.
+2. Sửa rig để ghi file mà **không** đổi phase: **+0,089**. Vẫn không giảm. Vậy chi phí không nằm ở sự kiện.
+
+**Thôi đoán, đo từng giai đoạn** bằng một biến môi trường tạm cho watcher dừng sớm (ON trừ OFF):
+
+| Dừng sau | Chênh |
+|---|---|
+| Vòng lặp + đọc settings | +0,014 |
+| + fingerprint thư mục | +0,020 |
+| **toàn bộ** (thêm `state.read`) | **+0,088** |
+| toàn bộ nhưng **tắt lịch sử Desktop** | **+0,012** |
+
+**Thủ phạm: quét lại 157 file lịch sử Desktop mỗi 60 giây, ngay trong luồng nền.** Chiếm **~86%** toàn bộ chi
+phí của module. Cache 60 giây (sửa ở lần 2) chỉ giảm tần suất chứ không bỏ được nó khỏi đường chạy nền.
+
+**Sửa:** lịch sử **ra khỏi hẳn đường của pill**. `claude_sessions` giờ chỉ trả phiên đang sống; lịch sử có lệnh
+riêng `claude_history` mà **chỉ card gọi, một lần khi panel mở**. Pill có thể cập nhật bao nhiêu lần cũng không
+kéo theo 157 file nào.
+
+| | Chênh CPU |
+|---|---|
+| Lần 1 (chưa cache lịch sử) | +1,66 |
+| Lần 2 (cache 60 giây) | +0,183 |
+| Lần 3 (watcher 2 giây) | +0,081 |
+| **Lần 4 (lịch sử ra khỏi luồng nền)** | **+0,021** |
+
+- [x] ✅ Bốn lần chạy, tải nặng nhất (đổi phase 2 lần/giây, lịch sử **bật** như bình thường):
+      **+0,017 · +0,030 · +0,015 · +0,023**. RAM 117,0–120,2 MB bật so với 117,0–117,3 MB tắt — tăng ~0 MB.
+- [ ] ⚠️ **Tiêu chí 11 (+0,02) giờ nằm trong tầm, nhưng chưa phải lần nào cũng đạt.** Trung bình +0,021, hai
+      trong bốn lần vượt nhẹ. Tôi **không** tuyên bố là đạt. Từ vượt 4 lần xuống dao động quanh ngưỡng.
+
+**Một lỗi tôi gây ra khi đo:** script đo phục hồi settings từ một file sao lưu **cố định**, chụp từ nhiều ngày
+trước. Mấy lần chạy đầu đã **ghi đè lựa chọn của Lauren** (`dense` 65%) về `liquid`. Đã trả lại, và sửa cả hai
+script đo để **chụp settings sống ngay trước mỗi lần chạy** thay vì dùng file cũ.
+
 ## 8. Chưa làm / giới hạn đã biết
 
 - **Duyệt quyền ngay trên notch** không nằm trong bản này (`claude-approvals`, phải duyệt riêng vì nó ghi hook).

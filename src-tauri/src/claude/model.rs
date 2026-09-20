@@ -117,6 +117,60 @@ pub fn title_for(cwd: &str, fallback: &str, orca_root: &str) -> (String, Option<
     }
 }
 
+/// The words the page puts in the time column, as a number.
+///
+/// The page keeps its own clock and re-renders on it, so it turns whatever `lastActiveAt` it was last given
+/// into "vừa xong", "5 phút", "2 giờ", "3 ngày". Matching that rounding here — rather than comparing the raw
+/// timestamp — is what lets the watcher stay quiet while a session works away without the row going stale.
+/// Kept in step with `ago()` in `phase.ts`.
+fn age_bucket(at_ms: u64, now_ms: u64) -> u64 {
+    let seconds = now_ms.saturating_sub(at_ms).div_ceil(1000);
+    if seconds < 45 {
+        return 0;
+    }
+    let minutes = (seconds + 30) / 60;
+    if minutes < 60 {
+        return 1_000 + minutes.max(1);
+    }
+    let hours = (minutes + 30) / 60;
+    if hours < 24 {
+        return 1_000_000 + hours;
+    }
+    1_000_000_000 + (hours + 12) / 24
+}
+
+/// Same, for the "đã chạy 12m" column, which only appears when the hook recorded a start.
+fn running_bucket(started_at: Option<u64>, now_ms: u64) -> u64 {
+    match started_at {
+        None | Some(0) => 0,
+        Some(start) => 1 + now_ms.saturating_sub(start) / 60_000,
+    }
+}
+
+/// Whether two lists would put exactly the same thing on screen right now.
+///
+/// The watcher used to compare whole `Session` values, which include `lastActiveAt` — and that moves every
+/// time the hook touches a file, several times a second while a session runs tools. So almost every pass
+/// counted as a change and pushed an event nobody could see the result of. Measured: that was the whole of the
+/// +0,081 points of CPU, and why slowing the poll down barely helped.
+pub fn looks_same(a: &[Session], b: &[Session], now_ms: u64) -> bool {
+    a.len() == b.len()
+        && a.iter().zip(b).all(|(x, y)| {
+            x.id == y.id
+                && x.source == y.source
+                && x.title == y.title
+                && x.project == y.project
+                && x.phase == y.phase
+                && x.tool == y.tool
+                && x.stale == y.stale
+                && x.turns == y.turns
+                // Only whether the row can be clicked shows, not the path behind it.
+                && x.cwd.is_some() == y.cwd.is_some()
+                && age_bucket(x.last_active_at, now_ms) == age_bucket(y.last_active_at, now_ms)
+                && running_bucket(x.started_at, now_ms) == running_bucket(y.started_at, now_ms)
+        })
+}
+
 /// Orders sessions for the card: what needs you first, then the most recently alive.
 pub fn sort(sessions: &mut [Session]) {
     sessions.sort_by(|a, b| {
@@ -176,6 +230,78 @@ mod tests {
             turns: None,
             stale: false,
         }
+    }
+
+    const NOW: u64 = 1_700_000_000_000;
+
+    #[test]
+    fn a_session_working_away_is_not_worth_an_event() {
+        // The hook rewrites the file every few hundred ms while a tool runs. Nothing on the row changes: it
+        // still says "Cooking · Bash" and still says "vừa xong".
+        let before = vec![session("a", Phase::Tool, NOW - 2_000, None)];
+        let after = vec![session("a", Phase::Tool, NOW - 200, None)];
+        assert!(looks_same(&before, &after, NOW));
+    }
+
+    #[test]
+    fn but_the_row_must_never_be_left_showing_the_wrong_time() {
+        // The page keeps its own clock and re-renders from whatever it was last given, so once the words
+        // would differ the page has to be told — otherwise a session hard at work drifts to "3 phút".
+        let stale = vec![session("a", Phase::Tool, NOW - 200_000, None)];
+        let fresh = vec![session("a", Phase::Tool, NOW - 200, None)];
+        assert!(!looks_same(&stale, &fresh, NOW), "vừa xong against 3 phút");
+
+        // Two timestamps inside the same bucket say the same thing, so they are the same picture.
+        let a = vec![session("a", Phase::Idle, NOW - 5 * 60_000, None)];
+        let b = vec![session("a", Phase::Idle, NOW - 5 * 60_000 - 900, None)];
+        assert!(looks_same(&a, &b, NOW));
+    }
+
+    #[test]
+    fn anything_you_can_actually_see_counts_as_a_change() {
+        let base = vec![session("a", Phase::Tool, NOW, None)];
+        let mut phase = base.clone();
+        phase[0].phase = Phase::Permission;
+        let mut tool = base.clone();
+        tool[0].tool = Some("Edit".into());
+        let mut title = base.clone();
+        title[0].title = "khác".into();
+        let mut project = base.clone();
+        project[0].project = Some("winbar".into());
+        let mut stale = base.clone();
+        stale[0].stale = true;
+        let mut turns = base.clone();
+        turns[0].turns = Some(4);
+        let mut clickable = base.clone();
+        clickable[0].cwd = Some("D:/x".into());
+        for (what, other) in [
+            ("phase", phase),
+            ("tool", tool),
+            ("title", title),
+            ("project", project),
+            ("stale", stale),
+            ("turns", turns),
+            ("clickable", clickable),
+        ] {
+            assert!(!looks_same(&base, &other, NOW), "{what} shows on the row");
+        }
+
+        // A row appearing or leaving, and two rows swapping places, are both visible.
+        let two = vec![
+            session("a", Phase::Tool, NOW, None),
+            session("b", Phase::Idle, NOW - 60_000, None),
+        ];
+        let swapped = vec![two[1].clone(), two[0].clone()];
+        assert!(!looks_same(&base, &two, NOW), "a row appeared");
+        assert!(!looks_same(&two, &swapped, NOW), "two rows swapped places");
+    }
+
+    #[test]
+    fn the_path_behind_a_row_is_not_on_screen() {
+        // Only whether the row can be clicked shows, so a folder being renamed is not worth a redraw.
+        let a = vec![session("a", Phase::Idle, NOW, Some("D:/one"))];
+        let b = vec![session("a", Phase::Idle, NOW, Some("D:/two"))];
+        assert!(looks_same(&a, &b, NOW));
     }
 
     #[test]
