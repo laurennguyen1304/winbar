@@ -100,6 +100,20 @@ Xem thêm `SPEC-claude.md` §13.1.
 > chỉ ~20 ms), nên **mọi** provider timeout ở mốc 1,5 giây — kể cả `files` và `clipboard` vốn chạy tốt. Muốn hiện
 > cửa sổ lên phải thêm quyền `window:allow-show`, thêm quyền chỉ để test thì không đáng.
 
+## 5b. Icon trạng thái "chờ duyệt" có khung màu (Lauren báo 20/09)
+
+**Không phải lỗi ảnh gốc.** Giải mã kênh alpha của cả 4 ảnh clawd: `clawd-thinking` trong suốt **54%**, các ảnh
+kia 50–56%, bốn góc alpha = 0. Ảnh trong suốt thật.
+
+**Lỗi ở CSS tôi viết.** `.iconWaiting` dùng `box-shadow: 0 0 0 2px var(--warn)`, mà bóng của box vẽ quanh **phần
+tử**, không quanh hình. Ảnh trong suốt một nửa nên cái vòng đó trông như một tấm nền màu nằm sau con vật.
+
+- [x] ✅ Chụp được lỗi bằng cách tiêm CSS vào app đang chạy: khung bo góc màu cam ôm cả vùng trong suốt
+      (`icon-waiting-before.png`).
+- [x] ✅ Sửa thành `drop-shadow`, thứ đi theo **đường viền của chính bức ảnh**. Chụp so sánh: dòng 1 có quầng
+      vàng ôm đúng hình con vật, dòng 2 bình thường (`icon-waiting-compare.png`).
+- [x] ✅ Kiểm lại stylesheet trong app: rule còn `drop-shadow`, `box-shadow` rỗng, icon thường `filter: none`.
+
 ## 6a. Dòng mở đúng nơi phiên đang sống (Lauren hỏi 20/09)
 
 - [x] ✅ Claude Desktop là app **đóng gói MSIX** (`Claude_pzs8sxrjxfjjc!Claude`) và có đăng ký protocol
