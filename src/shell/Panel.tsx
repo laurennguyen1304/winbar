@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import claudeIdle from "../assets/claude/claude_headstone.png";
+import claudeTab from "../assets/claude/clawd-sleeping.png";
 import { Icon } from "./Icon";
 import { layoutTab } from "./layout";
 import type { TabId, WidgetDefinition } from "./widget-contract";
@@ -38,7 +38,7 @@ export function Panel({ widgets, tab, onTabChange, onCollapse, onOpenSettings }:
               className={t.id === activeTab ? `${styles.tab} ${styles.active}` : styles.tab}
               onClick={() => onTabChange(t.id)}
             >
-              {t.id === "claude" && <img src={claudeIdle} alt="" width={18} height={18} />}
+              {t.id === "claude" && <img src={claudeTab} alt="" width={18} height={18} />}
               {t.label}
             </button>
           ))}

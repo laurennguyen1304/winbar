@@ -172,13 +172,16 @@ Phiên đang chờ bạn duyệt luôn nổi lên đầu — đó là thứ duy 
 Mỗi trạng thái có **một danh sách ảnh**; nếu danh sách có nhiều hơn một thì ảnh **luân phiên**, mờ chồng
 (`opacity`) mỗi **6 giây**.
 
-Bộ kèm app (3 ảnh, giữ nguyên 2 ảnh đang dùng + 1 ảnh cũ của yasb):
+Bộ kèm app (Lauren chốt 19/09, sửa 20/09/2026 — bộ "clawd" pixel art 48px + 2 ảnh động cũ):
 
-| Trạng thái | Ảnh |
+| Trạng thái | Ảnh trong vòng xoay |
 |---|---|
-| `idle` | `claude_headstone.png` |
-| `thinking`, `tool` | `claude-fu-transparent.gif` ↔ `working.gif` |
-| `permission` | `claude-fu-transparent.gif` (viền màu `--warn`) |
+| `idle` | `clawd-sleeping.png` ↔ `clawd-angry.png` |
+| `thinking`, `tool` | `clawd-sparkles.png` ↔ `claude-fu-transparent.gif` ↔ `working.gif` |
+| `permission` | `clawd-thinking.png` ↔ `claude-fu-transparent.gif` (viền màu `--warn`) |
+
+`claude_headstone.png` đã bị bỏ: ảnh minh họa 256px đứng cạnh pixel art 48px trong cùng ô 24px trông như của app
+khác. Icon tab "Claude" trong panel cũng đổi sang `clawd-sleeping.png`. File vẫn nằm trong repo.
 
 `working.gif` lấy từ `yasb-py312/…/resources/claude_code/` — theo `NOTICE.md` đó là ảnh **bạn tự đưa vào** yasb,
 nên dùng lại được. (`spark_*.png` và `logo.png` là của m1ckc3s/claude-status-bar, giấy phép MIT — chưa dùng.)
@@ -287,7 +290,7 @@ src/widgets/claude/
   index.tsx · native.ts · store.ts
   SessionsCard.tsx · UsageCard.tsx · ClaudeIcon.tsx · ClaudePill.tsx · Claude.module.css
   phase.ts      chữ/màu theo trạng thái, thứ tự sắp xếp, thời gian (thuần, có test)
-src/assets/claude/  claude_headstone.png · claude-fu-transparent.gif · working.gif
+src/assets/claude/  clawd-{sleeping,angry,sparkles,thinking}.png · claude-fu-transparent.gif · working.gif
 ```
 
 ## 9. Phong cách

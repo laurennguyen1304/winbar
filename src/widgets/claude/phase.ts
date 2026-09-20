@@ -1,6 +1,5 @@
 // What each session phase reads as, and the small time strings on a row (SPEC-claude §5.1, §5.2). Pure, so tested.
 import claudeFu from "../../assets/claude/claude-fu-transparent.gif";
-import headstone from "../../assets/claude/claude_headstone.png";
 import angry from "../../assets/claude/clawd-angry.png";
 import sleeping from "../../assets/claude/clawd-sleeping.png";
 import sparkles from "../../assets/claude/clawd-sparkles.png";
@@ -35,11 +34,11 @@ export function phaseLook(session: Pick<ClaudeSession, "phase" | "tool">): Phase
  * Images for a phase: the ones bundled with the app, then anything added to the user folder.
  *
  * The clawd pixel set is what Lauren chose per phase (2026-09-19): sleeping and angry for idle, sparkles while
- * working, thinking while waiting on you. The older illustration and gifs keep their place in the rotation —
- * they are a different style, which is the mismatch worth deciding on separately.
+ * working, thinking while waiting on you. The two gifs stay in the rotation; the 256px headstone illustration is
+ * out, because at 24px next to 48px pixel art it was the one image that read as a different app (Lauren, 20/09).
  */
 export const BUILT_IN_ICONS: Record<ClaudePhase, string[]> = {
-  idle: [sleeping, angry, headstone],
+  idle: [sleeping, angry],
   thinking: [sparkles, claudeFu, working],
   tool: [sparkles, claudeFu, working],
   permission: [thinkingIcon, claudeFu],

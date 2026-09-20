@@ -169,16 +169,20 @@ pub fn cache_path(config_dir: &Path) -> PathBuf {
     config_dir.join("winbar").join("claude-usage.json")
 }
 
-fn credentials_path(home: &Path) -> PathBuf {
-    super::sessions::claude_dir(home).join(".credentials.json")
+/// The credentials file inside an **already-resolved** `.claude` directory.
+///
+/// It takes the resolved directory rather than the home directory on purpose: resolving twice once produced
+/// `~/.claude/.claude/.credentials.json`, and the card quietly said "not logged in" while showing stale numbers.
+fn credentials_path(claude_dir: &Path) -> PathBuf {
+    claude_dir.join(".credentials.json")
 }
 
 /// Reads the OAuth token. The value is never logged, and the caller wipes it as soon as the header is built.
 ///
 /// A token that could not go in a header — a stray newline, a control character — is treated as no token at all,
 /// rather than handed down to be refused with a misleading "network" error.
-fn read_token(home: &Path) -> Option<String> {
-    let text = std::fs::read_to_string(credentials_path(home)).ok()?;
+fn read_token(claude_dir: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(credentials_path(claude_dir)).ok()?;
     let value: Value = serde_json::from_str(text.trim_start_matches('\u{feff}')).ok()?;
     let token = value.get("claudeAiOauth")?.get("accessToken")?.as_str()?;
     if token.is_empty() || !http::is_safe_header(token) {
@@ -226,7 +230,7 @@ fn with_error(cache: Option<Usage>, error: UsageError) -> Usage {
 }
 
 /// Fetches usage, or reuses a recent answer. `force` skips the cache for a manual refresh.
-pub fn fetch(home: &Path, config_dir: &Path, now_ms: u64, force: bool) -> Usage {
+pub fn fetch(claude_dir: &Path, config_dir: &Path, now_ms: u64, force: bool) -> Usage {
     let path = cache_path(config_dir);
     let cache = load_cache(&path);
     if !force {
@@ -237,7 +241,7 @@ pub fn fetch(home: &Path, config_dir: &Path, now_ms: u64, force: bool) -> Usage 
         }
     }
 
-    let Some(token) = read_token(home) else {
+    let Some(token) = read_token(claude_dir) else {
         // No credentials file: nothing to ask with, and no reason to touch the network.
         return with_error(cache, UsageError::NoLogin);
     };
@@ -454,8 +458,30 @@ mod tests {
             "{\"claudeAiOauth\":{\"accessToken\":\"abc\r\nX-Evil: 1\"}}",
         )
         .expect("writes");
-        assert_eq!(read_token(&home), None);
+        assert_eq!(read_token(&home.join(".claude")), None);
         let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[test]
+    fn the_token_sits_directly_in_the_directory_it_is_handed() {
+        // The regression this pins: the caller passes the resolved `.claude` directory, and resolving it a second
+        // time here looked for `~/.claude/.claude/.credentials.json`. The card then said "not logged in" while
+        // still showing the last good numbers, which is the kind of wrong that is easy to miss.
+        assert_eq!(
+            credentials_path(Path::new(r"D:\claude")),
+            PathBuf::from(r"D:\claude\.credentials.json")
+        );
+
+        let dir = std::env::temp_dir().join("winbar-claude-token-here");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("creates");
+        std::fs::write(
+            dir.join(".credentials.json"),
+            r#"{"claudeAiOauth":{"accessToken":"sk-test-abc"}}"#,
+        )
+        .expect("writes");
+        assert_eq!(read_token(&dir).as_deref(), Some("sk-test-abc"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

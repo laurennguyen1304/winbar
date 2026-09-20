@@ -46,8 +46,8 @@
 }
 
 /*
- * One box for every image, whatever its source size — the set ranges from 48px pixel art to a 256px illustration,
- * and without a fixed box they render at wildly different sizes.
+ * One box for every image, whatever its source size — the set still runs from 48px pixel art to a 128px gif, and
+ * without a fixed box they render at wildly different sizes.
  */
 .icon,
 .iconEmpty {
