@@ -74,7 +74,9 @@ Xem thêm `SPEC-claude.md` §13.1.
 ## 6. Command bar (tiêu chí 9 phần sau)
 
 - [x] ✅ Provider: `cl` ra phiên + dòng hạn mức; tìm theo project, worktree, tool; `remember: false` — 8 test.
-- [ ] 👤 **Cần bạn thử tay:** Ctrl+Space rồi gõ `cl`.
+- [x] ✅ **Lauren thử tay 20/09:** Ctrl+Space, gõ `cl`, chọn một dòng → mở đúng thư mục của phiên trong Explorer.
+      Đúng như §5.7 ("Enter mở thư mục"). `cl` là **tiền tố** của provider nên gõ một mình nó liệt kê mọi phiên
+      đang sống, không cần gõ thêm.
 
 > ⚠️ **Không tự kiểm được:** cửa sổ command bar khi ẩn bị WebView2 bóp cổ, một lệnh IPC mất 3–7,7 giây (từ notch
 > chỉ ~20 ms), nên **mọi** provider timeout ở mốc 1,5 giây — kể cả `files` và `clipboard` vốn chạy tốt. Muốn hiện
