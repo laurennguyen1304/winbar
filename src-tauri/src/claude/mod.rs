@@ -94,7 +94,8 @@ impl ClaudeState {
 
     fn read(&self, with_history: bool) -> Vec<Session> {
         let now = now_ms();
-        let mut list = sessions::collect(&self.claude_dir, &self.orca_root, &self.appdata, now, false);
+        let mut list =
+            sessions::collect(&self.claude_dir, &self.orca_root, &self.appdata, now, false);
         if with_history {
             list.extend(self.history(now));
         }

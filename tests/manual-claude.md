@@ -88,6 +88,13 @@ Xem thêm `SPEC-claude.md` §13.1.
         `zzznotacommand`, tức nó đã **chạy** nửa sau. Thư mục tên `x;calc.exe` là chạy được chương trình.
         Thư mục có `;` giờ đi sang PowerShell; đã xác nhận qua app: không có tiến trình WindowsTerminal nào,
         PowerShell được mở, và `current_dir` đặt đúng thư mục `probe;zzznotacommand`.
+- [x] ✅ **Lần ba — thử phá cách sửa của chính mình:** hai giả thuyết "sửa gọn hơn" đều **sai**, đo được:
+      - *Bọc nháy kép cho `-d`* — wt **vẫn tách theo `;` bên trong nháy**, tiêu đề vẫn ra `zzznotacommand`.
+      - *Bỏ `-d`, đưa thư mục qua `current_dir` của tiến trình* — wt **không thừa kế**, tab về thẳng home
+        (`pwsh @ Lenovo`).
+      Kết luận: không có cách an toàn nào đưa đường dẫn tuỳ ý lên dòng lệnh của wt, nên đổi từ chặn **một ký tự**
+      sang **allowlist**. Kiểm lại qua app: worktree bình thường → `pwsh @ firefish` (vẫn dùng wt); thư mục có
+      `;` → không có tiến trình WindowsTerminal nào, rơi về PowerShell.
 
 > ⚠️ **Không tự kiểm được:** cửa sổ command bar khi ẩn bị WebView2 bóp cổ, một lệnh IPC mất 3–7,7 giây (từ notch
 > chỉ ~20 ms), nên **mọi** provider timeout ở mốc 1,5 giây — kể cả `files` và `clipboard` vốn chạy tốt. Muốn hiện

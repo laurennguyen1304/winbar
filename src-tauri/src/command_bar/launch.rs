@@ -98,17 +98,20 @@ pub fn existing_dir(path: &str) -> Result<PathBuf, String> {
 
 /// Whether Windows Terminal can be trusted with this folder on its command line.
 ///
-/// `wt.exe` parses its own command line a second time and splits it on `;`, so a folder named `proj;calc.exe`
-/// arrives as a starting directory **and** a subcommand that runs a program. Passing the folder as its own
-/// argument does not help: the operating system keeps it whole, and wt takes it apart again afterwards.
+/// `wt.exe` parses its own command line a second time, and it splits on `;` **even inside double quotes** —
+/// both measured on this machine: a folder named `probe;zzznotacommand` opened a window titled
+/// `zzznotacommand`, quoted or not, so wt had run the second half. `;` is legal in a Windows folder name, so
+/// `x;calc.exe` would have been a folder that runs a program.
 ///
-/// Measured, not guessed: a folder named `probe;zzznotacommand` opened a Windows Terminal window whose title was
-/// `zzznotacommand` — wt had tried to run it. A semicolon in a folder name is legal on Windows, so the folder
-/// goes to PowerShell instead, which is handed its directory through the process, never through a command line.
+/// Quoting is therefore no defence, and since wt ignores the one convention that would have made its parser
+/// predictable, guessing the rest of its special characters is not a game worth playing. So this is an
+/// allowlist rather than a list of characters to avoid: a folder made of ordinary path characters goes to wt,
+/// and anything else goes to PowerShell, which is handed its directory through the process and parses nothing.
 fn safe_for_windows_terminal(dir: &Path) -> bool {
-    !dir.as_os_str().to_string_lossy().contains(';')
+    dir.as_os_str().to_string_lossy().chars().all(|c| {
+        c.is_alphanumeric() || matches!(c, ' ' | '\\' | '/' | ':' | '.' | '-' | '_' | '(' | ')')
+    })
 }
-
 /// Full paths of the terminals worth trying, best first.
 ///
 /// Full paths on purpose. `Command::new("wt.exe")` would let Windows look the name up, and what that search
@@ -235,15 +238,28 @@ mod tests {
 
     #[test]
     #[cfg(windows)]
-    fn a_folder_windows_terminal_would_re_parse_goes_to_powershell() {
-        // Proven on this machine: a folder named `probe;zzznotacommand` made wt open a window titled
-        // `zzznotacommand`, i.e. it ran the second half. `;` is legal in a Windows folder name.
-        assert!(!safe_for_windows_terminal(Path::new(r"C:\work\proj;calc.exe")));
-        assert!(!safe_for_windows_terminal(Path::new(r"C:\a;b")));
-        assert!(safe_for_windows_terminal(Path::new(r"C:\work\my proj (2)")));
-        assert!(safe_for_windows_terminal(Path::new(r"C:\work\a&b")));
+    fn only_a_plain_looking_folder_goes_to_windows_terminal() {
+        // Real worktree paths, accents and spaces included, still get the nicer terminal.
+        for ok in [
+            r"C:\Users\Lenovo\orca\workspaces\winbar\firefish",
+            r"C:\work\my proj (2)",
+            r"D:/duong-dan/co_dau/Tài liệu",
+        ] {
+            assert!(safe_for_windows_terminal(Path::new(ok)), "{ok:?}");
+        }
+        // `;` is the one proven to run a program. The rest are turned away because wt ignores quotes, so
+        // nothing about its parser is worth trusting: PowerShell takes these and parses nothing.
+        for risky in [
+            r"C:\work\proj;calc.exe",
+            r"C:\a;b",
+            r"C:\work\a&b",
+            r"C:\work\a|b",
+            r"C:\work\a`b",
+            r"C:\work\a%b%",
+        ] {
+            assert!(!safe_for_windows_terminal(Path::new(risky)), "{risky:?}");
+        }
     }
-
     #[test]
     fn only_http_and_https_addresses_reach_the_browser() {
         assert!(web_url("https://www.google.com/search?q=tauri%20window").is_ok());
