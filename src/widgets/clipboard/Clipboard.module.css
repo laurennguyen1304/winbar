@@ -90,6 +90,12 @@
   border-radius: 10px;
   color: var(--text-sub);
   /* The row can be dragged out to another app, so it says so (SPEC-clipboard §5.5). */
+  cursor: pointer;
+}
+
+/* Only a picture can be dragged out, so only a picture offers the grab hand. */
+.rowBody:has(.thumb),
+.rowBody:has(.thumbEmpty) {
   cursor: grab;
 }
 

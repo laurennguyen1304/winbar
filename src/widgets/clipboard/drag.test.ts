@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fillTextDrag, prefetchText, resetTextsForTests, startRowDrag } from "./drag";
+import { startRowDrag } from "./drag";
 import type { ClipItem } from "./native";
 
 const { plugin, native } = vi.hoisted(() => ({
   plugin: { calls: [] as Array<{ item: string[]; icon: string }> },
-  native: { texts: {} as Record<string, string>, reads: [] as string[] },
+  native: { reads: [] as string[] },
 }));
 
 vi.mock("@crabnebula/tauri-plugin-drag", () => ({
@@ -17,7 +17,7 @@ vi.mock("@tauri-apps/api/core", () => ({ isTauri: () => true }));
 vi.mock("./native", () => ({
   clipText: (id: string) => {
     native.reads.push(id);
-    return Promise.resolve(native.texts[id] ?? "");
+    return Promise.resolve("");
   },
 }));
 
@@ -54,32 +54,18 @@ describe("dragging an item out", () => {
   beforeEach(() => {
     plugin.calls = [];
     native.reads = [];
-    native.texts = { note: "Gửi lại bản brief cho freelancer, và cả bản dài hơn preview rất nhiều" };
-    resetTextsForTests();
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("carries the full text, not just the preview, once it has been read", async () => {
-    prefetchText(TEXT);
-    await vi.waitFor(() => expect(native.reads).toEqual(["note"]));
-
+  it("leaves a text row alone: no drag, and nothing read from disk", () => {
     const drag = dragEvent();
     startRowDrag(drag.event, TEXT);
-    expect(drag.data["text/plain"]).toBe(native.texts.note);
+    // WebView2 never handed such a drag to Windows, so the row does not offer one. Nothing is put on the
+    // DataTransfer, and no text is read out of the store just in case.
+    expect(drag.data["text/plain"]).toBeUndefined();
     expect(drag.wasPrevented()).toBe(false);
-  });
-
-  it("still starts a drag when the full text has not arrived, using the preview", () => {
-    const drag = dragEvent();
-    startRowDrag(drag.event, TEXT);
-    expect(drag.data["text/plain"]).toBe(TEXT.preview);
-  });
-
-  it("reads one row's text once, and never a picture's", async () => {
-    prefetchText(TEXT);
-    prefetchText(TEXT);
-    prefetchText(PICTURE);
-    await vi.waitFor(() => expect(native.reads).toEqual(["note"]));
+    expect(plugin.calls).toEqual([]);
+    expect(native.reads).toEqual([]);
   });
 
   it("hands a picture to Windows as a file, with its thumbnail as the preview", () => {
@@ -89,10 +75,5 @@ describe("dragging an item out", () => {
     expect(drag.wasPrevented()).toBe(true);
     expect(drag.data["text/plain"]).toBeUndefined();
     expect(plugin.calls).toEqual([{ item: ["C:/shot.png"], icon: "C:/thumb.png" }]);
-  });
-
-  it("does nothing when there is no DataTransfer to fill", () => {
-    const event = { dataTransfer: null, preventDefault: () => {} } as unknown as DragEvent;
-    expect(fillTextDrag(event, TEXT)).toBe(false);
   });
 });

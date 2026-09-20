@@ -51,13 +51,17 @@ Copy 4 thứ rồi đọc `clipboard_list`:
 
 | Kéo gì | Cách làm | Trạng thái |
 |---|---|---|
-| Chữ | Kéo HTML5 của WebView2, `text/plain` | [ ] 👤 |
-| Ảnh | `tauri-plugin-drag` 2.1.1 → `DoDragDrop` + `CF_HDROP` | [ ] 👤 |
+| Ảnh | `tauri-plugin-drag` 2.1.1 → `DoDragDrop` + `CF_HDROP` | [x] ✅ Lauren xác nhận chạy (20/09) |
+| Chữ | **Bỏ hẳn** | — |
 
 - [x] ✅ Plugin đã nạp và được cấp quyền trên app thật (gọi `plugin:drag|start_drag` đi tới được lệnh).
-- [x] ✅ Nội dung đầy đủ được đọc **trước** khi kéo (lúc chuột chạm dòng), không phải đoạn preview 200 ký tự.
-- [ ] 👤 **Không tự kiểm được:** kéo thật cần thao tác chuột thật. Kéo một dòng chữ thả vào Notepad, và một dòng
-      ảnh thả vào Explorer (phải ra file `.png`) hoặc vào Word/Paint.
+- [x] ✅ **Kéo chữ: bỏ (20/09).** Lauren thử trên máy thật — ảnh kéo được, chữ thì không. Kéo HTML5 của WebView2
+      **không** được chuyển ra Windows. Lauren nói không cần kéo chữ, chỉ cần bấm là copy. Nên dòng chữ không còn
+      nhận `draggable`, và bỏ luôn phần rê chuột đọc trước nội dung.
+- [x] ✅ Kiểm trên app đang chạy sau khi sửa: dòng ảnh `draggable=true`, con trỏ `grab`; dòng chữ
+      `draggable=false`, con trỏ `pointer`.
+- [x] ✅ **Bấm dòng chữ thì copy** — chạy thật hai lần (trước và sau khi sửa): clipboard nhận đúng nội dung dòng
+      đó. Ảnh đang nằm trên clipboard của Lauren được lưu ra file rồi trả lại nguyên vẹn, cả hai lần.
 
 ## 5. Nội dung nhạy cảm (tiêu chí 7)
 

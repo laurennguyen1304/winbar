@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Icon } from "../../shell/Icon";
-import { startRowDrag, prefetchText } from "./drag";
+import { startRowDrag } from "./drag";
 import { relativeTime } from "./filter";
 import type { ClipItem } from "./native";
 import { requestThumb } from "./store";
@@ -19,7 +19,13 @@ export interface ClipRowProps {
   onRemove: () => void;
 }
 
-/** One line of the history: click to copy it back, drag it out, pin and delete on hover (SPEC-clipboard §5.3). */
+/**
+ * One line of the history: click to copy it back, pin and delete on hover (SPEC-clipboard §5.3).
+ *
+ * Only a picture can be dragged out. WebView2 does not hand an HTML5 text drag to Windows, so a text row that
+ * announced itself as draggable simply did nothing when you dragged it — and `draggable` can swallow the click
+ * that was the point of the row. Lauren does not need text drag (20/09), so the offer is gone.
+ */
 export function ClipRow({ item, thumb, now, copied, onCopy, onPin, onRemove }: ClipRowProps) {
   const isImage = item.kind === "image";
   useEffect(() => {
@@ -33,10 +39,8 @@ export function ClipRow({ item, thumb, now, copied, onCopy, onPin, onRemove }: C
         className={styles.rowBody}
         onClick={onCopy}
         title={item.preview}
-        draggable
-        // The full text has to be in hand before the drag starts, so it is read when the pointer arrives.
-        onPointerEnter={() => prefetchText(item)}
-        onDragStart={(e) => startRowDrag(e.nativeEvent, item)}
+        draggable={isImage}
+        onDragStart={isImage ? (e) => startRowDrag(e.nativeEvent, item) : undefined}
       >
         {isImage ? (
           thumb ? (

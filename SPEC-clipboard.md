@@ -29,7 +29,7 @@ Lịch sử ngắn hạn, không biến winbar thành kho chứa dữ liệu, v�
 | Ảnh | Lưu file gốc trên đĩa + bản thu nhỏ để hiện. Kéo ra ngoài là kéo **file ảnh gốc** |
 | Card | Ô tìm, chip lọc, danh sách cuộn, ghim, xóa một mục, xóa tất cả (có xác nhận) |
 | Dán lại | Bấm item: đưa lại vào clipboard, pill nháy "Đã copy" (M7) |
-| Kéo ra ngoài | Kéo item thả sang app khác: text là chữ, ảnh là file |
+| Kéo ra ngoài | **Chỉ ảnh** — kéo thả sang app khác là file ảnh gốc. Text không kéo được (xem §5.5) |
 | Bỏ qua nhạy cảm | 4 lớp (§5.4): dấu hiệu của app, mẫu chuỗi key/token, danh sách app, nút tạm dừng |
 | Search provider | Tìm trong command bar, tiền tố `cb`; Enter là copy lại |
 | Cài đặt | Giữ bao lâu (1 hoặc 2 ngày), danh sách app bỏ qua, nút xóa toàn bộ lịch sử |
@@ -119,11 +119,15 @@ Bốn lớp, chạy theo thứ tự; dính lớp nào là **không lưu** (và k
 
 Khi bỏ qua vì lớp 2 hoặc 3, card hiện dòng mờ "Đã bỏ qua một mục nhạy cảm" trong 3 giây, **không** kèm nội dung.
 
-### 5.5 Kéo ra app khác
+### 5.5 Kéo ra app khác — **chỉ ảnh**
 
-- Text / link / code: kéo ra là chuỗi (`text/plain`).
-- Ảnh: kéo ra là **file ảnh gốc** trên đĩa.
-- Trong lúc kéo, panel không tự thu gọn.
+- **Ảnh**: kéo ra là **file ảnh gốc** trên đĩa (`DoDragDrop` + `CF_HDROP` qua `tauri-plugin-drag`). Trong lúc kéo,
+  panel không tự thu gọn.
+- **Text / link / code: không kéo được.** Bản đầu có gắn kéo HTML5 với giả định WebView2 sẽ chuyển tiếp ra
+  Windows. **Nó không chuyển** — kéo một dòng text không xảy ra gì cả. Lauren thử trên máy thật ngày 20/09, nói
+  không cần kéo text, chỉ cần **bấm để copy** là đủ. Nên dòng text **không còn nhận `draggable`** và con trỏ là
+  mũi tên thường chứ không phải bàn tay: một lời mời hỏng còn tệ hơn là không mời. Bỏ luôn phần đọc trước nội
+  dung khi rê chuột — trước đây rê qua một dòng là đọc **toàn bộ** nội dung của nó vào trang, phòng khi có kéo.
 - File ảnh kéo bằng `tauri-plugin-drag` (chốt sau Task 1); chữ vẫn là kéo HTML5 thường.
 
 ### 5.6 Trong command bar
