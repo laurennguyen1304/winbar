@@ -58,7 +58,13 @@ export function PillPreview({
       aria-hidden
       inert
     >
-      <NotchShape layout={props.layout} material={props.material} targetHeight={size.height} radius={radius} />
+      <NotchShape
+        layout={props.layout}
+        material={props.material}
+        opacity={props.opacity}
+        targetHeight={size.height}
+        radius={radius}
+      />
       <div
         className={styles.body}
         style={{ borderRadius: props.layout === "attached" ? `0 0 ${radius}px ${radius}px` : radius }}

@@ -61,6 +61,24 @@ describe("Notch", () => {
     expect(notch().querySelector("[data-material]")).toHaveAttribute("data-material", "dense");
   });
 
+  it("puts the opacity dial behind the material as a fraction, and clamps a silly value", () => {
+    const shape = () => notch().querySelector("[data-material]") as HTMLElement;
+    const { rerender } = render(<Notch opacity={0} />);
+    tick(0);
+    expect(shape().style.getPropertyValue("--notch-opacity")).toBe("0");
+
+    rerender(<Notch opacity={100} />);
+    expect(shape().style.getPropertyValue("--notch-opacity")).toBe("1");
+    rerender(<Notch opacity={60} />);
+    expect(shape().style.getPropertyValue("--notch-opacity")).toBe("0.6");
+
+    // Rust already keeps this to 0-100; the notch does not have to trust it to draw something sane.
+    rerender(<Notch opacity={400} />);
+    expect(shape().style.getPropertyValue("--notch-opacity")).toBe("1");
+    rerender(<Notch opacity={-20} />);
+    expect(shape().style.getPropertyValue("--notch-opacity")).toBe("0");
+  });
+
   it("hover mode: opens after 250ms and grows the native window before the morph", () => {
     render(<Notch />);
     tick(0);

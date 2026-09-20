@@ -10,6 +10,13 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /*
+   * The opacity dial, painted *under* every material's gradients: a background colour always sits beneath the
+   * background images. At 100 the notch lets nothing through; at 0 the material keeps its own translucency.
+   * Every material therefore states its look as `background-image`, never the `background` shorthand, which
+   * would reset this colour back to transparent.
+   */
+  background-color: rgba(0, 0, 0, var(--notch-opacity, 0));
 }
 
 .rim {
@@ -28,7 +35,7 @@
 
 /* Dense: the original opaque fill. */
 .shape[data-material="dense"] .fill {
-  background: var(--notch-bg);
+  background-image: linear-gradient(var(--notch-bg), var(--notch-bg));
 }
 
 .shape[data-material="dense"] .outer {
@@ -41,7 +48,7 @@
 
 /* Liquid glass Windows can draw: no blur behind the window, so a lighter tinted body, top sheen, bright rim, inner edge. */
 .shape[data-material="liquid"] .fill {
-  background:
+  background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.04) 34%, rgba(255, 255, 255, 0) 58%),
     radial-gradient(120% 140% at 50% 130%, rgba(140, 170, 255, 0.16), transparent 62%),
     linear-gradient(180deg, rgba(30, 36, 48, 0.74), rgba(14, 18, 26, 0.8));
@@ -49,7 +56,7 @@
 
 /* The open panel is mostly text: a denser body keeps it readable over busy windows. */
 :global([data-state="expanded"]) > .shape[data-material="liquid"] .fill {
-  background:
+  background-image:
     linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 18%, rgba(255, 255, 255, 0) 40%),
     radial-gradient(120% 60% at 50% 110%, rgba(140, 170, 255, 0.12), transparent 62%),
     linear-gradient(180deg, rgba(28, 33, 44, 0.88), rgba(14, 18, 26, 0.9));

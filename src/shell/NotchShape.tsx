@@ -1,10 +1,12 @@
-import { useId, useLayoutEffect, useRef } from "react";
+import { useId, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { notchShape, type NotchLayout, type NotchMaterial } from "./notch-shape";
 import styles from "./NotchShape.module.css";
 
 interface NotchShapeProps {
   layout: NotchLayout;
   material: NotchMaterial;
+  /** Solid black behind the material, 0-100 (SPEC-notch-shell §5.1). */
+  opacity?: number;
   /** Where the notch is heading; the corner radius eases with the height between the previous and this target. */
   targetHeight: number;
   radius: number;
@@ -14,7 +16,7 @@ interface NotchShapeProps {
  * Background and rim of the notch, drawn behind its content (SPEC §15 V1–V2). Sits inside the notch element and
  * follows its animated size with a ResizeObserver, writing the paths straight to the DOM (no React render per frame).
  */
-export function NotchShape({ layout, material, targetHeight, radius }: NotchShapeProps) {
+export function NotchShape({ layout, material, opacity = 0, targetHeight, radius }: NotchShapeProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const rimRef = useRef<SVGPathElement>(null);
@@ -55,7 +57,14 @@ export function NotchShape({ layout, material, targetHeight, radius }: NotchShap
   }, [layout, targetHeight, radius]);
 
   return (
-    <div ref={boxRef} className={styles.shape} data-material={material} data-layout={layout} aria-hidden>
+    <div
+      ref={boxRef}
+      className={styles.shape}
+      data-material={material}
+      data-layout={layout}
+      style={{ "--notch-opacity": Math.min(100, Math.max(0, opacity)) / 100 } as CSSProperties}
+      aria-hidden
+    >
       <div ref={fillRef} className={styles.fill} />
       <svg ref={svgRef} className={styles.rim} preserveAspectRatio="none">
         <defs>

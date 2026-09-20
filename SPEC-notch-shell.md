@@ -81,6 +81,12 @@ Format:        npm run format      (prettier) ; cargo fmt --manifest-path src-ta
 | `always` | Mode `always`, đang thu gọn | 620×64 | `MidPill` của 2 widget: ưu tiên trước, rồi widget kế tiếp; nếu có alert thì hiện alert |
 | `expanded` | Người dùng mở | rộng 780, cao theo nội dung (tối đa 80% chiều cao màn hình, phần dư cuộn) | Thanh tab + card của các widget đang bật |
 
+**Độ đục nền** (Lauren yêu cầu 20/09): thanh trượt trong Cài đặt, 0–100%, bước 5. Đây là **màu đen đặc nằm dưới**
+chất liệu, nên nó cộng thêm chứ không thay thế: 0% giữ nguyên độ trong vốn có của `liquid`/`dense`, 100% là nền
+đen kín, không nhìn xuyên qua được. Cài bằng biến CSS `--notch-opacity` trên lớp hình, và vì màu nền luôn được vẽ
+**dưới** các lớp ảnh nền nên mọi chất liệu phải khai báo bằng `background-image`, không dùng shorthand
+`background` (shorthand sẽ xoá màu nền về trong suốt).
+
 ### 5.2 Chuyển trạng thái
 
 ```

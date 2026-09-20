@@ -25,6 +25,8 @@ pub struct PillSettings {
     pub layout: String,
     /// `liquid` (translucent glass) or `dense` (the original opaque fill).
     pub material: String,
+    /// How much solid black sits behind the material, 0-100. 100 lets nothing through at all.
+    pub opacity: u32,
     /// Logical px from the screen centre, set by dragging the notch along the top edge.
     pub offset_x: i32,
     /// Reserve the strip above maximised windows with a Windows AppBar (SPEC §15 V4).
@@ -127,6 +129,7 @@ impl Default for Settings {
                 priority_widget: Some("claude-sessions".into()),
                 layout: "attached".into(),
                 material: "liquid".into(),
+                opacity: 0,
                 offset_x: 0,
                 sticky: false,
                 monitor: "primary".into(),
@@ -301,6 +304,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
             priority_widget,
             layout: r.choice(pill, "layout", &["attached", "float"], &d.pill.layout),
             material: r.choice(pill, "material", &["liquid", "dense"], &d.pill.material),
+            opacity: r.int(pill, "opacity", 0, 100, 5, d.pill.opacity),
             offset_x: r.signed(pill, "offsetX", -4000, 4000, d.pill.offset_x),
             sticky: r.boolean(pill, "sticky", d.pill.sticky),
             monitor: r.choice(pill, "monitor", &["primary", "all"], &d.pill.monitor),
@@ -623,6 +627,20 @@ mod tests {
         assert_eq!(s.font_scale, 120);
         assert_eq!(s.pill.open_mode, "always");
         assert!(w.is_empty(), "{w:?}");
+    }
+
+    #[test]
+    fn the_opacity_dial_keeps_to_whole_steps_inside_its_range() {
+        let (s, w) = from_value(&json!({ "pill": { "opacity": 100 } }));
+        assert_eq!(s.pill.opacity, 100, "a black notch is a valid choice");
+        assert!(w.is_empty(), "{w:?}");
+
+        // Out of range, off the step, or not a number at all: back to the default rather than a silly notch.
+        for bad in [json!(120), json!(7), json!(-10), json!("80"), json!(null)] {
+            let (s, w) = from_value(&json!({ "pill": { "opacity": bad } }));
+            assert_eq!(s.pill.opacity, Settings::default().pill.opacity, "{bad:?}");
+            assert!(!w.is_empty(), "{bad:?} should warn");
+        }
     }
 
     #[test]

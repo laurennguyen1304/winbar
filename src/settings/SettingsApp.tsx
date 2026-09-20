@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { quitApp } from "../shell/native";
-import { ALWAYS_SIZES, PANEL_WIDTHS, PILL_SIZES, TOP_GAP_RANGE } from "../shell/notch-sizes";
+import { ALWAYS_SIZES, NOTCH_OPACITY_RANGE, PANEL_WIDTHS, PILL_SIZES, TOP_GAP_RANGE } from "../shell/notch-sizes";
 import { PillPreview } from "../shell/PillPreview";
 import { registry } from "../shell/registry";
 import { mergeWidgets, moveWidget, type Settings } from "../shell/settings";
@@ -178,6 +178,25 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
                   { value: "dense", label: "Đặc" },
                 ]}
               />
+            </Row>
+            <Row
+              title="Độ đục nền"
+              description="0%: giữ nguyên độ trong của chất liệu · 100%: nền đen kín, không nhìn xuyên qua được"
+            >
+              <div className="flex w-64 items-center gap-3">
+                <Slider
+                  aria-label="Độ đục nền"
+                  min={NOTCH_OPACITY_RANGE.min}
+                  max={NOTCH_OPACITY_RANGE.max}
+                  step={NOTCH_OPACITY_RANGE.step}
+                  value={[view.pill.opacity]}
+                  onValueChange={([opacity]) => setDraft({ ...view, pill: { ...view.pill, opacity } })}
+                  onValueCommit={([opacity]) => setPill({ opacity })}
+                />
+                <output className="w-10 text-right font-mono text-xs text-muted-foreground">
+                  {view.pill.opacity}%
+                </output>
+              </div>
             </Row>
             <Row title="Vị trí ngang" description="Nhấn giữ notch rồi kéo sang trái/phải dọc mép trên">
               <div className="flex items-center gap-3">

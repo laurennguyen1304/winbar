@@ -41,6 +41,7 @@ describe("notchPropsFrom", () => {
       priorityWidget: "media",
       layout: "float",
       material: "dense",
+      opacity: 60,
       offsetX: -320,
       sticky: true,
       monitor: "all",

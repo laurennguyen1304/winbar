@@ -50,6 +50,8 @@ interface NotchProps {
   topGap?: number;
   layout?: NotchLayout;
   material?: NotchMaterial;
+  /** Solid black behind the material, 0-100. */
+  opacity?: number;
   /** Logical px right of the screen centre (Settings › pill.offsetX). */
   offsetX?: number;
   /** A drag along the top edge ended here; the app saves it as pill.offsetX. */
@@ -93,6 +95,7 @@ export function Notch({
   topGap = DEFAULT_TOP_GAP,
   layout = "attached",
   material = "liquid",
+  opacity = 0,
   offsetX = 0,
   onOffsetChange,
   sticky = false,
@@ -285,7 +288,13 @@ export function Notch({
         onMouseEnter={() => dispatch({ type: "pointerEnter" })}
         onMouseLeave={() => dispatch({ type: "pointerLeave" })}
       >
-        <NotchShape layout={layout} material={material} targetHeight={block.height} radius={radius} />
+        <NotchShape
+          layout={layout}
+          material={material}
+          opacity={opacity}
+          targetHeight={block.height}
+          radius={radius}
+        />
         <div
           className={styles.body}
           style={{ borderRadius: layout === "attached" ? `0 0 ${radius}px ${radius}px` : radius }}

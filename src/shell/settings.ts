@@ -28,6 +28,8 @@ export interface Settings {
     priorityWidget: string | null;
     layout: NotchLayout;
     material: NotchMaterial;
+    /** Solid black behind the material, 0-100. At 100 nothing shows through the notch. */
+    opacity: number;
     /** Logical px from the screen centre, set by dragging the notch. */
     offsetX: number;
     /** Reserve the strip above maximised windows (Windows AppBar). */
@@ -88,6 +90,7 @@ export const DEFAULT_SETTINGS: Settings = {
     priorityWidget: "claude-sessions",
     layout: "attached",
     material: "liquid",
+    opacity: 0,
     offsetX: 0,
     sticky: false,
     monitor: "primary",
@@ -122,6 +125,7 @@ export interface NotchSettingsProps {
   topGap: number;
   layout: NotchLayout;
   material: NotchMaterial;
+  opacity: number;
   offsetX: number;
   sticky: boolean;
   fontScale: number;
@@ -142,6 +146,7 @@ export function notchPropsFrom(settings: Settings, registered: readonly WidgetDe
     topGap: settings.pill.topGap,
     layout: settings.pill.layout,
     material: settings.pill.material,
+    opacity: settings.pill.opacity,
     offsetX: settings.pill.offsetX,
     sticky: settings.pill.sticky,
     fontScale: settings.fontScale / 100,

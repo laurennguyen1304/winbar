@@ -27,6 +27,14 @@ export const PANEL_MIN_HEIGHT = 120;
 /** The expanded panel never exceeds this share of the screen height; extra content scrolls. */
 export const PANEL_MAX_SCREEN_SHARE = 0.8;
 
+/**
+ * How much solid black may sit behind the notch material, as a percentage.
+ *
+ * 0 leaves the material's own translucency alone; 100 is a black notch you cannot see through. Steps of 5 keep
+ * the slider from offering a precision nobody can see.
+ */
+export const NOTCH_OPACITY_RANGE = { min: 0, max: 100, step: 5 } as const;
+
 export const DEFAULT_TOP_GAP = 8;
 /** Up to 48 so the pill can sit below a top taskbar such as yasb (~32px). */
 export const TOP_GAP_RANGE = { min: 0, max: 48 } as const;
