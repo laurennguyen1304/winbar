@@ -67,15 +67,12 @@
 }
 
 /*
- * A session waiting on you glows in the warning colour, so the row reads at a glance.
+ * A session waiting on you carries no mark on its picture at all.
  *
- * `drop-shadow` rather than `box-shadow`: the shadow of a box is drawn around the element, and every one of
- * these images is about half transparent, so a ring round the box looked like a coloured panel sitting behind
- * the drawing (Lauren spotted it, 20/09). `drop-shadow` follows the picture's own outline instead.
+ * It had a ring (`box-shadow`), which drew a coloured panel around a half-transparent image, and then a glow
+ * (`drop-shadow`), which still put yellow around the drawing. Lauren did not want either (20/09). The waiting
+ * state is already unmistakable in words: the row and the pill both say "wait for you" in `var(--warn)`.
  */
-.iconWaiting {
-  filter: drop-shadow(0 0 3px var(--warn)) drop-shadow(0 0 5px var(--warn));
-}
 
 .rowText {
   display: flex;

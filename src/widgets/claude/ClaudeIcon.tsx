@@ -39,7 +39,7 @@ export function ClaudeIcon({ phase, extra, size = 26, rotateMs = ROTATE_MS }: Cl
     <img
       // Re-keying on the source replays the fade, which is what makes the change read as a change.
       key={src}
-      className={phase === "permission" ? `${styles.icon} ${styles.iconWaiting}` : styles.icon}
+      className={styles.icon}
       src={src}
       alt=""
       width={size}
