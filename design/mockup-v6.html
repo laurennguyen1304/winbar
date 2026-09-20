@@ -66,12 +66,13 @@ h2 { font-size: 15px; margin: 32px 0 4px; }
 .sq { width: 20px; height: 20px; border-radius: 6px; flex: none; background: linear-gradient(140deg, #e08a5f, #b5542f); }
 
 /*
- * Media gets two columns of its own row, so it is the biggest tile. Clipboard and the machine share the last
- * row rather than the machine owning a full-height column (Lauren, 20/09).
+ * Area follows how much each one is worth looking at (Lauren, 20/09): sessions and music take two rows each and
+ * are the big pair, the clipboard takes the whole bottom row and is the middle one, and the limits and the
+ * machine are single cells stacked in the narrow right column — the two smallest.
  */
 .bento { display: grid; gap: 10px; padding: 13px;
-  grid-template-columns: 1.05fr 1.15fr 0.8fr;
-  grid-template-areas: "claude media media" "claude usage usage" "clip clip cpu"; }
+  grid-template-columns: 1.15fr 1.35fr 0.62fr;
+  grid-template-areas: "claude media usage" "claude media cpu" "clip clip clip"; }
 .tile { background: var(--card-bg); border: var(--card-border); border-radius: 16px; padding: 10px 12px; min-width: 0; }
 .tile h3 { margin: 0 0 8px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--text-faint); font-weight: 600; }
@@ -90,7 +91,7 @@ h2 { font-size: 15px; margin: 32px 0 4px; }
 .small { font-size: 11px; color: var(--text-faint); }
 .cpuRow { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
 .cpuRow b { font-family: var(--mono); font-weight: 600; }
-.clipList { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.clipList { max-height: 112px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .clipItem { display: flex; gap: 9px; align-items: center; padding: 5px 6px; border-radius: 8px; font-size: 12.5px; }
 .clipItem:hover { background: rgba(255,255,255,0.06); }
 .clipItem .k { width: 22px; text-align: center; color: var(--text-faint); font-size: 10px; font-family: var(--mono); }
@@ -125,9 +126,10 @@ Ngược với bản hiện tại — đậm ở trên, loãng dần xuống dư
 <div class="desk" data-bg="code"><div class="stage" id="stageC"></div></div>
 
 <h2>D · Panel gộp một chỗ, dàn bento</h2>
-<p class="lede">Bỏ tab: Claude, nhạc, hạn mức, clipboard và máy nằm chung một khung. <b>Nhạc chiếm phần lớn nhất</b>
-— đủ chỗ cho ảnh bìa, thanh chạy và nút điều khiển. Danh sách Claude chỉ còn phiên đang chạy. <b>Clipboard và
-máy chia nhau hàng cuối</b>. Clipboard thấp hơn và cuộn trong ô.</p>
+<p class="lede">Bỏ tab — tất cả nằm chung một khung, diện tích chia theo mức đáng nhìn (Lauren chốt 20/09):
+<b>Phiên Claude và Nhạc lớn nhất</b>, mỗi ô cao hai hàng · <b>Clipboard vừa</b>, chiếm trọn hàng cuối và cuộn
+trong ô · <b>Hạn mức và Máy nhỏ nhất</b>, xếp chồng ở cột hẹp bên phải. Danh sách Claude chỉ còn phiên đang
+chạy; phiên im lâu và lịch sử dồn vào <code>cl</code>.</p>
 <div class="desk" data-bg="code"><div class="stage" id="stageD" style="min-height:0;padding:16px 0 20px"></div></div>
 
 <script>
@@ -213,29 +215,32 @@ document.querySelectorAll(".desk").forEach(function (d) { d.setAttribute("data-s
 render();
 
 const BENTO = '<div class="bento">'
-  + '<div class="tile t-claude"><h3>Phiên đang chạy</h3>'
+  + '<div class="tile t-claude" style="display:flex;flex-direction:column"><h3>Phiên đang chạy</h3>'
   + '<div class="sess"><span class="sq"></span><span><span class="nm">winbar · firefish</span><br /><span class="st">Cooking · Bash</span></span><span class="tm">vừa xong</span></div>'
   + '<div class="sess"><span class="sq"></span><span><span class="nm">brain</span><br /><span class="st">Thinking</span></span><span class="tm">2 phút</span></div>'
   + '<div class="sess"><span class="sq"></span><span><span class="nm">qikify · fangtooth</span><br /><span class="st" style="color:var(--warn)">wait for you</span></span><span class="tm">5 phút</span></div>'
-  + '<div class="small" style="margin-top:7px">3 phiên đang mở · phiên im lâu và lịch sử chỉ còn trong <code>cl</code></div></div>'
+  + '<div class="sess"><span class="sq"></span><span><span class="nm">qikify · makara</span><br /><span class="st">Cooking · Edit</span></span><span class="tm">11 phút</span></div>'
+  + '<div class="sess"><span class="sq"></span><span><span class="nm">Lauren Claude</span><br /><span class="st">idle</span></span><span class="tm">18 phút</span></div>'
+  + '<div class="small" style="margin-top:auto;padding-top:8px">5 phiên đang mở · phiên im lâu và lịch sử chỉ còn trong <code>cl</code></div></div>'
   + '<div class="tile t-usage"><h3>Hạn mức</h3>'
-  + '<div class="meter"><div class="head"><span class="small">5 giờ</span><b>25%</b></div><div class="bar"><i style="width:25%;background:var(--claude)"></i></div></div>'
-  + '<div class="meter"><div class="head"><span class="small">7 ngày</span><b>7%</b></div><div class="bar"><i style="width:7%;background:var(--claude)"></i></div></div>'
-  + '<div class="small">Reset sau 2h 41m · Fable 2%</div></div>'
+  + '<div class="cpuRow"><span class="small">5 giờ</span><b>25%</b></div><div class="bar" style="margin-bottom:8px"><i style="width:25%;background:var(--claude)"></i></div>'
+  + '<div class="cpuRow"><span class="small">7 ngày</span><b>7%</b></div><div class="bar"><i style="width:7%;background:var(--claude)"></i></div>'
+  + '<div class="small" style="margin-top:7px">Reset 2h 41m</div></div>'
   + '<div class="tile t-cpu"><h3>Máy</h3>'
-  + '<div class="cpuRow"><span class="small">CPU</span><b>12%</b></div><div class="bar" style="margin-bottom:9px"><i style="width:12%;background:var(--media)"></i></div>'
-  + '<div class="cpuRow"><span class="small">RAM</span><b>41%</b></div><div class="bar" style="margin-bottom:9px"><i style="width:41%;background:var(--media)"></i></div>'
+  + '<div class="cpuRow"><span class="small">CPU</span><b>12%</b></div><div class="bar" style="margin-bottom:8px"><i style="width:12%;background:var(--media)"></i></div>'
+  + '<div class="cpuRow"><span class="small">RAM</span><b>41%</b></div><div class="bar" style="margin-bottom:8px"><i style="width:41%;background:var(--media)"></i></div>'
   + '<div class="cpuRow"><span class="small">Pin</span><b>88%</b></div><div class="bar"><i style="width:88%;background:var(--ok)"></i></div></div>'
-  + '<div class="tile t-media"><h3>Đang phát</h3>'
-  + '<div style="display:flex;gap:13px;align-items:center">'
-  + '<span class="sq" style="width:56px;height:56px;border-radius:12px;background:linear-gradient(140deg,#5f8ae0,#2f54b5)"></span>'
+  + '<div class="tile t-media" style="display:flex;flex-direction:column"><h3>Đang phát</h3>'
+  + '<div style="display:flex;gap:14px;align-items:center;flex:1">'
+  + '<span class="sq" style="width:116px;height:116px;border-radius:16px;background:linear-gradient(140deg,#5f8ae0,#2f54b5)"></span>'
   + '<span style="min-width:0;flex:1">'
-  + '<span class="nm" style="font-size:15px">Ditto</span><br /><span class="small" style="font-size:12px">NewJeans · Get Up</span>'
-  + '<div class="bar" style="margin-top:9px"><i style="width:38%;background:var(--media)"></i></div>'
-  + '<div style="display:flex;justify-content:space-between;margin-top:4px"><span class="small">1:12</span><span class="small">3:05</span></div>'
-  + '</span>'
-  + '<span style="display:flex;gap:12px;align-items:center;color:var(--text-sub);font-size:17px;padding-right:4px">'
-  + '<span>⏮</span><span style="font-size:22px">⏸</span><span>⏭</span></span></div></div>'
+  + '<span class="nm" style="font-size:17px">Ditto</span><br /><span class="small" style="font-size:12.5px">NewJeans · Get Up</span>'
+  + '<div class="bar" style="margin-top:12px"><i style="width:38%;background:var(--media)"></i></div>'
+  + '<div style="display:flex;justify-content:space-between;margin-top:5px"><span class="small">1:12</span><span class="small">3:05</span></div>'
+  + '<div style="display:flex;gap:18px;align-items:center;color:var(--text-sub);font-size:17px;margin-top:10px">'
+  + '<span>⏮</span><span style="font-size:23px">⏸</span><span>⏭</span>'
+  + '<span class="small" style="margin-left:auto">Spotify</span></div>'
+  + '</span></div></div>'
   + '<div class="tile t-clip"><h3>Clipboard · 24 mục</h3><div class="clipList">'
   + '<div class="clipItem"><span class="k">IMG</span><span class="p">Ảnh 1144×656</span><span class="w">vừa xong</span></div>'
   + '<div class="clipItem"><span class="k">T</span><span class="p">C:\\Users\\Lenovo\\kwangya</span><span class="w">3 phút</span></div>'
