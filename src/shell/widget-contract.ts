@@ -21,11 +21,19 @@ export interface WidgetDefinition {
    * panel is closed, e.g. watching a source and pushing pill alerts.
    */
   Background?: ComponentType;
-  /** `tall`: takes a whole column (e.g. clipboard). */
-  layout?: { tall?: boolean };
+  /**
+   * How much of the panel this widget is worth (SPEC-notch-shell §6).
+   *
+   * `large` takes a tall tile two rows high, `medium` a full-width row of its own, `small` a single cell in the
+   * narrow column. A widget that says nothing is treated as `small`.
+   */
+  layout?: { size?: WidgetSize };
   /** Collected by the shell for the command bar. */
   searchProvider?: SearchProvider;
 }
+
+/** Panel weight: how much room a widget's card is worth. */
+export type WidgetSize = "large" | "medium" | "small";
 
 export interface PillAlert {
   /** Unique; pushing the same id again replaces the alert. */

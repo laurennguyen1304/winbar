@@ -10,6 +10,6 @@ export const clipboardWidget: WidgetDefinition = {
   description: "Lịch sử, tìm kiếm, ảnh",
   Card: ClipboardCard,
   // The list needs the height, so it takes a column of its own (SPEC-notch-shell §6).
-  layout: { tall: true },
+  layout: { size: "medium" },
   searchProvider: createClipboardProvider(),
 };

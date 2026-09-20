@@ -4,7 +4,7 @@ import { Card, CardLabel } from "../../shell/ui";
 import { ClaudeIcon } from "./ClaudeIcon";
 import { openDesktop, type ClaudeSession } from "./native";
 import { ago, groupSessions, phaseLook, rowTime } from "./phase";
-import { refreshHistory, refreshIcons, useClaude } from "./store";
+import { refreshIcons, useClaude } from "./store";
 import styles from "./Claude.module.css";
 
 /** How often the relative times are refreshed. */
@@ -78,38 +78,36 @@ function Row({
 
 /** "Phiên Claude" card: what is running now, what has gone quiet, and recent Desktop sessions (SPEC §5.2). */
 export function SessionsCard() {
-  const { sessions, history: past, icons, options } = useClaude();
+  const { sessions, icons, options } = useClaude();
   const rotateMs = options.iconRotateSeconds * 1000;
   const now = useNow();
   const { live, quiet } = groupSessions(sessions);
-  const history = past;
 
-  // Both only matter while the card is on screen: a file dropped into the icons folder shows up without a
-  // restart, and the Desktop history is too expensive to keep up to date behind a closed panel.
+  // A file dropped into the icons folder shows up the next time the panel opens, without a restart.
   useEffect(() => {
     void refreshIcons();
-    void refreshHistory().catch((err: unknown) => console.error("claude_history failed", err));
   }, []);
 
   return (
     <Card className={styles.card}>
       <CardLabel aside={live.length > 0 ? `${live.length} đang mở` : undefined}>Phiên Claude</CardLabel>
-      {sessions.length === 0 ? (
-        <p className={styles.empty}>Không có phiên Claude nào đang mở</p>
+      {live.length === 0 ? (
+        <p className={styles.empty}>Không có phiên Claude nào đang chạy</p>
       ) : (
         <div className={styles.list}>
           {live.map((s) => (
             <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} />
           ))}
-          {quiet.length > 0 && <p className={styles.groupLabel}>Đã lâu không hoạt động</p>}
-          {quiet.map((s) => (
-            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} dim />
-          ))}
-          {history.length > 0 && <p className={styles.groupLabel}>Phiên Desktop gần đây</p>}
-          {history.map((s) => (
-            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} dim />
-          ))}
         </div>
+      )}
+      {/*
+        Only what is running (Lauren, 20/09). Sessions that have been quiet for hours are still open, so they
+        are counted here rather than dropped silently — `cl` in the command bar still lists them.
+      */}
+      {quiet.length > 0 && (
+        <p className={styles.groupLabel}>
+          {quiet.length} phiên đã lâu không hoạt động · gõ <code>cl</code> để xem
+        </p>
       )}
     </Card>
   );

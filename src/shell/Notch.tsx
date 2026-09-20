@@ -34,7 +34,7 @@ import { pickMidPills, pickPills } from "./pill-content";
 import { registry } from "./registry";
 import { useShellRuntime } from "./shell-context";
 import { useNotchMachine } from "./use-notch-machine";
-import type { TabId, WidgetDefinition } from "./widget-contract";
+import type { WidgetDefinition } from "./widget-contract";
 import { WidgetBoundary } from "./WidgetBoundary";
 import styles from "./Notch.module.css";
 
@@ -105,18 +105,17 @@ export function Notch({
   const { alert, flash } = snapshot;
   const { visual, dispatch } = useNotchMachine(mode, alert !== undefined);
   const expanded = visual === "expanded";
-  const [tab, setTab] = useState<TabId>("core");
   // Widgets that hid themselves (ShellApi.setHidden) leave the pill and the panel; their Background keeps running.
   const shown = snapshot.hidden.size === 0 ? widgets : widgets.filter((w) => !snapshot.hidden.has(w.id));
   // Up to two: a Claude session and music playing at the same time widen the pill rather than hiding one.
   const pills = pickPills(shown, priorityWidget);
   const midPills = pickMidPills(shown, priorityWidget);
 
-  // Let widgets open/collapse the panel through ShellApi.
+  // Let widgets open/collapse the panel through ShellApi. The panel shows everything at once now, so the tab a
+  // caller asks for no longer picks anything — it is kept only so the tray and the command bar still compile.
   useEffect(() => {
     shell.bindNotch({
-      open: (target) => {
-        if (target) setTab(target);
+      open: () => {
         dispatch({ type: "clickPill" });
       },
       collapse: () => dispatch({ type: "close", reason: "collapseButton" }),
@@ -127,8 +126,7 @@ export function Notch({
   // Tray › "Mở notch".
   useEffect(
     () =>
-      onOpenNotchRequested((requested) => {
-        if (requested) setTab(requested);
+      onOpenNotchRequested(() => {
         dispatch({ type: "clickPill" });
       }),
     [dispatch],
@@ -219,10 +217,6 @@ export function Notch({
 
   const openFromPill = (e: MouseEvent | KeyboardEvent) => {
     if (fromControl(e)) return;
-    if (alert) {
-      const source = widgets.find((w) => w.id === alert.source);
-      if (source) setTab(source.tab);
-    }
     dispatch({ type: "clickPill" });
   };
 
@@ -312,8 +306,6 @@ export function Notch({
             >
               <Panel
                 widgets={shown}
-                tab={tab}
-                onTabChange={setTab}
                 onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
                 onOpenSettings={() => void openSettings()}
               />

@@ -31,13 +31,6 @@ describe("ClaudeSection", () => {
     expect(onChange).toHaveBeenCalledWith({ ...value, usageWarnPercent: 80 });
   });
 
-  it("hides the Desktop session history", () => {
-    const onChange = vi.fn();
-    render(<ClaudeSection value={value} onChange={onChange} />);
-    fireEvent.click(screen.getByLabelText("Hiện phiên Claude Desktop"));
-    expect(onChange).toHaveBeenCalledWith({ ...value, showDesktopSessions: false });
-  });
-
   it("says plainly what turning the layout off means", () => {
     render(<ClaudeSection value={value} onChange={vi.fn()} />);
     expect(

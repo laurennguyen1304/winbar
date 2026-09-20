@@ -19,6 +19,7 @@ export const mediaWidget: WidgetDefinition = {
   tab: "core",
   title: "Đang phát",
   description: "Ảnh bìa, tiến độ, điều khiển nhạc",
+  layout: { size: "large" },
   Card: MediaCard,
   Pill: MediaPill,
   MidPill: MediaMidPill,

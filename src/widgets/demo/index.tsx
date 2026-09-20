@@ -214,7 +214,7 @@ export const demoWidgets: WidgetDefinition[] = [
     title: "Demo tall",
     description: "Chiếm một cột",
     Card: DemoTall,
-    layout: { tall: true },
+    layout: { size: "medium" },
   },
   {
     id: "demo-claude",

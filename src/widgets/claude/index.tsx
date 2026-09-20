@@ -11,6 +11,7 @@ export const claudeSessionsWidget: WidgetDefinition = {
   title: "Phiên Claude",
   description: "Phiên đang chạy, trạng thái, project",
   Card: SessionsCard,
+  layout: { size: "large" },
   Pill: ClaudePill,
   // Hides the widget from the pill while nothing is running, the way media does when nothing is playing.
   Background: ClaudeBackground,
@@ -22,5 +23,6 @@ export const claudeUsageWidget: WidgetDefinition = {
   tab: "claude",
   title: "Hạn mức",
   description: "Hạn mức 5 giờ và 7 ngày",
+  layout: { size: "small" },
   Card: UsageCard,
 };

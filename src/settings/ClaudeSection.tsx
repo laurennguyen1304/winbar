@@ -86,18 +86,6 @@ export function ClaudeSection({ value, onChange }: Props) {
           ))}
         </ToggleGroup>
       </Row>
-
-      <Row
-        title="Hiện phiên Claude Desktop"
-        description="Các phiên gần đây của app Desktop, dưới các phiên đang chạy. Chỉ là lịch sử, không có trạng thái"
-      >
-        <Switch
-          aria-label="Hiện phiên Claude Desktop"
-          checked={value.showDesktopSessions}
-          className="data-[state=checked]:bg-[var(--switch-on)]"
-          onCheckedChange={(showDesktopSessions) => onChange({ ...value, showDesktopSessions })}
-        />
-      </Row>
     </section>
   );
 }

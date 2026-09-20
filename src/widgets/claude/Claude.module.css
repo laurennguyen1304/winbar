@@ -12,8 +12,8 @@
   overflow-y: auto;
   min-height: 0;
   margin: 0 -8px;
-  /* About six rows; more than that scrolls rather than stretching the notch (see notch-sizes panelMaxHeight). */
-  max-height: 324px;
+  /* About five rows. Only running sessions are listed now, so this is rarely reached (see panelMaxHeight). */
+  max-height: 270px;
 }
 
 .row {
@@ -167,9 +167,11 @@
 
 /* --- Hạn mức --- */
 
+/* The limits card is one of the two small tiles, so its meters stack down the narrow column (SPEC §6). */
 .meters {
   display: flex;
-  gap: 14px;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .meter {
@@ -194,7 +196,7 @@
 
 .meterValue {
   font-family: var(--mono);
-  font-size: 26px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.02em;
   white-space: nowrap;

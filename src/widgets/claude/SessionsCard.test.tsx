@@ -8,8 +8,6 @@ import { resetForTests } from "./store";
 const { native } = vi.hoisted(() => ({
   native: {
     sessions: [] as ClaudeSession[],
-    history: [] as ClaudeSession[],
-    historyReads: 0,
     icons: {} as Record<string, string[]>,
     opened: [] as string[],
     desktopOpens: 0,
@@ -20,10 +18,6 @@ const { native } = vi.hoisted(() => ({
 vi.mock("./native", () => ({
   NO_USAGE: { perModel: [], fetchedAt: 0 },
   listSessions: () => Promise.resolve(native.sessions),
-  listHistory: () => {
-    native.historyReads += 1;
-    return Promise.resolve(native.history);
-  },
   extraIcons: () => Promise.resolve(native.icons),
   getUsage: () => Promise.resolve({ perModel: [], fetchedAt: 0 }),
   onSessionsChanged: (handler: () => void) => {
@@ -60,8 +54,6 @@ describe("SessionsCard", () => {
       }),
       session({ id: "b", title: "brain", phase: "permission", cwd: "C:\\brain" }),
     ];
-    native.history = [];
-    native.historyReads = 0;
     native.icons = {};
     native.opened = [];
     native.desktopOpens = 0;
@@ -95,12 +87,8 @@ describe("SessionsCard", () => {
 
   it("takes a Desktop row to the Desktop app, never to a terminal", async () => {
     native.sessions = [session({ id: "d", title: "Lauren Claude", source: "desktop" })];
-    native.history = [session({ id: "h", title: "Việc cũ", source: "history", turns: 2 })];
     render(<SessionsCard />);
-    // Both the live Desktop session and the past one belong to the app, not to a terminal.
-    const rows = await screen.findAllByTitle("Mở Claude Desktop");
-    expect(rows).toHaveLength(2);
-    fireEvent.click(rows[0]);
+    fireEvent.click(await screen.findByTitle("Mở Claude Desktop"));
     await waitFor(() => expect(native.desktopOpens).toBe(1));
     expect(native.opened).toEqual([]);
   });
@@ -112,41 +100,24 @@ describe("SessionsCard", () => {
     expect(await screen.findByTitle("Mở Claude Desktop")).toBeEnabled();
   });
 
-  it("asks for the Desktop history once, and never again while sessions move", async () => {
-    native.history = [session({ id: "past", title: "Việc cũ", source: "history", turns: 1 })];
-    render(<SessionsCard />);
-    await screen.findByText("firefish");
-    await waitFor(() => expect(native.historyReads).toBe(1));
-
-    // The pill path runs on every change. Rescanning every old Desktop session behind it was 86% of what
-    // this module cost on the release build (measured 20/09), so it must not happen here.
-    for (let i = 0; i < 5; i += 1) {
-      native.changed?.();
-    }
-    await waitFor(() => expect(screen.getByText("firefish")).toBeInTheDocument());
-    expect(native.historyReads).toBe(1);
-  });
-
   it("says so when nothing is running", async () => {
     native.sessions = [];
     render(<SessionsCard />);
-    expect(await screen.findByText("Không có phiên Claude nào đang mở")).toBeInTheDocument();
+    expect(await screen.findByText("Không có phiên Claude nào đang chạy")).toBeInTheDocument();
   });
 
-  it("puts quiet sessions and past Desktop ones under their own headings", async () => {
+  it("lists only what is running, and counts the quiet ones instead of showing them", async () => {
     native.sessions = [
       session({ id: "live", title: "firefish" }),
       session({ id: "ghost", title: "makara", stale: true }),
-    ];
-    // Past Desktop sessions arrive from their own command now, asked for once when the card appears.
-    native.history = [
-      session({ id: "past", title: "Việc cũ", source: "history", turns: 4, lastActiveAt: Date.now() - 3_600_000 }),
+      session({ id: "ghost2", title: "fangtooth", stale: true }),
     ];
     render(<SessionsCard />);
-    expect(await screen.findByText("Đã lâu không hoạt động")).toBeInTheDocument();
-    expect(screen.getByText("Phiên Desktop gần đây")).toBeInTheDocument();
-    expect(screen.getByText("4 lượt · 1 giờ")).toBeInTheDocument();
+    expect(await screen.findByText("firefish")).toBeInTheDocument();
     expect(screen.getByText("1 đang mở")).toBeInTheDocument();
+    // The quiet ones are still open, so they are counted and pointed at rather than dropped in silence.
+    expect(screen.queryByText("makara")).not.toBeInTheDocument();
+    expect(screen.getByText(/2 phiên đã lâu không hoạt động/)).toBeInTheDocument();
   });
 
   it("re-reads the list when Rust says it changed", async () => {

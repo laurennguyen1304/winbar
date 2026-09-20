@@ -5,7 +5,6 @@ import { loadSettings, onSettingsChanged } from "../../shell/native";
 import {
   extraIcons,
   getUsage,
-  listHistory,
   listSessions,
   onSessionsChanged,
   NO_USAGE,
@@ -15,8 +14,6 @@ import {
 
 export interface ClaudeView {
   sessions: ClaudeSession[];
-  /** Past Desktop sessions. Empty until the panel asks for them. */
-  history: ClaudeSession[];
   /** Extra images per phase, added by the user. Empty until the first read. */
   icons: Readonly<Record<string, string[]>>;
   usage: ClaudeUsage;
@@ -26,7 +23,6 @@ export interface ClaudeView {
 
 const EMPTY: ClaudeView = {
   sessions: [],
-  history: [],
   icons: {},
   usage: NO_USAGE,
   options: DEFAULT_SETTINGS.claude,
@@ -48,11 +44,6 @@ export function refresh(): Promise<void> {
 /** Re-reads the limits. Rust serves a cached answer unless `force` asks for a fresh one. */
 export function refreshUsage(force = false): Promise<void> {
   return getUsage(force).then((usage) => set({ ...view, usage }));
-}
-
-/** Re-reads the Desktop history. Called when the card appears; the pill never needs it. */
-export function refreshHistory(): Promise<void> {
-  return listHistory().then((history) => set({ ...view, history }));
 }
 
 /** Re-reads the user's icon folder. Called when the panel opens, so a new file shows up without a restart. */

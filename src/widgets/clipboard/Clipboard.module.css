@@ -69,8 +69,11 @@
   min-height: 0;
   flex-grow: 1;
   margin: 0 -8px;
-  /* About seven rows. Without a cap the notch stretches towards the bottom of the screen (SPEC §5.3). */
-  max-height: 372px;
+  /*
+   * About three rows. Short on purpose: the clipboard shares one panel with everything else now, and Lauren
+   * would rather scroll here than have the notch reach down the screen (20/09).
+   */
+  max-height: 164px;
 }
 
 /* One row: the body is the copy button, the actions sit on top of its right edge on hover. */

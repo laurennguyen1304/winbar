@@ -171,12 +171,12 @@ describe("Notch", () => {
       expect(backgroundRuns).toHaveBeenCalled();
     });
 
-    it("hides the Claude tab when every Claude widget is hidden", () => {
+    it("drops a hidden widget's card out of the panel", () => {
       renderWith("click");
       fireEvent.click(screen.getByRole("button", { name: "Mở notch" }));
-      expect(screen.getByRole("tab", { name: "Claude" })).toBeInTheDocument();
+      expect(screen.getByText("card claude-sessions")).toBeInTheDocument();
       act(() => shell.api.setHidden("claude-sessions", true));
-      expect(screen.queryByRole("tab", { name: "Claude" })).not.toBeInTheDocument();
+      expect(screen.queryByText("card claude-sessions")).not.toBeInTheDocument();
     });
   });
 
@@ -307,7 +307,7 @@ describe("Notch", () => {
   it("click mode: closes with the collapse button and when the window loses focus", () => {
     render(<Notch mode="click" />);
     fireEvent.click(screen.getByRole("button"));
-    expect(screen.getByRole("tab", { name: "Core" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Thu gọn" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Thu gọn" }));
     expect(notch()).toHaveAttribute("data-state", "pill");
 
@@ -334,11 +334,13 @@ describe("Notch", () => {
     expect(notch()).toHaveAttribute("data-state", "expanded");
   });
 
-  it("opens on the Claude tab when the command bar asks for it", () => {
+  it("opens the panel when the command bar or tray asks for it", () => {
     render(<Notch mode="hover" widgets={demoWidgets} />);
     act(() => trayOpenHandlers[0]("claude"));
     expect(notch()).toHaveAttribute("data-state", "expanded");
-    expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
+    // Everything is on screen at once now, so the tab the caller asked for no longer picks anything.
+    expect(screen.getByText("Cooking")).toBeInTheDocument();
+    expect(screen.getByText("Card thường")).toBeInTheDocument();
   });
 
   it("uses the requested pill size and gap", () => {
@@ -412,12 +414,13 @@ describe("Notch", () => {
       expect(notch()).toHaveAttribute("data-state", "alert");
     });
 
-    it("opens the panel on the alert source's tab when the text is clicked", () => {
+    it("opens the panel when the alert text is clicked", () => {
       renderWithShell();
       act(() => shell.api.alerts.push(approval));
       fireEvent.click(screen.getByText("wait for you"));
       expect(notch()).toHaveAttribute("data-state", "expanded");
-      expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
+      // The alert's own widget is on screen without anyone having to pick a tab.
+      expect(screen.getByText("Cooking")).toBeInTheDocument();
     });
 
     it("returns to the normal pill when the alert is dismissed", () => {
@@ -450,11 +453,11 @@ describe("Notch", () => {
       expect(screen.getByText("Demo widget")).toBeInTheDocument();
     });
 
-    it("lets widgets open the panel on a tab and collapse it", () => {
+    it("lets widgets open the panel and collapse it", () => {
       renderWithShell("click");
       act(() => shell.api.openPanel("claude"));
       expect(notch()).toHaveAttribute("data-state", "expanded");
-      expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByText("Cooking")).toBeInTheDocument();
       act(() => shell.api.collapse());
       expect(notch()).toHaveAttribute("data-state", "pill");
     });
@@ -511,7 +514,7 @@ describe("Notch", () => {
       expect(notch()).toHaveAttribute("data-state", "always");
       fireEvent.click(screen.getByText("wait for you"));
       expect(notch()).toHaveAttribute("data-state", "expanded");
-      expect(screen.getByRole("tab", { name: "Claude" })).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByText("Cooking")).toBeInTheDocument();
     });
 
     it("opens on click and collapses back to the large pill", () => {

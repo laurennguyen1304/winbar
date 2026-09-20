@@ -136,6 +136,10 @@ Theo mockup: mỗi dòng có ảnh trạng thái (26px), tên + badge `cli`/`des
 bên phải. Nhãn card ghi số phiên đang mở.
 
 - **Phiên đang sống** (§3.1) lên trước, sắp theo §5.3; badge lấy từ `entrypoint`: `cli` hoặc `desktop`.
+- **Chỉ liệt kê phiên đang chạy** (Lauren chốt 20/09). Phiên im quá 2 giờ không hiện dòng nữa mà gộp thành một
+  câu đếm ở cuối card, trỏ sang `cl`. **Lịch sử phiên Desktop bị bỏ hẳn** — không còn card, không còn lệnh
+  `claude_history`, không còn tuỳ chọn "Hiện phiên Claude Desktop". Đó cũng là thứ tốn CPU nhất của module
+  (xem tiêu chí 11), và là lịch sử không mở lại được từ winbar.
 - Tên dòng: `<project> · <worktree>` theo §3.4 khi ở trong Orca, còn lại là tên thư mục.
 - Cột phải: "hoạt động 2 phút trước"; chỉ khi `startedAt > 0` mới ghi "đã chạy 12m".
 - Phiên `idle` quá **2 giờ** xuống mục "đã lâu không hoạt động" ở cuối, chữ mờ — vẫn còn file nhưng gần như

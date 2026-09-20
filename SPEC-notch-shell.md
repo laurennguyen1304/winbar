@@ -144,7 +144,7 @@ export interface WidgetDefinition {
   Pill?: React.ComponentType;             // nội dung pill 340×36 khi là widget ưu tiên
   MidPill?: React.ComponentType;          // nửa pill always 620×64
   Background?: React.ComponentType;       // luôn mount khi widget bật, không hiện gì; chạy việc nền (vd. theo dõi và đẩy alert khi panel đóng)
-  layout?: { tall?: boolean };            // tall: chiếm riêng một cột (vd. clipboard)
+  layout?: { size?: WidgetSize };         // large | medium | small — xem "Bento" bên dưới
   searchProvider?: SearchProvider;        // command-bar dùng; shell chỉ thu thập
 }
 
@@ -169,6 +169,25 @@ export interface SearchProvider {
 }
 export interface SearchResult { id: string; title: string; subtitle?: string; icon?: string; run(): void | Promise<void>; }
 ```
+
+### Bento — panel mở, không còn tab (Lauren chốt 20/09)
+
+Trước đây panel có tab **Core** và tab **Claude**. Giờ **bỏ tab**: mọi widget đang bật nằm chung một lưới, vì sau
+khi danh sách Claude rút gọn còn phiên đang chạy thì mọi thứ đáng xem đều vừa một màn, và một cái tab chỉ là một
+cú bấm chắn giữa bạn và thứ bạn mở notch ra để xem.
+
+Lưới ba cột `1.1fr 1.25fr 0.78fr`, widget tự khai mình đáng bao nhiêu chỗ:
+
+| `layout.size` | Chỗ | Ai dùng |
+|---|---|---|
+| `large` | Ô cao **hai hàng** ở một cột rộng. Tối đa **2** ô | `claude-sessions`, `media` |
+| `small` | Một ô đơn, xếp chồng ở cột hẹp bên phải | `claude-usage`, `system` |
+| `medium` | **Trọn một hàng** riêng phía dưới | `clipboard` |
+| *không khai* | Coi như `small` | |
+
+Shell **không biết tên widget nào**: widget khai kích cỡ, shell xếp chỗ (`bentoLayout()` trong `src/shell/layout.ts`).
+Hai trường hợp lệch được xử lý ngay trong hàm đó: `large` thứ ba rơi xuống thành hàng trọn chiều ngang thay vì bóp
+hết lại; và một `large` đứng một mình (nhạc tắt chẳng hạn) thì trải rộng chứ không để hở một cột trống.
 
 Quy tắc:
 - Widget đăng ký qua `registerWidget(def)` trong `src/widgets/index.ts`; shell không import widget cụ thể nào khác.

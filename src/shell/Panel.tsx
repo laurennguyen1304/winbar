@@ -1,48 +1,28 @@
 import type { ReactNode } from "react";
-import claudeTab from "../assets/claude/clawd-sleeping.png";
 import { Icon } from "./Icon";
-import { layoutTab } from "./layout";
-import type { TabId, WidgetDefinition } from "./widget-contract";
+import { bentoLayout } from "./layout";
+import type { WidgetDefinition } from "./widget-contract";
 import { WidgetBoundary } from "./WidgetBoundary";
 import styles from "./Panel.module.css";
 
 interface PanelProps {
   /** Enabled widgets, in Settings order. */
   widgets: WidgetDefinition[];
-  tab: TabId;
-  onTabChange(tab: TabId): void;
   onCollapse(): void;
   onOpenSettings?(): void;
 }
 
-const TABS: Array<{ id: TabId; label: string }> = [
-  { id: "core", label: "Core" },
-  { id: "claude", label: "Claude" },
-];
-
-export function Panel({ widgets, tab, onTabChange, onCollapse, onOpenSettings }: PanelProps) {
-  const visibleTabs = TABS.filter((t) => t.id === "core" || widgets.some((w) => w.tab === t.id));
-  const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : "core";
-  const tabWidgets = widgets.filter((w) => w.tab === activeTab);
-
+/**
+ * The open panel: every enabled widget at once, in one bento (SPEC-notch-shell §6).
+ *
+ * There used to be a Core tab and a Claude tab. Lauren asked for them merged on 20/09 — with the sessions
+ * list trimmed to what is running, everything worth seeing fits in one view, and a tab that hides half of it
+ * is one click between you and the thing you opened the notch for.
+ */
+export function Panel({ widgets, onCollapse, onOpenSettings }: PanelProps) {
   return (
     <>
       <div className={styles.header}>
-        <div className={styles.tabs} role="tablist">
-          {visibleTabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={t.id === activeTab}
-              className={t.id === activeTab ? `${styles.tab} ${styles.active}` : styles.tab}
-              onClick={() => onTabChange(t.id)}
-            >
-              {t.id === "claude" && <img src={claudeTab} alt="" width={18} height={18} />}
-              {t.label}
-            </button>
-          ))}
-        </div>
         <span className={styles.grow} />
         {onOpenSettings && (
           <button type="button" className={styles.iconButton} aria-label="Cài đặt" onClick={onOpenSettings}>
@@ -53,16 +33,15 @@ export function Panel({ widgets, tab, onTabChange, onCollapse, onOpenSettings }:
           <Icon name="collapse" size={16} />
         </button>
       </div>
-      {/* key: remount on tab change so the fade (M4) replays */}
-      <div key={activeTab} className={styles.body} role="tabpanel">
-        <TabBody widgets={tabWidgets} />
+      <div className={styles.body} role="group">
+        <Bento widgets={widgets} />
       </div>
     </>
   );
 }
 
-function TabBody({ widgets }: { widgets: WidgetDefinition[] }) {
-  const layout = layoutTab(widgets);
+function Bento({ widgets }: { widgets: WidgetDefinition[] }) {
+  const layout = bentoLayout(widgets);
   const byId = new Map(widgets.map((w) => [w.id, w]));
   const card = (id: string): ReactNode => {
     const def = byId.get(id);
@@ -74,21 +53,28 @@ function TabBody({ widgets }: { widgets: WidgetDefinition[] }) {
     );
   };
 
-  switch (layout.kind) {
-    case "empty":
-      return <div className={styles.empty}>Chưa bật widget nào trong tab này.</div>;
-    case "grid":
-      return <div className={styles.grid}>{layout.ids.map(card)}</div>;
-    case "columns": {
-      const stack = <div className={styles.stack}>{layout.stack.map(card)}</div>;
-      // `stretch` tells the grid this column may fill the panel; its card scrolls inside rather than growing it.
-      const tall = <div className={`${styles.stack} ${styles.stretch}`}>{card(layout.tall)}</div>;
-      return (
-        <div className={styles.grid}>
-          {layout.tallFirst ? tall : stack}
-          {layout.tallFirst ? stack : tall}
-        </div>
-      );
-    }
+  if (widgets.length === 0) {
+    return <div className={styles.empty}>Chưa bật widget nào.</div>;
   }
+
+  return (
+    // How many tall tiles there are decides how the row is split; CSS cannot count them on its own.
+    <div className={styles.bento} data-large={layout.large.length}>
+      {layout.large.map((id) => (
+        <div key={id} className={styles.large} data-tile="large">
+          {card(id)}
+        </div>
+      ))}
+      {layout.small.length > 0 && (
+        <div className={styles.smalls} data-tile="small">
+          {layout.small.map(card)}
+        </div>
+      )}
+      {layout.medium.map((id) => (
+        <div key={id} className={styles.medium} data-tile="medium">
+          {card(id)}
+        </div>
+      ))}
+    </div>
+  );
 }

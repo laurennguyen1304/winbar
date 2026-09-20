@@ -175,7 +175,7 @@ pub fn claude_open_desktop() -> Result<(), String> {
     crate::command_bar::launch::open_shell_target("claude://")
 }
 
-/// The live sessions, in order. Past Desktop ones come from `claude_history` instead.
+/// The live sessions, in order.
 #[tauri::command]
 pub fn claude_sessions<R: Runtime>(
     app: AppHandle<R>,
@@ -190,23 +190,6 @@ pub fn claude_sessions<R: Runtime>(
         *last = list.clone();
     }
     Ok(list)
-}
-
-/// Recent Desktop sessions, for the card only.
-///
-/// Split off from `claude_sessions` on purpose. The pill asks for the live list every time a session moves,
-/// and none of those reads should drag 157 old Desktop files along behind them. The card asks for this once,
-/// when the panel opens, and the answer is cached for a minute anyway.
-#[tauri::command]
-pub fn claude_history<R: Runtime>(
-    app: AppHandle<R>,
-    state: tauri::State<'_, ClaudeState>,
-) -> Vec<Session> {
-    let settings = options(&app);
-    if !settings.enabled || !settings.show_desktop_sessions {
-        return Vec::new();
-    }
-    state.history(now_ms())
 }
 
 /// Watches the status directory and pushes a change to the page, so the frontend never polls.

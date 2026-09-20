@@ -35,6 +35,7 @@ export const systemWidget: WidgetDefinition = {
   tab: "core",
   title: "Hệ thống",
   description: "CPU, RAM, Task Manager",
+  layout: { size: "small" },
   Card: SystemCard,
   searchProvider: systemSearch,
 };

@@ -73,8 +73,6 @@ pub struct ClaudeSettings {
     pub icon_rotate_seconds: u32,
     /// Warn on the pill when the 5-hour limit passes this; 0 turns the warning off.
     pub usage_warn_percent: u32,
-    /// Show recent Claude Desktop sessions under the live ones.
-    pub show_desktop_sessions: bool,
 }
 
 /// Clipboard history (SPEC-clipboard §7).
@@ -154,7 +152,6 @@ impl Default for Settings {
                 enabled: true,
                 icon_rotate_seconds: 6,
                 usage_warn_percent: 90,
-                show_desktop_sessions: true,
             },
         }
     }
@@ -373,11 +370,6 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
                 100,
                 1,
                 d.claude.usage_warn_percent,
-            ),
-            show_desktop_sessions: r.boolean(
-                claude,
-                "showDesktopSessions",
-                d.claude.show_desktop_sessions,
             ),
         },
     };

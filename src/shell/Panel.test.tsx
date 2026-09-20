@@ -1,40 +1,34 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { useState } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { demoWidgets } from "../widgets/demo";
 import { Panel } from "./Panel";
-import type { TabId, WidgetDefinition } from "./widget-contract";
+import type { WidgetDefinition } from "./widget-contract";
 
 function Harness({ widgets, onCollapse = () => {} }: { widgets: WidgetDefinition[]; onCollapse?: () => void }) {
-  const [tab, setTab] = useState<TabId>("core");
-  return <Panel widgets={widgets} tab={tab} onTabChange={setTab} onCollapse={onCollapse} />;
+  return <Panel widgets={widgets} onCollapse={onCollapse} />;
 }
 
 const byId = (...ids: string[]) => ids.map((id) => demoWidgets.find((w) => w.id === id) as WidgetDefinition);
+const tileOf = (text: string) => screen.getByText(text).closest("[data-tile]");
 
 describe("Panel", () => {
   // The broken demo widget logs through React and the boundary; keep test output readable.
   beforeEach(() => vi.spyOn(console, "error").mockImplementation(() => {}));
   afterEach(() => vi.restoreAllMocks());
 
-  it("shows Core and Claude tabs when both have widgets, Core first", () => {
+  it("shows every widget at once, with no tabs to hide half of them", () => {
     render(<Harness widgets={demoWidgets} />);
-    const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["Core", "Claude"]);
-    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
+    // A Core widget and a Claude one, side by side rather than one click apart.
+    expect(screen.getByText("Card thường")).toBeInTheDocument();
+    expect(screen.getByText("Cooking")).toBeInTheDocument();
   });
 
-  it("hides the Claude tab when no Claude widget is enabled", () => {
+  it("gives each widget the tile its size asked for", () => {
     render(<Harness widgets={byId("demo-card", "demo-tall")} />);
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Core"]);
-  });
-
-  it("switches tabs", () => {
-    render(<Harness widgets={demoWidgets} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Claude" }));
-    const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText("Cooking")).toBeInTheDocument();
-    expect(within(panel).queryByText("Card thường")).not.toBeInTheDocument();
+    // demo-tall is the medium one, so it gets its own full-width row; the plain card is a small cell.
+    expect(tileOf("Card cao")).toHaveAttribute("data-tile", "medium");
+    expect(tileOf("Card thường")).toHaveAttribute("data-tile", "small");
   });
 
   it("keeps other widgets working when one widget crashes", () => {
@@ -50,9 +44,9 @@ describe("Panel", () => {
     expect(screen.getByRole("button", { name: "Đã bấm 1 lần" })).toBeInTheDocument();
   });
 
-  it("shows an empty message when the tab has no widgets", () => {
+  it("shows an empty message when nothing is enabled", () => {
     render(<Harness widgets={[]} />);
-    expect(screen.getByText("Chưa bật widget nào trong tab này.")).toBeInTheDocument();
+    expect(screen.getByText("Chưa bật widget nào.")).toBeInTheDocument();
   });
 
   it("collapses from the header button", () => {
