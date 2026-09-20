@@ -21,10 +21,16 @@ pub use model::Session;
 pub use usage::Usage;
 
 /// The live list changed: a session started, ended, or moved to another phase.
+///
+/// The event is empty on purpose. Sending the list along looks like it should save the page a read, and it was
+/// tried and measured: +0,10 points of CPU against +0,09 for the empty event. The second read is not what this
+/// costs, so the page still asks for the list itself.
 pub const SESSIONS_CHANGED: &str = "claude-sessions-changed";
 
-/// How often the watcher looks while something is happening.
-const WATCH_BUSY: Duration = Duration::from_secs(1);
+/// How often the watcher looks while something is happening. Two seconds rather than one is Lauren's trade
+/// (2026-09-19): "không cần phải ngay tức thì, có độ trễ cũng được". It is the one lever that actually moves the
+/// number — the cost is one read plus one re-render per pass, so halving the passes halves the cost.
+const WATCH_BUSY: Duration = Duration::from_secs(2);
 /// …and while every session is idle. Lauren asked for this trade (2026-09-19): a couple of seconds of delay is
 /// fine, and a one-second loop is what made the layout cost 0.18 points of CPU while a session ran tools.
 const WATCH_IDLE: Duration = Duration::from_secs(5);
@@ -61,7 +67,11 @@ fn fingerprint(dir: &std::path::Path) -> Vec<(std::ffi::OsString, u64, u128)> {
 const HISTORY_TTL_MS: u64 = 60_000;
 
 pub struct ClaudeState {
-    home: PathBuf,
+    /// The `.claude` directory, resolved once at startup: `CLAUDE_CONFIG_DIR` when set, else the one under the
+    /// user's home. Resolved here rather than on every read, so the watcher never touches the environment.
+    claude_dir: PathBuf,
+    /// Where Orca keeps its worktrees, resolved once for the same reason.
+    orca_root: String,
     appdata: PathBuf,
     /// Last list handed out, so the watcher can tell a real change from a touched file.
     last: Mutex<Vec<Session>>,
@@ -74,7 +84,8 @@ pub struct ClaudeState {
 impl ClaudeState {
     pub fn load<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Self> {
         Ok(ClaudeState {
-            home: app.path().home_dir()?,
+            claude_dir: sessions::claude_dir(&app.path().home_dir()?),
+            orca_root: sessions::orca_root(&app.path().home_dir()?),
             appdata: app.path().config_dir()?,
             last: Mutex::new(Vec::new()),
             history: Mutex::new((0, Vec::new())),
@@ -83,7 +94,7 @@ impl ClaudeState {
 
     fn read(&self, with_history: bool) -> Vec<Session> {
         let now = now_ms();
-        let mut list = sessions::collect(&self.home, &self.appdata, now, false);
+        let mut list = sessions::collect(&self.claude_dir, &self.orca_root, &self.appdata, now, false);
         if with_history {
             list.extend(self.history(now));
         }
@@ -140,7 +151,7 @@ pub fn claude_usage<R: Runtime>(
         return Usage::default();
     }
     usage::fetch(
-        &state.home,
+        &state.claude_dir,
         &state.appdata,
         now_ms(),
         force.unwrap_or(false),
@@ -185,7 +196,7 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) {
                     continue;
                 }
                 // A handful of directory entries, read without opening a file.
-                let stamp = fingerprint(&sessions::statusbar_dir(&state.home));
+                let stamp = fingerprint(&sessions::state_dir(&state.claude_dir));
                 if stamp == last_stamp {
                     continue;
                 }
@@ -230,7 +241,8 @@ mod tests {
         write_one("first");
 
         let state = ClaudeState {
-            home: dir.clone(),
+            claude_dir: dir.clone(),
+            orca_root: String::new(),
             appdata: dir.clone(),
             last: Mutex::new(Vec::new()),
             history: Mutex::new((0, Vec::new())),

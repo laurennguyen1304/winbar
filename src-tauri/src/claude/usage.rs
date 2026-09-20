@@ -170,11 +170,7 @@ pub fn cache_path(config_dir: &Path) -> PathBuf {
 }
 
 fn credentials_path(home: &Path) -> PathBuf {
-    std::env::var("CLAUDE_CONFIG_DIR")
-        .ok()
-        .filter(|v| !v.trim().is_empty())
-        .map_or_else(|| home.join(".claude"), PathBuf::from)
-        .join(".credentials.json")
+    super::sessions::claude_dir(home).join(".credentials.json")
 }
 
 /// Reads the OAuth token. The value is never logged, and the caller wipes it as soon as the header is built.

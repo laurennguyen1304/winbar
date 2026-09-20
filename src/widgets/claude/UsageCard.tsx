@@ -45,6 +45,16 @@ function Meter({ label, window, now }: { label: string; window: ClaudeWindow | u
   );
 }
 
+/**
+ * Asks for the limits and swallows a failure into the log.
+ *
+ * The command can genuinely reject — at startup the page is alive before Rust has managed its state — and an
+ * uncaught rejection here surfaced as an unhandled error in the test run and in the console.
+ */
+function ask(force = false): void {
+  refreshUsage(force).catch((err: unknown) => console.error("claude_usage failed", err));
+}
+
 /** "Hạn mức" card: the 5-hour and 7-day windows, plus any per-model limit (SPEC-claude §5.5). */
 export function UsageCard() {
   const { usage } = useClaude();
@@ -52,8 +62,8 @@ export function UsageCard() {
 
   // Ask once when the card appears, then occasionally while it stays open. Nothing runs behind a closed panel.
   useEffect(() => {
-    void refreshUsage();
-    const id = setInterval(() => void refreshUsage(), REFRESH_MS);
+    ask();
+    const id = setInterval(ask, REFRESH_MS);
     return () => clearInterval(id);
   }, []);
 
@@ -66,7 +76,7 @@ export function UsageCard() {
           <button
             type="button"
             className={styles.refresh}
-            onClick={() => void refreshUsage(true)}
+            onClick={() => ask(true)}
             aria-label="Cập nhật hạn mức"
           >
             {fetchedAgo(usage.fetchedAt, now) || "chưa có số"}

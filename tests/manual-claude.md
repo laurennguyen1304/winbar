@@ -120,6 +120,49 @@ lúc chưa đo là quá chặt. Đây là chỗ cần bạn quyết, không ph�
 Còn có thể giảm tiếp: hiện tại mỗi lần đổi, Rust đọc danh sách một lần rồi giao diện gọi `claude_sessions` đọc
 **lần nữa**. Gửi kèm danh sách trong sự kiện sẽ bỏ được một nửa.
 
+### Lần 3 — sau khi watcher chậm lại (2026-09-20)
+
+Lần này đo **đúng lúc một phiên đang chạy tool**, bằng cách trỏ `CLAUDE_CONFIG_DIR` vào một thư mục nháp có 5 file
+phiên, và một job ghi đè file của một phiên **2 lần/giây** — đúng cái mà phiên đang cook làm.
+`~/.claude` thật **không bị ghi vào**. Script: `claude-perf-busy.ps1` (scratchpad).
+
+| Cấu hình | CPU bật | CPU tắt | **Chênh** |
+|---|---|---|---|
+| Lần 2 (watcher 1 giây, đo trên `~/.claude` thật) | 0,625% | 0,442% | **+0,183** |
+| Watcher 1 giây, đo lại trên thư mục nháp | 0,090% | 0,001% | **+0,089** |
+| Gửi kèm danh sách trong sự kiện (thử) | 0,223% | 0,018% | **+0,205** ❌ |
+| …chỉ gửi cho cửa sổ notch | 0,105% / 0,112% | 0,002% / 0,001% | **+0,103 / +0,111** ❌ |
+| **Watcher 2 giây (đang dùng)** | **0,082%** | **0,001%** | **+0,081** ✅ |
+| Thêm: bỏ 2 ảnh động khỏi vòng xoay (chỉ để đo) | 0,083% | 0,019% | +0,064 |
+
+- [x] ✅ RAM: 119,8–125,5 MB bật, 119,8–120,1 MB tắt — tăng **~0 MB** (yêu cầu ≤ 12 MB).
+- [x] ✅ CPU: từ **+0,183** (lần 2) xuống **+0,081** điểm phần trăm.
+- [ ] ⚠️ Vẫn trên mức +0,02% tôi tự đặt. Xem bên dưới — con số đó không đạt được.
+
+**Ba giả thuyết của tôi đều sai, và đó mới là kết quả đáng ghi:**
+
+1. *"Đọc hai lần là nguyên nhân"* — Rust đọc danh sách, rồi giao diện gọi `claude_sessions` đọc **lần nữa**. Tôi
+   gửi kèm danh sách vào sự kiện để bỏ lần đọc thứ hai. Kết quả **tệ hơn**: `emit` gửi payload cho **mọi** cửa sổ,
+   nên command bar — vốn không nghe sự kiện này — phải parse danh sách mỗi lần đổi. Gửi riêng cho notch vẫn tệ hơn
+   sự kiện rỗng (+0,10 so với +0,09, đo 2 lần). **Đã bỏ thay đổi này.**
+2. *"Giãn nhịp quét sẽ giảm một nửa"* — từ 1 giây lên 2 giây chỉ đi từ +0,089 xuống +0,081. Chi phí **không** tỉ lệ
+   với số lần quét.
+3. *"Hai ảnh GIF động mới là thủ phạm"* — bỏ hẳn chúng chỉ tiết kiệm ~0,015 điểm.
+
+**Vậy tiền đi đâu?** Khoảng **15 ms CPU cho mỗi lần pill đổi trạng thái**: một vòng IPC, một lần parse JSON, một
+lần React vẽ lại pill. Đó là cái giá của việc pill **thật sự sống**. Muốn rẻ hơn nữa thì phải cập nhật thưa hơn
+nữa, tức là pill chậm hơn — không phải chỗ tôi nên tự quyết.
+
+**Tiêu chí +0,02% là tôi viết sai khi chưa đo.** Sàn thực tế của một pill sống là khoảng +0,06–0,08 điểm phần trăm
+trong lúc có phiên đang chạy tool (≈0,8% của một nhân), và gần **0** khi mọi phiên nằm im — đo riêng trên
+`~/.claude` thật: bật 0,278%, tắt 0,283%, tức **chênh bằng 0**. Bạn cần chọn: nới tiêu chí lên ~+0,1 điểm, hay
+cho pill cập nhật thưa hơn nữa.
+
+**Một lần đo hỏng, giữ lại để không lặp lại:** lần chạy đầu tôi build bằng `cargo build --release` rồi đo — sai.
+Không có `tauri build` thì app vẫn trỏ về `http://localhost:1420`, mà dev server không chạy, nên tôi đã đo một app
+**không có giao diện nào cả** (RAM 89 MB thay vì 135 MB, CPU gần 0 ở cả hai nửa). Phải dùng
+`npm run tauri build -- --no-bundle`.
+
 ## 8. Chưa làm / giới hạn đã biết
 
 - **Duyệt quyền ngay trên notch** không nằm trong bản này (`claude-approvals`, phải duyệt riêng vì nó ghi hook).

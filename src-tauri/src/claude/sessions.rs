@@ -47,8 +47,26 @@ struct DesktopFile {
     is_archived: bool,
 }
 
-pub fn statusbar_dir(home: &Path) -> PathBuf {
-    home.join(".claude").join("statusbar").join("state.d")
+/// The `.claude` directory: `CLAUDE_CONFIG_DIR` when the user moved it, otherwise the one under `home`.
+///
+/// Claude Code honours this variable, so a machine that sets it keeps its state files somewhere else entirely and
+/// winbar would otherwise show an empty list forever. `usage.rs` already read it; this is the same rule.
+pub fn claude_dir(home: &Path) -> PathBuf {
+    claude_dir_from(home, std::env::var("CLAUDE_CONFIG_DIR").ok().as_deref())
+}
+
+/// The rule on its own, so it can be tested without an environment variable — setting one would leak into every
+/// other test in the process.
+fn claude_dir_from(home: &Path, configured: Option<&str>) -> PathBuf {
+    configured
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .map_or_else(|| home.join(".claude"), PathBuf::from)
+}
+
+/// Where the per-session state files live, inside an already-resolved `.claude` directory.
+pub fn state_dir(claude_dir: &Path) -> PathBuf {
+    claude_dir.join("statusbar").join("state.d")
 }
 
 fn desktop_dirs(appdata: &Path) -> [PathBuf; 2] {
@@ -195,9 +213,17 @@ fn read_desktop_file(path: &Path, now_ms: u64) -> Option<Session> {
 }
 
 /// The whole list the card shows: live sessions in order, then recent Desktop history.
-pub fn collect(home: &Path, appdata: &Path, now_ms: u64, with_history: bool) -> Vec<Session> {
-    let root = orca_root(home);
-    let mut live = read_live(&statusbar_dir(home), &root, now_ms);
+///
+/// Both directories and the Orca root come in already resolved — the environment is read once at startup, not on
+/// every pass of the watcher.
+pub fn collect(
+    claude_dir: &Path,
+    orca_root: &str,
+    appdata: &Path,
+    now_ms: u64,
+    with_history: bool,
+) -> Vec<Session> {
+    let mut live = read_live(&state_dir(claude_dir), orca_root, now_ms);
     mark_stale(&mut live, now_ms);
     sort(&mut live);
     if with_history {
@@ -418,10 +444,27 @@ mod tests {
     }
 
     #[test]
+    fn a_moved_config_directory_wins_over_the_home_one() {
+        let home = Path::new(r"C:\Users\someone");
+        assert_eq!(
+            claude_dir_from(home, None),
+            home.join(".claude"),
+            "no variable set: the directory under home"
+        );
+        assert_eq!(
+            claude_dir_from(home, Some(r"D:\claude")),
+            PathBuf::from(r"D:\claude")
+        );
+        // An empty or blank value is someone unsetting it, not a request to read the drive root.
+        assert_eq!(claude_dir_from(home, Some("")), home.join(".claude"));
+        assert_eq!(claude_dir_from(home, Some("   ")), home.join(".claude"));
+    }
+
+    #[test]
     fn collect_puts_live_sessions_above_history_and_can_leave_history_out() {
         let home = temp_dir("collect-home");
         write(
-            &statusbar_dir(&home),
+            &state_dir(&home),
             "live.json",
             &state_json("live", "thinking", "C:\\x", "cli", NOW / 1000),
         );
@@ -435,12 +478,13 @@ mod tests {
             ),
         );
 
-        let both = collect(&home, &appdata, NOW, true);
+        let root = home.join("orca").to_string_lossy().into_owned();
+        let both = collect(&home, &root, &appdata, NOW, true);
         assert_eq!(
             both.iter().map(|s| s.id.as_str()).collect::<Vec<_>>(),
             ["live", "past"]
         );
-        let live_only = collect(&home, &appdata, NOW, false);
+        let live_only = collect(&home, &root, &appdata, NOW, false);
         assert_eq!(live_only.len(), 1);
         let _ = fs::remove_dir_all(&home);
         let _ = fs::remove_dir_all(&appdata);

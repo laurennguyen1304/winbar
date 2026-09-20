@@ -28,6 +28,10 @@ chạy y nguyên. Mọi thứ dưới đây là đọc file có sẵn và gọi 
 Hook `claude-status-bar/hooks/lifecycle.js` **đã chạy sẵn** trên máy (khai báo trong `~/.claude/settings.json`),
 ghi một file cho mỗi phiên còn sống, xóa khi `SessionEnd`. Máy đang có 6 file. Định dạng thật:
 
+> Thư mục `.claude` lấy từ biến `CLAUDE_CONFIG_DIR` nếu có, không thì mới là `~/.claude` — đúng quy tắc Claude Code
+> dùng. Phần đọc hạn mức đã theo biến này từ đầu, phần đọc phiên thì chưa: máy nào đặt biến sẽ thấy danh sách rỗng
+> mãi. Biến được đọc **một lần lúc khởi động**, không phải mỗi vòng quét.
+
 ```json
 { "sessionId": "2f7d71d9-…", "state": "tool", "label": "Bash",
   "cwd": "C:\\Users\\Lenovo\\orca\\workspaces\\winbar\\firefish", "project": "firefish",
@@ -98,7 +102,7 @@ nếu có, mặc định `~/orca`; không khớp thì không đoán gì thêm. P
 
 | Việc | Cách làm | Vì sao |
 |---|---|---|
-| Theo dõi phiên đang sống | Xem `mtime` của thư mục `state.d` mỗi **1 giây**; chỉ đọc lại file khi nó đổi | Một lần `stat` rẻ hơn hẳn đọc 6 file; pill cần cập nhật gần như tức thì |
+| Theo dõi phiên đang sống | Xem tên + kích thước + `mtime` của từng file trong `state.d`, mỗi **2 giây** khi có hoạt động và **5 giây** khi mọi phiên nằm im; chỉ đọc lại khi có đổi | `mtime` của **thư mục** không đổi khi một file bị ghi đè tại chỗ — mà đó chính là lúc phiên đổi trạng thái. 2 giây là Lauren chọn (20/09): "có độ trễ cũng được" |
 | Gọi HTTPS | **WinHTTP** qua crate `windows` (feature `Win32_Networking_WinHttp`) | `reqwest` đã có trong cây phụ thuộc nhưng **không có TLS backend**; bật `rustls-tls` sẽ kéo thêm cả rustls + ring và làm build lâu hơn nhiều. App vốn đã chỉ chạy Windows và đã dùng nhiều Win32 |
 | Cache hạn mức | `%APPDATA%\winbar\claude-usage.json`, TTL **120 giây**, làm mới mỗi 5 phút khi panel mở | Endpoint không công khai, phải tôn trọng rate limit (capability map) |
 | Token | Đọc lại từ `.credentials.json` mỗi lần gọi, giữ trong bộ nhớ đúng lúc gọi | Không sao chép token sang chỗ khác, không ghi ra đĩa, **không bao giờ ghi log** |
@@ -299,11 +303,12 @@ trạng thái, và mã lỗi.
 | TS thuần | chữ/màu theo trạng thái; "Reset sau 2h 14m"; luân phiên ảnh |
 | Component | card phiên (rỗng, chỉ CLI, CLI + Desktop), card hạn mức (bình thường, lỗi auth, lỗi mạng, chưa đăng nhập) |
 | Command bar | provider trả đúng dòng |
-| Thủ công | `tests/manual-claude.md`: chạy Claude thật ở phiên khác, xem pill đổi trạng thái trong 1 giây |
+| Thủ công | `tests/manual-claude.md`: chạy Claude thật ở phiên khác, xem pill đổi trạng thái trong vài giây |
 
 ## 11. Tiêu chí hoàn thành
 
-1. Mở một phiên Claude ở cửa sổ khác: trong 1 giây pill đổi sang `Thinking`/`Cooking · <tool>`.
+1. Mở một phiên Claude ở cửa sổ khác: trong **2–3 giây** pill đổi sang `Thinking`/`Cooking · <tool>`. (Ban đầu
+   viết "1 giây"; Lauren đổi ngày 20/09 để đánh đổi lấy CPU — xem tiêu chí 11.)
 2. Phiên chờ duyệt quyền: pill chuyển `wait for you` màu vàng và nổi lên đầu danh sách.
 3. Card phiên hiện đúng các phiên đang sống (cả `cli` lẫn `claude-desktop`) + tối đa 3 dòng lịch sử Desktop,
    bấm vào mở đúng thư mục.
@@ -318,6 +323,10 @@ trạng thái, và mã lỗi.
 9. Không có phiên nào: widget tự ẩn khỏi pill.
 10. Riêng tư: log không có token, không có đường dẫn đầy đủ, không có tiêu đề phiên.
 11. Hiệu năng (bản release): RAM tăng ≤ 12 MB; CPU khi panel đóng ≤ mức trước module + 0,02%.
+    **Đã đo và KHÔNG đạt phần CPU.** Thực tế: **+0,00** điểm phần trăm khi mọi phiên nằm im, **+0,081** khi có
+    một phiên đang chạy tool. Con số 0,02% là tôi viết khi chưa đo; ~15 ms CPU mỗi lần pill đổi trạng thái (một
+    vòng IPC + một lần React vẽ lại) là sàn của một pill sống. Chi tiết và ba giả thuyết sai:
+    `tests/manual-claude.md` §7. **Cần bạn quyết** nới tiêu chí hay cho pill cập nhật thưa hơn.
 12. `npm test`, `cargo test`, clippy, `npm run lint` qua; checklist thủ công chạy xong.
 
 ## 12. Rủi ro
@@ -330,7 +339,7 @@ trạng thái, và mã lỗi.
 | Orca đổi cách xếp thư mục worktree | Thấp | Không khớp thì hiện tên thư mục như cũ, không đoán; hàm tách chuỗi có test |
 | Token lộ ra log hoặc ảnh chụp màn hình | **Cao** | Không log; không đưa token vào bất kỳ struct nào phát ra frontend; checklist có mục kiểm |
 | WinHTTP viết tay sai, rò handle | Trung bình | Một hàm GET duy nhất, đóng handle bằng `Drop`; test với URL sai và không có mạng |
-| Poll 1 giây làm tốn CPU | Trung bình | Chỉ `stat` một thư mục; đo ở task cuối như các module trước |
+| Poll làm tốn CPU | ~~Trung bình~~ **Đã xảy ra** | Đo ở Task 6: +1,66 điểm lúc đầu (quét lại 156 file lịch sử mỗi lần đổi), còn +0,081 sau khi cache lịch sử và giãn nhịp quét. Vẫn trên tiêu chí 11 |
 | Ảnh động làm tốn CPU | Trung bình | Bài học media: chỉ chạy khi thấy được; đo CPU khi panel đóng |
 
 ## 13. Giới hạn khi làm
