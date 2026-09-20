@@ -89,28 +89,7 @@
   overflow-y: auto;
 }
 
-/* Thin overlay-style scrollbar like the Settings ScrollArea, instead of the default Windows bar. */
-.body::-webkit-scrollbar {
-  width: 10px;
-}
-
-.body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.body::-webkit-scrollbar-thumb {
-  border: 3px solid transparent;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16) padding-box;
-}
-
-.body::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.28);
-}
-
-.body::-webkit-scrollbar-button {
-  display: none;
-}
+/* The scrollbar itself now lives in design/tokens.css, so every window's lists look the same. */
 
 .empty {
   padding: 18px 20px;

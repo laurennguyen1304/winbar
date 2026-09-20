@@ -98,6 +98,14 @@ h2 { font-size: 15px; margin: 32px 0 4px; }
 .clipItem .p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .clipItem .w { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text-faint); }
 code { font-family: var(--mono); font-size: 12px; background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 5px; }
+
+/* The same scrollbar the app now uses everywhere (design/tokens.css), instead of the default Windows slab. */
+.clipList::-webkit-scrollbar { width: 10px; }
+.clipList::-webkit-scrollbar-track { background: transparent; }
+.clipList::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16) padding-box; }
+.clipList::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.28); }
+.clipList::-webkit-scrollbar-button { display: none; }
 </style>
 </head>
 <body>
@@ -230,17 +238,22 @@ const BENTO = '<div class="bento">'
   + '<div class="cpuRow"><span class="small">CPU</span><b>12%</b></div><div class="bar" style="margin-bottom:8px"><i style="width:12%;background:var(--media)"></i></div>'
   + '<div class="cpuRow"><span class="small">RAM</span><b>41%</b></div><div class="bar" style="margin-bottom:8px"><i style="width:41%;background:var(--media)"></i></div>'
   + '<div class="cpuRow"><span class="small">Pin</span><b>88%</b></div><div class="bar"><i style="width:88%;background:var(--ok)"></i></div></div>'
+  // Media has two rows of its own: the cover and the song on top, everything you press underneath.
   + '<div class="tile t-media" style="display:flex;flex-direction:column"><h3>Đang phát</h3>'
-  + '<div style="display:flex;gap:14px;align-items:center;flex:1">'
-  + '<span class="sq" style="width:116px;height:116px;border-radius:16px;background:linear-gradient(140deg,#5f8ae0,#2f54b5)"></span>'
+  + '<div style="display:flex;gap:14px;align-items:center;flex:1;min-height:0">'
+  + '<span class="sq" style="width:104px;height:104px;border-radius:16px;flex:none;background:linear-gradient(140deg,#5f8ae0,#2f54b5)"></span>'
   + '<span style="min-width:0;flex:1">'
-  + '<span class="nm" style="font-size:17px">Ditto</span><br /><span class="small" style="font-size:12.5px">NewJeans · Get Up</span>'
-  + '<div class="bar" style="margin-top:12px"><i style="width:38%;background:var(--media)"></i></div>'
-  + '<div style="display:flex;justify-content:space-between;margin-top:5px"><span class="small">1:12</span><span class="small">3:05</span></div>'
-  + '<div style="display:flex;gap:18px;align-items:center;color:var(--text-sub);font-size:17px;margin-top:10px">'
-  + '<span>⏮</span><span style="font-size:23px">⏸</span><span>⏭</span>'
-  + '<span class="small" style="margin-left:auto">Spotify</span></div>'
-  + '</span></div></div>'
+  + '<span class="nm" style="font-size:18px">Ditto</span><br />'
+  + '<span class="small" style="font-size:12.5px">NewJeans · Get Up</span><br />'
+  + '<span class="small" style="display:inline-block;margin-top:7px">Spotify</span></span></div>'
+  + '<div style="margin-top:12px">'
+  + '<div class="bar"><i style="width:38%;background:var(--media)"></i></div>'
+  + '<div style="display:flex;align-items:center;margin-top:8px">'
+  + '<span class="small" style="font-family:var(--mono);width:34px">1:12</span>'
+  + '<span style="flex:1;display:flex;gap:22px;align-items:center;justify-content:center;color:var(--text-sub);font-size:18px">'
+  + '<span>⏮</span><span style="font-size:25px;color:var(--text)">⏸</span><span>⏭</span></span>'
+  + '<span class="small" style="font-family:var(--mono);width:34px;text-align:right">3:05</span>'
+  + '</div></div></div>'
   + '<div class="tile t-clip"><h3>Clipboard · 24 mục</h3><div class="clipList">'
   + '<div class="clipItem"><span class="k">IMG</span><span class="p">Ảnh 1144×656</span><span class="w">vừa xong</span></div>'
   + '<div class="clipItem"><span class="k">T</span><span class="p">C:\\Users\\Lenovo\\kwangya</span><span class="w">3 phút</span></div>'
