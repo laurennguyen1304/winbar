@@ -135,16 +135,25 @@ fn read_state_file(path: &Path, orca_root: &str, now_ms: u64) -> Option<Session>
         project,
         phase,
         tool: (phase == Phase::Tool && !state.label.is_empty()).then(|| state.label.clone()),
-        // Only a real directory is offered to open. `cwd` comes from a file someone else's hook writes, and a row
-        // click hands it to ShellExecute — which would happily launch an executable. A session's working directory
-        // is a folder, so anything else is not one.
-        cwd: (!state.cwd.is_empty() && Path::new(&state.cwd).is_dir()).then(|| state.cwd.clone()),
+        // Only a real local directory is offered to open. `cwd` comes from a file someone else's hook writes,
+        // and a row click hands it to a launcher; a session's working directory is a folder, so anything else is
+        // not one.
+        cwd: is_local_dir(&state.cwd).then(|| state.cwd.clone()),
         // 0 means the hook never recorded a start, which is the usual case.
         started_at: (state.started_at > 0).then(|| state.started_at.saturating_mul(1000)),
         last_active_at,
         turns: None,
         stale: false,
     })
+}
+
+/// Whether `cwd` names a folder on this machine.
+///
+/// The UNC check comes first and on purpose: this runs for every session on every pass of the watcher, and
+/// `is_dir()` on `\\server\share` makes Windows open an SMB connection. Against a server that asks for
+/// credentials that would hand them over every couple of seconds, for a row nobody clicked.
+fn is_local_dir(cwd: &str) -> bool {
+    !cwd.is_empty() && !cwd.trim_start().starts_with(r"\\") && Path::new(cwd).is_dir()
 }
 
 /// Past Desktop sessions, newest first. Metadata only — never the conversation.
@@ -441,6 +450,17 @@ mod tests {
         );
         assert!(read_history(&dir, NOW, 3).is_empty());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_network_folder_is_never_offered_and_never_reached_for() {
+        assert!(!is_local_dir(r"\\server\share\work"));
+        assert!(!is_local_dir(r"  \\server\share"));
+        assert!(!is_local_dir(""));
+        assert!(!is_local_dir(r"C:\definitely\not\here-9f2c"));
+        assert!(is_local_dir(
+            std::env::temp_dir().to_str().expect("temp dir is text")
+        ));
     }
 
     #[test]

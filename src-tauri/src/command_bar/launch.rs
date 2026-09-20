@@ -71,8 +71,12 @@ pub fn open_path(path: String) -> Result<(), String> {
     return Err(format!("unsupported platform for {}", path.display()));
 }
 
-/// A folder that exists right now. A terminal needs somewhere to stand, so a file is not good enough.
+/// A folder on this machine that exists right now. A terminal needs somewhere to stand, so a file is not good
+/// enough, and a UNC path is refused before anything touches it — see `open_terminal`.
 pub fn existing_dir(path: &str) -> Result<PathBuf, String> {
+    if path.trim_start().starts_with(r"\\") {
+        return Err(format!("not a local folder: {path}"));
+    }
     let p = existing_path(path)?;
     if !p.is_dir() {
         return Err(format!("not a folder: {path}"));
@@ -80,11 +84,30 @@ pub fn existing_dir(path: &str) -> Result<PathBuf, String> {
     Ok(p)
 }
 
+/// Full paths of the terminals worth trying, best first.
+///
+/// Full paths on purpose. `Command::new("wt.exe")` would let Windows look the name up, and what that search
+/// covers — the working directory, every entry on `PATH` — depends on the platform and on the standard library's
+/// version. A writable directory on `PATH` is a common enough mistake that it is not worth relying on; naming the
+/// file outright means a planted `wt.exe` is never the one that runs.
+#[cfg(windows)]
+fn terminal_candidates() -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    if let Ok(local) = std::env::var("LOCALAPPDATA") {
+        out.push(PathBuf::from(local).join(r"Microsoft\WindowsApps\wt.exe"));
+    }
+    let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".to_string());
+    out.push(PathBuf::from(root).join(r"System32\WindowsPowerShell\v1.0\powershell.exe"));
+    out
+}
+
 /// Opens a terminal standing in a folder: Windows Terminal when it is installed, otherwise PowerShell in a new
 /// console window.
 ///
-/// The arguments go as an array, never through a shell. The folder reaches us from a file someone else's hook
-/// writes, so a path holding `&` or a quote must stay a path and not become a second command.
+/// The folder goes to the process as an argument, never through a shell. It reaches us from a file someone else's
+/// hook writes, so a path holding `&` or a quote has to stay a path rather than become a second command. A UNC
+/// path is refused outright: `\\somewhere\share` would have Windows open an SMB connection, and on a server that
+/// asks for it that hands over the machine's credentials for nothing.
 #[tauri::command]
 pub fn open_terminal(path: String) -> Result<(), String> {
     let dir = existing_dir(&path)?;
@@ -94,20 +117,25 @@ pub fn open_terminal(path: String) -> Result<(), String> {
         // Without this a console process spawned from a windowed app has no window to draw in.
         const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
 
-        if std::process::Command::new("wt.exe")
-            .arg("-d")
-            .arg(&dir)
-            .spawn()
-            .is_ok()
-        {
-            return Ok(());
+        let mut last = String::from("no terminal found");
+        for exe in terminal_candidates() {
+            if !exe.is_file() {
+                continue;
+            }
+            let windows_terminal = exe.file_name().is_some_and(|n| n == "wt.exe");
+            let mut command = std::process::Command::new(&exe);
+            if windows_terminal {
+                // Windows Terminal draws its own window and takes the folder as an argument.
+                command.arg("-d").arg(&dir);
+            } else {
+                command.current_dir(&dir).creation_flags(CREATE_NEW_CONSOLE);
+            }
+            match command.spawn() {
+                Ok(_) => return Ok(()),
+                Err(e) => last = e.to_string(),
+            }
         }
-        std::process::Command::new("powershell.exe")
-            .current_dir(&dir)
-            .creation_flags(CREATE_NEW_CONSOLE)
-            .spawn()
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+        Err(last)
     }
     #[cfg(not(windows))]
     Err(format!("unsupported platform for {}", dir.display()))
@@ -155,6 +183,15 @@ mod tests {
         assert!(existing_dir(file.to_str().unwrap()).is_err());
         assert!(existing_dir(r"..\somewhere").is_err());
         assert!(existing_dir("").is_err());
+        // A UNC path must be turned away by the UNC rule itself, before the filesystem is touched: reaching out
+        // to a server that asks for credentials is an attack on its own. The error text tells the rules apart.
+        for unc in [r"\\attacker\share", r"  \\attacker\share"] {
+            assert_eq!(
+                existing_dir(unc),
+                Err(format!("not a local folder: {unc}")),
+                "{unc:?}"
+            );
+        }
         std::fs::remove_file(file).unwrap();
     }
 

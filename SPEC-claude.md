@@ -364,13 +364,18 @@ trạng thái, và mã lỗi.
 | Chèn header qua token dị dạng | Từ chối chuỗi có ký tự điều khiển; token hỏng bị coi như chưa đăng nhập |
 | Nhận chứng chỉ giả | Không đụng tới `WINHTTP_OPTION_SECURITY_FLAGS`, nên giữ nguyên kiểm tra chứng chỉ mặc định của Windows |
 | Rò handle khi lỗi | Mọi handle thuộc `Handle` tự đóng; có test gọi host không tồn tại |
-| Bấm một dòng chạy nhầm chương trình | `cwd` đến từ file do hook **bên thứ ba** ghi, và bấm dòng sẽ đưa nó cho `ShellExecute`. Chỉ nhận **thư mục có thật**; file, chương trình, hay đường dẫn đã mất thì dòng vẫn hiện nhưng không bấm được |
+| Bấm một dòng chạy nhầm chương trình | `cwd` đến từ file do hook **bên thứ ba** ghi. Chỉ nhận **thư mục có thật trên máy**; file, chương trình, hay đường dẫn đã mất thì dòng vẫn hiện nhưng không bấm được |
+| Đường dẫn thành lệnh thứ hai | `open_terminal` truyền thư mục cho tiến trình dạng **mảng tham số**, không qua shell. Đường dẫn chứa `&`, `|`, dấu nháy vẫn chỉ là đường dẫn |
+| Chạy nhầm một `wt.exe` do người khác đặt vào | Gọi terminal bằng **đường dẫn đầy đủ** (`%LOCALAPPDATA%\…\wt.exe`, rồi `%SystemRoot%\…\powershell.exe`), không để Windows tự dò theo `PATH` hay thư mục làm việc |
+| Rò chứng thực NTLM qua đường dẫn mạng | `\\server\share` bị từ chối **trước khi** chạm vào ổ đĩa, ở cả hai chỗ: lúc dựng danh sách (chạy mỗi 2 giây cho mọi phiên) và lúc mở terminal. Chỉ cần `is_dir()` một đường dẫn UNC là Windows đã mở kết nối SMB |
 
 | **Chưa chặn được** | Vì sao |
 |---|---|
 | Token nằm **plaintext** trong `~/.claude/.credentials.json` | Đó là file của Claude Code, không phải của winbar. Ai đọc được máy bạn thì đọc được token, bất kể winbar làm gì |
 | Ghi đè bộ nhớ chỉ che một phần | Hệ điều hành có thể đã sao chép trang nhớ (pagefile, crash dump) trước đó. Việc ghi đè chỉ rút ngắn khoảng thời gian, không xóa được dấu vết đã có |
 | Proxy hệ thống | Dùng đúng proxy Windows đang cấu hình, giống Claude Code. Nếu máy bị cài proxy MITM thì đó là vấn đề ở tầng máy |
+| Script khởi động của shell | Terminal mở ra sẽ chạy `$PROFILE` của bạn như mọi lần. Nếu có công cụ kiểu "chạy config theo thư mục" thì mở terminal ở một thư mục lạ là chạy config của thư mục đó — winbar không thể biết |
+| Ai ghi được vào `state.d` thì điều khiển được dòng | Họ chọn được `cwd` nào hiện ra và bạn mở terminal ở đâu. Nhưng ghi được vào `~/.claude` thì đã ghi được cả hook rồi — lúc đó winbar không phải là lớp phòng thủ còn lại |
 
 ## 14. Câu hỏi mở
 
