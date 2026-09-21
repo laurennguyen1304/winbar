@@ -1,0 +1,120 @@
+/* The native window can be larger than the notch while it morphs; the notch stays top-centre inside it. */
+.stage {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* Background and rim come from NotchShape, which also draws the flares outside this box when attached. */
+.notch {
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  color: var(--text);
+  transition:
+    width var(--motion-resize),
+    height var(--motion-resize);
+}
+
+.notch[data-dragging] {
+  cursor: grabbing;
+}
+
+.body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transition: border-radius var(--motion-resize);
+}
+
+.pill {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.panel {
+  box-sizing: border-box;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Paired with the max-height set from panelMaxHeight: lets a tall card scroll instead of running off the window. */
+  min-height: 0;
+  animation: panel-in var(--motion-panel-fade) both;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pill.large {
+  padding: 0 12px 0 20px;
+  gap: 12px;
+}
+
+.midBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 12px 2px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pill.alert {
+  padding: 0 8px 0 16px;
+}
+
+.flash {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  animation: flash-in var(--motion-quick-fade) both;
+}
+
+@keyframes flash-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.faint {
+  color: var(--text-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+}

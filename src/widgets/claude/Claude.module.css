@@ -1,0 +1,308 @@
+/* Claude widgets (SPEC-claude §5.2), following the mockup's Claude tab. */
+
+.card {
+  gap: 8px;
+  min-height: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+  margin: 0 -8px;
+  /* About five rows. Only running sessions are listed now, so this is rarely reached (see panelMaxHeight). */
+  max-height: 270px;
+}
+
+.row {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.row:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.row:disabled {
+  cursor: default;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.rowDim {
+  opacity: 0.55;
+}
+
+/*
+ * One box for every image, whatever its source size — the set still runs from 48px pixel art to a 128px gif, and
+ * without a fixed box they render at wildly different sizes.
+ */
+.icon,
+.iconEmpty {
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 8px;
+  animation: icon-in var(--motion-quick-fade);
+}
+
+@keyframes icon-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * A session waiting on you carries no mark on its picture at all.
+ *
+ * It had a ring (`box-shadow`), which drew a coloured panel around a half-transparent image, and then a glow
+ * (`drop-shadow`), which still put yellow around the drawing. The owner did not want either (20/09). The waiting
+ * state is already unmistakable in words: the row and the pill both say "wait for you" in `var(--warn)`.
+ */
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.rowTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The project is the part that tells two worktrees apart; the worktree name is the detail. */
+.project {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project::after {
+  content: " ·";
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+.worktree {
+  font-size: 13px;
+  color: var(--text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* With no project, the worktree name is the title, so it carries the weight. */
+.rowTitle > .worktree:first-child {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+
+.statusLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.status {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+/* Pinned to the bottom of the card, which fills its tile: the count reads as a footnote, not a stranded line. */
+.groupLabel {
+  margin: auto 8px 2px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.empty {
+  margin: 0;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+/* --- Hạn mức --- */
+
+/* The limits card is one of the two small tiles, so its meters stack down the narrow column (SPEC §6). */
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.meterHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.meterLabel {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.meterValue {
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.meterValue small {
+  font-size: 14px;
+}
+
+.track {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.track > i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--claude);
+  transition: width var(--motion-quick-fade);
+}
+
+.track > i[data-level="high"] {
+  background: var(--warn);
+}
+
+.track > i[data-level="critical"] {
+  background: var(--danger);
+}
+
+.reset {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.perModel {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.refresh {
+  all: unset;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.refresh:hover {
+  color: var(--text);
+}
+
+.refresh:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.noteError {
+  color: var(--danger);
+}
+
+/* --- pill --- */
+
+/*
+ * Fills the shell's pill rather than shrinking to its text. Without this the whole row sat packed against the
+ * left edge with the rest of the pill empty, because `margin-left: auto` had no space to push into.
+ */
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.pillPhase {
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Takes the middle and gives way first: the phase and the limit are what must always be readable. */
+.pillProject {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pillLimit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}

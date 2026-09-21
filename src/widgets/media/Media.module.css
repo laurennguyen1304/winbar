@@ -1,0 +1,296 @@
+/* Media widget (SPEC-media §5.2), sizes and colours from the mockup's "Đang phát" card. */
+.card {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Artwork, blurred, behind the card content. */
+.backdrop {
+  position: absolute;
+  inset: -30px;
+  width: calc(100% + 60px);
+  height: calc(100% + 60px);
+  object-fit: cover;
+  filter: blur(34px) saturate(1.3);
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+/* Content wrapper: takes wheel events for switching apps without adding a layout box. */
+.wheelArea {
+  display: contents;
+}
+
+.card header {
+  position: relative;
+}
+
+.switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.switchButton {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-sub);
+}
+
+.switchButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.switchButton:focus-visible {
+  outline: 2px solid var(--media);
+}
+
+/*
+ * Two rows of its own: the cover on top, then the song, the seek bar and the buttons underneath it
+ * (the owner, 20/09). It used to sit side by side, which left the cover small in a tile that is now two rows tall.
+ */
+.body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  /* Takes the rest of the card, so a filled cover has room to grow into instead of leaving it empty. */
+  flex: 1 1 auto;
+  min-height: 0;
+  animation: media-in var(--motion-quick-fade) both;
+}
+
+@keyframes media-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.art {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+  color: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(135deg, oklch(0.62 0.12 250), oklch(0.38 0.09 300));
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.title,
+.artist,
+.album {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.artist {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.album {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.track {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.seekable {
+  box-sizing: content-box;
+  cursor: pointer;
+  /* Taller hit area without a thicker bar. */
+  padding-block: 6px;
+  margin-block: -6px;
+  background-clip: content-box;
+  touch-action: none;
+}
+
+.seekable:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.track > i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--text);
+}
+
+.times {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.iconButton,
+.playButton {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.iconButton {
+  width: 32px;
+  height: 32px;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.playButton {
+  width: 38px;
+  height: 38px;
+  background: var(--text);
+  color: var(--on-text);
+}
+
+.iconButton:disabled,
+.playButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.iconButton:focus-visible,
+.playButton:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+/* Pill (SPEC-media §5.2): artwork 24, title, faint artist, equalizer. */
+.pillTrack,
+.midTrack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  animation: media-in var(--motion-quick-fade) both;
+}
+
+.midTrack {
+  flex: 1 1 0;
+}
+
+.pillTitle,
+.pillArtist,
+.midTitle,
+.midArtist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.pillTitle {
+  font-weight: 500;
+}
+
+.pillArtist {
+  flex-shrink: 1000;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.midText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.midTitle {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.midArtist {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* Controls on the collapsed notch: small, tight, and never opening the panel. */
+.pillControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.pillButton {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.pillButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.pillButton:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pillButton:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: -2px;
+}

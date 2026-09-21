@@ -1,0 +1,99 @@
+/* System widget (SPEC-system §5.1); bars and button follow the mockup's card style. */
+
+/* Compact card: the Task Manager button sits in the header, so the card is about a third shorter. */
+.card {
+  gap: 8px;
+  padding: 10px 14px 12px;
+}
+
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.meterHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.meterLabel {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.meterValue {
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.track {
+  height: 5px;
+  border-radius: 6px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.track > i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--text);
+  transition: width var(--motion-quick-fade);
+}
+
+.track > i[data-level="high"] {
+  background: var(--warn);
+}
+
+.track > i[data-level="critical"] {
+  background: var(--danger);
+}
+
+.button {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  /* The card sits in the bento's narrow column; without this "Task Manager" breaks across two lines. */
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.noteError {
+  color: var(--danger);
+}

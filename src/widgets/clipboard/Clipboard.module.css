@@ -1,0 +1,304 @@
+/* Clipboard widget (SPEC-clipboard §5.3), following the mockup's tall card. */
+
+.card {
+  gap: 8px;
+  min-height: 0;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 8px 0 12px;
+  border-radius: 12px;
+  background: var(--input-bg);
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+
+.search input {
+  all: unset;
+  flex-grow: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.chip {
+  all: unset;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text-sub);
+  transition: background var(--motion-quick-fade);
+}
+
+.chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chipOn {
+  background: var(--text);
+  color: var(--on-text);
+}
+
+.chip:focus-visible,
+.pauseButton:focus-visible,
+.textButton:focus-visible,
+.iconButton:focus-visible,
+.rowBody:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+  flex-grow: 1;
+  margin: 0 -8px;
+  /*
+   * About three rows. Short on purpose: the clipboard shares one panel with everything else now, and the owner
+   * would rather scroll here than have the notch reach down the screen (20/09).
+   */
+  max-height: 164px;
+}
+
+/* One row: the body is the copy button, the actions sit on top of its right edge on hover. */
+.row {
+  position: relative;
+  border-radius: 10px;
+}
+
+.rowBody {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 8px;
+  border-radius: 10px;
+  color: var(--text-sub);
+  /* The row can be dragged out to another app, so it says so (SPEC-clipboard §5.5). */
+  cursor: pointer;
+}
+
+/* Only a picture can be dragged out, so only a picture offers the grab hand. */
+.rowBody:has(.thumb),
+.rowBody:has(.thumbEmpty) {
+  cursor: grab;
+}
+
+.rowBody:active {
+  cursor: grabbing;
+}
+
+.row:hover .rowBody {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.rowCopied .rowBody {
+  animation: flash 0.55s ease-out;
+}
+
+@keyframes flash {
+  from {
+    background: rgba(255, 255, 255, 0.24);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+.kindIcon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.thumb,
+.thumbEmpty {
+  width: 84px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
+}
+
+.thumbEmpty {
+  display: block;
+  background: var(--input-bg);
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.preview {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.meta {
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinned {
+  display: flex;
+  color: var(--claude);
+  flex-shrink: 0;
+}
+
+.time {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+
+.copied {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ok);
+  flex-shrink: 0;
+}
+
+/* Pin and delete: hidden until the row is hovered or something in it has focus. */
+.rowActions {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.row:hover .rowActions,
+.row:focus-within .rowActions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.iconButton {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  color: var(--text-sub);
+  background: var(--input-bg);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.pauseButton {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pauseButton:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pauseOn {
+  background: var(--warn);
+  color: var(--on-text);
+}
+
+.empty {
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.noteError {
+  color: var(--danger);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.footer .note {
+  margin-right: auto;
+}
+
+.textButton {
+  all: unset;
+  font-size: 12px;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.textButton:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.textButton:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.danger {
+  color: var(--danger);
+}

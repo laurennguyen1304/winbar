@@ -1,0 +1,314 @@
+/* Command bar, from the mockup's .cmd block. Background matches the notch (css-dense). */
+.bar {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--notch-bg);
+  border: var(--notch-border);
+  box-shadow: var(--notch-highlight);
+  opacity: 0;
+  transition:
+    opacity var(--motion-quick-fade),
+    border-color var(--motion-quick-fade);
+}
+
+.bar[data-open="true"] {
+  opacity: 1;
+}
+
+/* Another app has focus: the bar stays but reads as inactive. */
+.bar[data-focused="false"] {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.bar[data-focused="false"] .input {
+  color: var(--text-sub);
+}
+
+.top {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 18px 0 12px;
+}
+
+.grip {
+  display: flex;
+  padding: 8px 4px;
+  color: var(--text-faint);
+  cursor: grab;
+}
+
+.searchIcon {
+  display: flex;
+  color: var(--text-sub);
+}
+
+.input {
+  all: unset;
+  flex-grow: 1;
+  min-width: 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.clear {
+  all: unset;
+  cursor: pointer;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.clear:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sep {
+  height: 1px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Results area: the only part that shrinks and scrolls when the bar would run off the bottom of the screen. */
+.body {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+/* The scrollbar itself now lives in design/tokens.css, so every window's lists look the same. */
+
+.empty {
+  padding: 18px 20px;
+  font-size: 14px;
+  color: var(--text-faint);
+}
+
+.hint {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text-sub);
+}
+
+.foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 40px;
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.foot > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.kbd {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-style: normal;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+/* Results (mockup .results / .group / .row / .tile). */
+.results {
+  padding: 6px 10px 10px;
+}
+
+/* Calculator / conversion answer (mockup .calc). */
+.instant {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 10px;
+  padding: 16px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.instant[data-selected="true"] {
+  background: var(--hover-bg);
+}
+
+.instant + .results {
+  padding-top: 0;
+}
+
+.tileLarge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: var(--text);
+}
+
+.instantValue {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.instantExpression {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 52px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--on-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: toast 1.6s ease-in-out both;
+}
+
+@keyframes toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  15%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+.group {
+  padding: 12px 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.row[data-selected="true"] {
+  background: var(--hover-bg);
+}
+
+.tile {
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--input-bg);
+  color: var(--text-sub);
+  font-size: 14px;
+  font-weight: 700;
+  object-fit: contain;
+}
+
+img.tile {
+  background: transparent;
+}
+
+.text {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.title,
+.subtitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title {
+  font-size: 14px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.verb {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+/*
+ * Widget blocks under the search box (the clipboard). Same padding as the results so the two line up, and the
+ * card inside keeps its own scrolling list rather than growing the window.
+ */
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  min-height: 0;
+}

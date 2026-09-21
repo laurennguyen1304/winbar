@@ -1,0 +1,94 @@
+/* Notch background and rim (SPEC §15 V1–V2). Positioned and sized by NotchShape from the notch's live size. */
+.shape {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /*
+   * The opacity dial, painted *under* every material's gradients: a background colour always sits beneath the
+   * background images. At 100 the notch lets nothing through; at 0 the material keeps its own translucency.
+   * Every material therefore states its look as `background-image`, never the `background` shorthand, which
+   * would reset this colour back to transparent.
+   */
+  background-color: rgba(0, 0, 0, var(--notch-opacity, 0));
+}
+
+.rim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.rim path {
+  fill: none;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Dense: the original opaque fill. */
+.shape[data-material="dense"] .fill {
+  background-image: linear-gradient(var(--notch-bg), var(--notch-bg));
+}
+
+.shape[data-material="dense"] .outer {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+
+.shape[data-material="dense"] .inner {
+  display: none;
+}
+
+/*
+ * Liquid glass, taken from the two images the owner sent on 20/09 and measured off their pixels rather than
+ * matched by eye: alpha 0.67 at the top easing to 0.27 at the bottom, RGB #04060a to #13171e.
+ *
+ * This is the previous material turned upside down. It used to be lightest at the top and densest at the
+ * bottom; the reference is densest at the top, where it meets the screen edge, and thins downwards.
+ */
+.shape[data-material="liquid"] .fill {
+  background-image: linear-gradient(
+    180deg,
+    rgba(4, 6, 10, 0.67) 0%,
+    rgba(11, 13, 19, 0.54) 25%,
+    rgba(17, 19, 26, 0.42) 50%,
+    rgba(19, 23, 30, 0.27) 100%
+  );
+}
+
+/* The open panel is mostly text, so the same ramp runs denser throughout: readable over a busy window. */
+:global([data-state="expanded"]) > .shape[data-material="liquid"] .fill {
+  background-image: linear-gradient(
+    180deg,
+    rgba(4, 6, 10, 0.88) 0%,
+    rgba(11, 13, 19, 0.82) 30%,
+    rgba(17, 19, 26, 0.74) 65%,
+    rgba(19, 23, 30, 0.66) 100%
+  );
+}
+
+/* The bright hairline along the bottom edge, the one thing the reference has that a flat ramp does not. */
+.shape[data-material="liquid"] .fill::before {
+  content: "";
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+}
+
+.shape[data-material="liquid"] .fill::after {
+  display: none;
+}
+
+.shape[data-material="liquid"] .inner {
+  stroke: rgba(255, 255, 255, 0.05);
+}

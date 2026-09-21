@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* shadcn/ui theme mapped onto the winbar tokens (src/design/tokens.css). */
+:root {
+  --radius: 0.75rem;
+  --background: #10141b;
+  --foreground: var(--text);
+  --card: rgba(255, 255, 255, 0.04);
+  --card-foreground: var(--text);
+  --popover: #171c24;
+  --popover-foreground: var(--text);
+  --primary: var(--text);
+  --primary-foreground: var(--on-text);
+  --secondary: rgba(255, 255, 255, 0.08);
+  --secondary-foreground: var(--text);
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: var(--text-faint);
+  --accent: rgba(255, 255, 255, 0.14);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --border: rgba(255, 255, 255, 0.09);
+  --input: rgba(255, 255, 255, 0.16);
+  --ring: rgba(255, 255, 255, 0.45);
+  --switch-on: oklch(0.7 0.12 150);
+}
+
+@theme inline {
+  --font-sans: var(--font);
+  --font-mono: var(--mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}

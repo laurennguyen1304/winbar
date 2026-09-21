@@ -1,0 +1,139 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+/* The tab bar is gone: one bento holds every widget (SPEC §6). */
+
+.tab {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition:
+    background var(--motion-quick-fade),
+    color var(--motion-quick-fade);
+}
+
+.tab.active {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--text);
+}
+
+.tab img {
+  object-fit: contain;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.iconButton {
+  all: unset;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--hover-bg);
+}
+
+.body {
+  animation: tab-in var(--motion-tab-fade) both;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.body > * {
+  min-height: 0;
+}
+
+@keyframes tab-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * The bento. Two wide columns for the `large` tiles and a narrow one for the stack of `small` ones; each
+ * `medium` widget takes a full-width row underneath. The large tiles set the height of the top band, and a
+ * card that outgrows it scrolls inside itself rather than pushing the panel past the window.
+ */
+.bento {
+  display: grid;
+  grid-template-columns: 1.1fr 1.25fr 0.78fr;
+  gap: 10px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.large,
+.smalls,
+.medium {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * A row is as tall as its tallest tile, so the card inside a short one fills the rest rather than leaving a
+ * hole of bare panel beside it — one running session next to a full column of meters, say.
+ */
+.large > *,
+.medium > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.smalls {
+  gap: 10px;
+}
+
+/* Full width, on its own row below whatever came before it. */
+.medium {
+  grid-column: 1 / -1;
+}
+
+/*
+ * The top band adapts to how many tall tiles there are. With two (music playing beside the sessions) the three
+ * columns are used as they stand. With one — music paused, say — it spreads over both wide columns instead of
+ * leaving a hole. With none, the small tiles line up across the full width rather than huddling in a column.
+ */
+.bento[data-large="1"] > .large {
+  grid-column: 1 / 3;
+}
+
+.bento[data-large="0"] > .smalls {
+  grid-column: 1 / -1;
+  flex-direction: row;
+}
+
+.bento[data-large="0"] > .smalls > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.empty {
+  padding: 18px;
+  font-size: 13px;
+  color: var(--text-faint);
+}

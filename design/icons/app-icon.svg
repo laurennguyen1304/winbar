@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- winbar app / tray icon: Iconoir "sparks" (MIT) on the notch glass colour -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232a36"/>
+      <stop offset="1" stop-color="#12161d"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#bg)"/>
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="12"/>
+  <g transform="translate(176 176) scale(28)" fill="none" stroke="#f6f7f9" stroke-width="1.6" stroke-linejoin="round">
+    <path d="M8 15C12.8747 15 15 12.949 15 8C15 12.949 17.1104 15 22 15C17.1104 15 15 17.1104 15 22C15 17.1104 12.8747 15 8 15Z"/>
+    <path d="M2 6.5C5.13376 6.5 6.5 5.18153 6.5 2C6.5 5.18153 7.85669 6.5 11 6.5C7.85669 6.5 6.5 7.85669 6.5 11C6.5 7.85669 5.13376 6.5 2 6.5Z"/>
+  </g>
+</svg>

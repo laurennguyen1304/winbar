@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Winbar Notch · Nâng cấp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --text: #f6f7f9; --sub: rgba(236,240,247,0.72); --faint: rgba(236,240,247,0.52);
+    --notch-bg: rgba(20,24,32,0.90); --notch-line: rgba(255,255,255,0.14);
+    --card: rgba(255,255,255,0.06); --card-border: 1px solid rgba(255,255,255,0.09);
+    --input: rgba(255,255,255,0.08); --track: rgba(255,255,255,0.14);
+    --claude: oklch(0.76 0.12 45); --media: oklch(0.76 0.12 240); --warn: oklch(0.84 0.12 90);
+    --on-text: #0d0f14;
+    --font: 'Onest', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    --wall: radial-gradient(60% 70% at 18% 25%, #5f86b8 0%, transparent 60%), radial-gradient(50% 60% at 85% 15%, #b58cab 0%, transparent 60%), linear-gradient(160deg, #2c3a52, #182130);
+    --resize: .42s cubic-bezier(.32,1.25,.5,1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--font); background: #0e131c; color: var(--text); display: flex; flex-direction: column; }
+  button { font-family: inherit; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 12px 20px; background: #0b0f16; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .brand { font-weight: 700; letter-spacing: -0.01em; margin-right: 6px; }
+  .ctl { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
+  .seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(255,255,255,0.06); }
+  .seg button { all: unset; cursor: pointer; font-size: 13px; padding: 5px 12px; border-radius: 8px; color: var(--faint); }
+  .seg button.on { background: rgba(255,255,255,0.14); color: var(--text); }
+  .seg button:disabled { opacity: .35; cursor: default; }
+  .stage-wrap { flex-grow: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 16px; }
+  .stage { width: 1280px; height: 760px; transform-origin: center center; flex-shrink: 0; position: relative; border-radius: 12px; overflow: hidden; background: var(--wall); box-shadow: 0 30px 80px rgba(0,0,0,0.5); user-select: none; }
+
+  /* ---------- maximized browser under the notch ---------- */
+  .browser { position: absolute; left: 0; right: 0; bottom: 0; top: 0; display: flex; flex-direction: column; transition: top .35s ease; }
+  .browser .chrome { height: 76px; flex-shrink: 0; display: flex; flex-direction: column; }
+  .browser .tabs { height: 38px; display: flex; align-items: flex-end; gap: 4px; padding: 0 10px; }
+  .browser .tab { width: 180px; height: 30px; border-radius: 8px 8px 0 0; }
+  .browser .addr { height: 38px; display: flex; align-items: center; padding: 0 12px; gap: 10px; }
+  .browser .addr i { display: block; height: 24px; border-radius: 12px; flex-grow: 1; }
+  .browser .page { flex-grow: 1; padding: 40px 120px; display: flex; flex-direction: column; gap: 16px; }
+  .browser .page i { display: block; height: 12px; border-radius: 6px; }
+  .browser.light { background: #f5f6f8; }
+  .browser.light .chrome { background: #dfe3e9; } .browser.light .tab { background: #eef1f5; } .browser.light .tab.on { background: #f5f6f8; }
+  .browser.light .addr { background: #f5f6f8; } .browser.light .addr i { background: #e4e7ec; } .browser.light .page i { background: #dde1e7; }
+  .browser.light .page i.h { background: #b9c0cb; height: 22px; width: 46%; }
+  .browser.dark { background: #1b1d22; }
+  .browser.dark .chrome { background: #111316; } .browser.dark .tab { background: #1f2227; } .browser.dark .tab.on { background: #2a2d33; }
+  .browser.dark .addr { background: #2a2d33; } .browser.dark .addr i { background: #1b1d22; } .browser.dark .page i { background: #2b2f36; }
+  .browser.dark .page i.h { background: #444a54; height: 22px; width: 46%; }
+
+  /* ---------- sticky strip (Windows AppBar) ---------- */
+  .strip { position: absolute; left: 0; right: 0; top: 0; height: 0; overflow: hidden; background: repeating-linear-gradient(135deg, rgba(0,0,0,.22) 0 8px, rgba(0,0,0,.30) 8px 16px); border-bottom: 1px dashed rgba(255,255,255,.35); transition: height .35s ease; }
+  .strip span { position: absolute; right: 14px; bottom: 6px; font-size: 11px; color: rgba(255,255,255,.75); font-family: var(--mono); white-space: nowrap; }
+
+  /* ---------- notch ---------- */
+  .notch { position: absolute; top: 8px; left: 640px; transform: translateX(-50%); color: var(--text);
+    transition: width var(--resize), height var(--resize), border-radius .42s ease, top .3s ease; cursor: grab; }
+  .notch.dragging { cursor: grabbing; transition: width var(--resize), height var(--resize), border-radius .42s ease; }
+  /* Attached ("giọt nước"): flush with the top edge, concave flares into the edge, round at the bottom */
+  .notch.attached { top: 0; }
+  /* The whole outline (flares + sides + bottom) is ONE path: no seams where a flare meets a side. */
+  .shape { position: absolute; top: 0; pointer-events: none; filter: drop-shadow(0 14px 28px rgba(0,0,0,.34)); }
+  .fill { position: absolute; inset: 0; overflow: hidden; }
+  .rim { position: absolute; inset: 0; overflow: visible; }
+  .rim path { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .content { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+
+  /* Materials */
+  .notch[data-material="dense"] .fill { background: rgba(20,24,32,.90); }
+  .notch[data-material="dense"] .rim .outer { stroke: rgba(255,255,255,.14); }
+  .notch[data-material="dense"] .rim .inner { display: none; }
+
+  /* Liquid glass that Windows CAN draw: no real blur, lighter tinted body, top sheen, bright rim, inner edge. */
+  .notch[data-material="liquid"] .fill {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.13) 0%, rgba(255,255,255,.04) 34%, rgba(255,255,255,0) 58%),
+      radial-gradient(120% 140% at 50% 130%, rgba(140,170,255,.16), transparent 62%),
+      linear-gradient(180deg, rgba(30,36,48,.74), rgba(14,18,26,.80));
+  }
+  .notch[data-material="liquid"] .fill::before { content: ''; position: absolute; left: 8%; right: 8%; top: 0; height: 46%;
+    background: radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,.16), transparent 70%); }
+  .notch[data-material="liquid"] .fill::after { content: ''; position: absolute; left: 6%; bottom: 10%; width: 36%; height: 30%;
+    background: radial-gradient(closest-side, rgba(160,200,255,.10), transparent); filter: blur(4px); }
+  .notch[data-material="liquid"] .rim .outer { stroke: url(#rimGrad); }
+  .notch[data-material="liquid"] .rim .inner { stroke: rgba(255,255,255,.07); }
+
+  /* Real blur, for comparison only: Windows does not blur behind an unfocused transparent window. */
+  .notch[data-material="blur"] .fill { background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.02) 50%), rgba(22,26,36,.46);
+    backdrop-filter: blur(22px) saturate(1.7); -webkit-backdrop-filter: blur(22px) saturate(1.7); }
+  .notch[data-material="blur"] .rim .outer { stroke: url(#rimGrad); }
+  .notch[data-material="blur"] .rim .inner { stroke: rgba(255,255,255,.07); }
+
+  .pill { height: 100%; display: flex; align-items: center; gap: 10px; padding: 0 16px; font-size: 13px; white-space: nowrap; }
+  .pill .faint { color: var(--faint); font-size: 12px; }
+  .pill .grow { flex-grow: 1; }
+  .claude-ico { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
+  .mid { height: 100%; display: flex; align-items: center; gap: 14px; padding: 0 20px; }
+  .mid .block { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 0; }
+  .mid .t1 { font-size: 13px; font-weight: 600; } .mid .t2 { font-size: 12px; color: var(--faint); font-family: var(--mono); }
+  .mid .vsep { width: 1px; align-self: stretch; margin: 12px 0; background: rgba(255,255,255,.12); }
+  .art { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, oklch(0.62 0.12 250), oklch(0.38 0.09 300)); flex-shrink: 0; }
+  .btn { all: unset; cursor: pointer; padding: 5px 12px; border-radius: 999px; font-size: 12px; background: var(--input); }
+  .btn.primary { background: var(--text); color: var(--on-text); font-weight: 600; }
+  .panel { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .panel .tabs2 { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--input); width: max-content; }
+  .panel .tabs2 span { font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 999px; color: var(--faint); }
+  .panel .tabs2 span.on { background: rgba(255,255,255,.18); color: var(--text); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { background: var(--card); border: var(--card-border); border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .label { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .bar-track { height: 6px; border-radius: 6px; background: var(--track); }
+  .bar-track > i { display: block; height: 100%; border-radius: 6px; }
+
+  /* ---------- drag hint ---------- */
+  .pos { position: absolute; font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.6); color: #fff; opacity: 0; transition: opacity .15s; pointer-events: none; white-space: nowrap; }
+  .pos.on { opacity: 1; }
+
+  /* ---------- notes ---------- */
+  .notes { position: absolute; right: 22px; bottom: 22px; width: 380px; padding: 14px 16px; border-radius: 14px; background: rgba(11,15,22,.82); border: 1px solid rgba(255,255,255,.10); font-size: 12.5px; line-height: 1.55; color: var(--sub); }
+  .notes b { color: var(--text); font-weight: 600; }
+  .notes ul { margin: 6px 0 0; padding-left: 18px; }
+  .notes li { margin: 2px 0; }
+  .notes .k { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 5px; background: rgba(255,255,255,.1); color: var(--text); }
+  body.reduce * { transition-duration: .01ms !important; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <span class="brand">Winbar · nâng cấp notch</span>
+  <label class="ctl">Kiểu
+    <span class="seg" data-opt="layout"><button data-v="float">Pill nổi (hiện tại)</button><button data-v="attached" class="on">Giọt nước · dính mép trên</button></span>
+  </label>
+  <label class="ctl">Độ loe
+    <span class="seg" data-opt="flare"><button data-v="0">0</button><button data-v="8">8</button><button data-v="14" class="on">14</button><button data-v="22">22</button></span>
+  </label>
+  <label class="ctl">Nền
+    <span class="seg" data-opt="material"><button data-v="dense">Đặc (hiện tại)</button><button data-v="liquid" class="on">Liquid glass</button><button data-v="blur">Kính blur thật *</button></span>
+  </label>
+  <label class="ctl">Cao pill
+    <span class="seg" data-opt="pillH"><button data-v="32">32</button><button data-v="36">36</button><button data-v="40" class="on">40</button></span>
+  </label>
+  <label class="ctl">Trạng thái
+    <span class="seg" data-opt="state"><button data-v="pill" class="on">Thu gọn</button><button data-v="alert">Cảnh báo</button><button data-v="always">Always</button><button data-v="open">Mở rộng</button></span>
+  </label>
+  <label class="ctl">Sticky
+    <span class="seg" data-opt="sticky"><button data-v="off" class="on">Tắt</button><button data-v="on">Bật</button></span>
+  </label>
+  <label class="ctl">Browser
+    <span class="seg" data-opt="theme"><button data-v="light" class="on">Sáng</button><button data-v="dark">Tối</button></span>
+  </label>
+  <label class="ctl">Vị trí
+    <span class="seg" data-opt="pos"><button data-v="left">Trái</button><button data-v="center">Giữa</button><button data-v="right">Phải</button></span>
+  </label>
+  <label class="ctl"><input type="checkbox" id="reduce"> giảm chuyển động</label>
+</div>
+
+<div class="stage-wrap"><div class="stage" id="stage">
+  <div class="browser light" id="browser">
+    <div class="chrome">
+      <div class="tabs"><span class="tab on"></span><span class="tab"></span><span class="tab"></span></div>
+      <div class="addr"><i></i></div>
+    </div>
+    <div class="page"><i class="h"></i><i style="width:82%"></i><i style="width:74%"></i><i style="width:88%"></i><i style="width:61%"></i><i style="width:79%"></i></div>
+  </div>
+  <div class="strip" id="strip"><span id="stripLabel"></span></div>
+  <div class="notch attached" id="notch" data-material="liquid">
+    <div class="shape" id="shape">
+      <div class="fill" id="fill"></div>
+      <svg class="rim" id="rim">
+        <defs>
+          <linearGradient id="rimGrad" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="rgba(255,255,255,.34)"/>
+            <stop offset=".45" stop-color="rgba(255,255,255,.10)"/>
+            <stop offset="1" stop-color="rgba(255,255,255,.30)"/>
+          </linearGradient>
+        </defs>
+        <path class="outer" id="outer"/>
+        <path class="inner" id="inner"/>
+      </svg>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+  <div class="pos" id="pos"></div>
+  <div class="notes" id="notes"></div>
+</div></div>
+
+<script>
+const CLAUDE_WORKING = 'assets/claude-fu-transparent.gif';
+const SIZES = { pill: [340, 40], alert: [490, 44], always: [620, 64], open: [780, 330] };
+const STAGE_W = 1280;
+const opts = { layout: 'attached', flare: 14, state: 'pill', sticky: 'off', theme: 'light', material: 'liquid', pillH: 40, x: 640 };
+
+const stage = document.getElementById('stage');
+const notch = document.getElementById('notch');
+const content = document.getElementById('content');
+const browser = document.getElementById('browser');
+const strip = document.getElementById('strip');
+const shape = document.getElementById('shape');
+const fill = document.getElementById('fill');
+const rim = document.getElementById('rim');
+const pos = document.getElementById('pos');
+
+function fit() {
+  const wrap = stage.parentElement.getBoundingClientRect();
+  const s = Math.min((wrap.width - 32) / 1280, (wrap.height - 32) / 760, 1);
+  stage.style.transform = `scale(${s})`;
+  stage.dataset.scale = s;
+}
+addEventListener('resize', fit);
+
+function pillHTML() {
+  return `<div class="pill"><img class="claude-ico" src="${CLAUDE_WORKING}" alt=""><b>Cooking</b><span class="faint mono">3m 12s</span><span class="grow"></span><span class="faint">Midnight City</span></div>`;
+}
+function alertHTML() {
+  return `<div class="pill" style="padding-right:8px"><img class="claude-ico" src="${CLAUDE_WORKING}" alt=""><b>wait for you</b><span class="faint" style="font-family:var(--mono)">Bash · git push</span><span class="grow"></span><button class="btn">Từ chối</button><button class="btn primary">Cho phép</button></div>`;
+}
+function alwaysHTML() {
+  return `<div class="mid">
+    <div class="block"><span class="art"></span><div><div class="t1">Midnight City</div><div class="t2">M83 · 2:41</div></div></div>
+    <span class="vsep"></span>
+    <div class="block"><img class="claude-ico" style="width:30px;height:30px" src="${CLAUDE_WORKING}" alt=""><div><div class="t1">Cooking</div><div class="t2">3m 12s · 5h 62%</div></div></div>
+  </div>`;
+}
+function openHTML() {
+  return `<div class="panel">
+    <div class="tabs2"><span class="on">Core</span><span>Claude</span></div>
+    <div class="grid2">
+      <div class="card"><span class="label">Đang phát</span><div style="display:flex;gap:12px;align-items:center"><span class="art" style="width:64px;height:64px;border-radius:12px"></span><div><div style="font-weight:600">Midnight City</div><div style="font-size:12px;color:var(--faint)">M83</div></div></div><div class="bar-track"><i style="width:42%;background:var(--media)"></i></div></div>
+      <div class="card"><span class="label">Hạn mức Claude</span><div style="font-family:var(--mono);font-size:24px;font-weight:600">62<small style="font-size:13px;color:var(--faint)">%</small></div><div class="bar-track"><i style="width:62%;background:var(--claude)"></i></div><div style="font-size:12px;color:var(--faint)">Reset sau 1h 04m</div></div>
+    </div>
+    <div class="card"><span class="label">Clipboard</span><div style="font-size:13px">git worktree add ../firefish -b firefish</div></div>
+  </div>`;
+}
+
+/**
+ * Outline in shape coordinates (the shape box starts `f` px left of the notch).
+ * Fill: closed. Rim: open along the top edge when attached, so nothing is drawn against the screen edge.
+ */
+function paths(w, h, f, r, attached) {
+  r = Math.max(0, Math.min(r, h / 2, w / 2));
+  if (!attached) {
+    const d = `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    return { fill: d, rim: d, inset: 0 };
+  }
+  const L = f, R = w + f;
+  const fillD = `M 0 0 H ${R + f} A ${f} ${f} 0 0 0 ${R} ${f} V ${h - r} A ${r} ${r} 0 0 1 ${R - r} ${h} H ${L + r} A ${r} ${r} 0 0 1 ${L} ${h - r} V ${f} A ${f} ${f} 0 0 0 0 0 Z`;
+  const rimD = `M 0 0 A ${f} ${f} 0 0 1 ${L} ${f} V ${h - r} A ${r} ${r} 0 0 0 ${L + r} ${h} H ${R - r} A ${r} ${r} 0 0 0 ${R} ${h - r} V ${f} A ${f} ${f} 0 0 1 ${R + f} 0`;
+  return { fill: fillD, rim: rimD, inset: f };
+}
+
+/** Redraws the outline for the notch's current (possibly animating) size. */
+function drawShape() {
+  const attached = opts.layout === 'attached';
+  const w = notch.offsetWidth, h = notch.offsetHeight;
+  const f = attached ? opts.flare : 0;
+  const targetR = opts.state === 'open' ? 28 : h / 2;
+  const { fill: fd, rim: rd, inset } = paths(w, h, f, Math.min(targetR, h / 2), attached);
+  shape.style.left = `${-inset}px`;
+  shape.style.width = `${w + 2 * inset}px`;
+  shape.style.height = `${h}px`;
+  fill.style.clipPath = `path('${fd}')`;
+  rim.setAttribute('viewBox', `0 0 ${w + 2 * inset} ${h}`);
+  document.getElementById('outer').setAttribute('d', rd);
+  // Inner edge: the same outline drawn 1.5 px inside gives the glass some thickness.
+  const inner = paths(w - 3, h - 1.5, f, Math.min(targetR, h / 2) - 1.5, attached).rim;
+  const innerEl = document.getElementById('inner');
+  innerEl.setAttribute('d', inner);
+  innerEl.setAttribute('transform', `translate(${attached ? 1.5 : 1.5} ${attached ? 0 : 0.75})`);
+}
+new ResizeObserver(drawShape).observe(notch);
+
+function render() {
+  const w = SIZES[opts.state][0];
+  const h = opts.state === 'pill' ? opts.pillH : opts.state === 'alert' ? opts.pillH + 4 : SIZES[opts.state][1];
+  const attached = opts.layout === 'attached';
+  notch.classList.toggle('attached', attached);
+  notch.classList.toggle('float', !attached);
+  notch.dataset.material = opts.material;
+  notch.style.width = `${w}px`;
+  notch.style.height = `${h}px`;
+  const bottom = opts.state === 'open' ? 28 : h / 2;
+  notch.style.borderRadius = attached ? `0 0 ${bottom}px ${bottom}px` : `${bottom}px`;
+  content.innerHTML = { pill: pillHTML, alert: alertHTML, always: alwaysHTML, open: openHTML }[opts.state]();
+
+  // Keep the notch and its flares on the screen.
+  const margin = w / 2 + (attached ? opts.flare : 0);
+  opts.x = Math.min(Math.max(opts.x, margin), STAGE_W - margin);
+  notch.style.left = `${opts.x}px`;
+
+  // Sticky reserves the collapsed notch's height (plus the gap for the floating pill), full width.
+  const collapsedH = opts.state === 'always' ? SIZES.always[1] : opts.pillH;
+  const reserve = opts.sticky === 'on' ? (attached ? collapsedH : collapsedH + 16) : 0;
+  strip.style.height = `${reserve}px`;
+  document.getElementById('stripLabel').textContent = reserve ? `Vùng giữ chỗ (AppBar) · ${reserve}px · cả chiều ngang` : '';
+  browser.style.top = `${reserve}px`;
+  browser.className = `browser ${opts.theme}`;
+
+  document.querySelectorAll('[data-opt="flare"] button').forEach((b) => (b.disabled = !attached));
+  notes();
+  drawShape();
+}
+
+function notes() {
+  const attached = opts.layout === 'attached';
+  const sticky = opts.sticky === 'on';
+  document.getElementById('notes').innerHTML = `
+    <b>${attached ? 'Giọt nước · dính mép trên' : 'Pill nổi · cách mép 8px'}</b>
+    <ul>
+      ${attached ? `<li>Cạnh trên dính liền mép màn hình, hai góc trên loe cong <span class="k">${opts.flare}px</span> vào mép; góc dưới bo tròn.</li>` : '<li>Giữ như hiện tại: cách mép trên 8px, bo tròn đều.</li>'}
+      <li><b>Nền ${ {dense: 'đặc', liquid: 'liquid glass', blur: 'kính blur thật'}[opts.material] }:</b> ${ {dense: 'như hiện tại.', liquid: 'làm được trên Windows: thân trong hơn, vệt sáng phía trên, viền sáng ở hai đầu, mép trong mờ. Không làm mờ nội dung phía sau.', blur: '<b>chỉ để so sánh</b>, Windows không làm mờ phía sau cửa sổ trong suốt khi không có focus (spike Task 2).'}[opts.material] }</li>
+      <li><b>Kéo:</b> nhấn giữ notch rồi kéo ngang, notch trượt dọc mép trên (không kéo xuống được). Kéo quá 6px mới tính là kéo, nên bấm để mở vẫn dùng được.</li>
+      <li><b>Sticky ${sticky ? 'bật' : 'tắt'}:</b> ${sticky ? 'cửa sổ phóng to (browser) bắt đầu dưới dải giữ chỗ. Windows chỉ giữ được cả dải ngang. Panel mở rộng vẫn nổi đè lên.' : 'browser phóng to lấp tới mép trên, notch nổi đè lên phần đầu browser.'}</li>
+      <li>Mặc định: giọt nước, sticky tắt. Vị trí ngang và sticky lưu trong Cài đặt, có nút <span class="k">Về giữa</span>.</li>
+    </ul>`;
+}
+
+document.querySelectorAll('.seg[data-opt]').forEach((seg) => {
+  seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    const key = seg.dataset.opt;
+    if (key === 'pos') {
+      const [w] = SIZES[opts.state];
+      opts.x = { left: 0, center: 640, right: STAGE_W }[b.dataset.v];
+      render();
+      return;
+    }
+    seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    opts[key] = key === 'flare' || key === 'pillH' ? Number(b.dataset.v) : b.dataset.v;
+    render();
+  });
+});
+document.getElementById('reduce').addEventListener('change', (e) => document.body.classList.toggle('reduce', e.target.checked));
+
+// Drag: horizontal only, stuck to the top edge. Movement over 6px counts as a drag.
+let drag = null;
+notch.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('button')) return;
+  notch.setPointerCapture(e.pointerId);
+  drag = { startX: e.clientX, fromX: opts.x, moved: false };
+});
+notch.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const scale = Number(stage.dataset.scale || 1);
+  const dx = (e.clientX - drag.startX) / scale;
+  if (!drag.moved && Math.abs(dx) < 6) return;
+  drag.moved = true;
+  notch.classList.add('dragging');
+  opts.x = drag.fromX + dx;
+  render();
+  pos.textContent = `cách trái ${Math.round(opts.x - notch.offsetWidth / 2)}px`;
+  pos.style.left = `${opts.x - 40}px`;
+  pos.style.top = `${notch.offsetHeight + 14}px`;
+  pos.classList.add('on');
+});
+const endDrag = () => {
+  if (!drag) return;
+  if (!drag.moved) {
+    // A click, not a drag: toggle between collapsed and open, as the real notch would.
+    opts.state = opts.state === 'open' ? 'pill' : 'open';
+    document.querySelectorAll('[data-opt="state"] button').forEach((b) => b.classList.toggle('on', b.dataset.v === opts.state));
+    render();
+  }
+  drag = null;
+  notch.classList.remove('dragging');
+  pos.classList.remove('on');
+};
+notch.addEventListener('pointerup', endDrag);
+notch.addEventListener('pointercancel', endDrag);
+
+fit();
+render();
+</script>
+</body>
+</html>

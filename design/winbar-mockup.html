@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Winbar Notch · Mockup</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --text: #f6f7f9; --sub: rgba(236,240,247,0.72); --faint: rgba(236,240,247,0.52);
+    --glass: rgba(20,24,32,0.70); --glass-border: 1px solid rgba(255,255,255,0.14);
+    --card: rgba(255,255,255,0.06); --card-border: 1px solid rgba(255,255,255,0.09);
+    --input: rgba(255,255,255,0.08); --hover: rgba(255,255,255,0.10); --track: rgba(255,255,255,0.14);
+    --claude: oklch(0.76 0.12 45); --media: oklch(0.76 0.12 240); --warn: oklch(0.84 0.12 90);
+    --ok: oklch(0.80 0.12 150); --danger: oklch(0.72 0.14 25); --on-text: #0d0f14;
+    --font: 'Onest', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+    --blur: blur(30px) saturate(1.6);
+    --shadow: 0 24px 70px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.10);
+    --wall: radial-gradient(60% 70% at 18% 25%, #5f86b8 0%, transparent 60%), radial-gradient(50% 60% at 85% 15%, #b58cab 0%, transparent 60%), radial-gradient(70% 60% at 70% 95%, #3f6f78 0%, transparent 60%), linear-gradient(160deg, #2c3a52, #182130);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--font); background: #0e131c; color: var(--text); display: flex; flex-direction: column; }
+  button { font-family: inherit; }
+  input::placeholder { color: var(--faint); }
+
+  /* ---------- toolbar (outside the mock desktop) ---------- */
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 12px 20px; background: #0b0f16; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .toolbar .brand { font-weight: 700; letter-spacing: -0.01em; margin-right: 6px; }
+  .seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(255,255,255,0.06); }
+  .seg button { all: unset; cursor: pointer; font-size: 13px; padding: 5px 12px; border-radius: 8px; color: var(--faint); }
+  .seg button.on { background: rgba(255,255,255,0.14); color: var(--text); }
+  .ctl { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--faint); }
+  .ctl[hidden] { display: none; }
+  .stage-wrap { flex-grow: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 16px; }
+  .stage { width: 1280px; height: 760px; transform-origin: center center; flex-shrink: 0; position: relative; }
+  .view { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; background: var(--wall); box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+  .view[hidden] { display: none; }
+
+  /* ---------- mock desktop ---------- */
+  .win-light { position: absolute; left: 150px; top: 150px; width: 560px; height: 470px; border-radius: 10px; background: #f1f3f6; box-shadow: 0 24px 70px rgba(0,0,0,0.35); overflow: hidden; }
+  .win-light .bar { height: 38px; background: #e6e9ee; }
+  .win-dark { position: absolute; left: 640px; top: 240px; width: 520px; height: 420px; border-radius: 10px; background: #1f2229; box-shadow: 0 24px 70px rgba(0,0,0,0.45); overflow: hidden; }
+  .win-dark .bar { height: 38px; background: #272a32; }
+  .lines { padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+  .lines i { display: block; height: 10px; border-radius: 6px; }
+  .caption { position: absolute; left: 28px; bottom: 22px; font-size: 13px; color: rgba(255,255,255,0.8); display: flex; flex-direction: column; gap: 3px; }
+  .caption b { font-weight: 600; }
+
+  /* ---------- shared pieces ---------- */
+  .glass { background: var(--glass); border: var(--glass-border); box-shadow: var(--shadow); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); }
+  .card { background: var(--card); border: var(--card-border); border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; position: relative; overflow: hidden; }
+  .card > * { position: relative; }
+  .card > .card-bg { position: absolute; inset: -30px; width: calc(100% + 60px); height: calc(100% + 60px); object-fit: cover; filter: blur(34px) saturate(1.3); opacity: .38; pointer-events: none; }
+  .label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .label > span:first-child { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .label .aside { font-size: 11px; color: var(--faint); }
+  .icon-btn { all: unset; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 999px; color: var(--sub); flex-shrink: 0; }
+  .icon-btn:hover, .hov:hover { background: rgba(255,255,255,0.08); }
+  .kbd { font-family: var(--mono); font-size: 11px; font-style: normal; padding: 2px 7px; border-radius: 6px; background: var(--input); border: 1px solid rgba(255,255,255,0.10); color: var(--text); }
+  .chip { all: unset; cursor: pointer; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--input); color: var(--sub); transition: background .15s; }
+  .chip.on { background: var(--text); color: var(--on-text); }
+  .btn { all: unset; cursor: pointer; padding: 8px 16px; border-radius: 999px; font-size: 13px; color: var(--text); background: var(--input); white-space: nowrap; }
+  .btn.primary { font-weight: 600; color: var(--on-text); background: var(--text); }
+  .btn.danger { font-weight: 600; color: var(--on-text); background: var(--danger); }
+  .btn.sm { padding: 5px 12px; font-size: 12px; }
+  .mono { font-family: var(--mono); }
+  .dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+  .grow { flex-grow: 1; }
+  .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .art { flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.8); background: linear-gradient(135deg, oklch(0.62 0.12 250), oklch(0.38 0.09 300)); object-fit: cover; }
+  .eq { display: flex; gap: 2px; align-items: flex-end; height: 14px; flex-shrink: 0; }
+  .eq i { width: 3px; background: var(--media); border-radius: 2px; transform-origin: bottom; }
+  .eq.on i { animation: wbEq .9s ease-in-out infinite alternate; }
+  .eq i:nth-child(1) { height: 60%; } .eq i:nth-child(2) { height: 100%; animation-delay: -.3s; } .eq i:nth-child(3) { height: 40%; animation-delay: -.6s; } .eq i:nth-child(4) { height: 80%; animation-delay: -.15s; }
+  @keyframes wbEq { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
+  .pulse { animation: wbPulse 1.4s ease-in-out infinite; }
+  @keyframes wbPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.78); } }
+  .vsep { width: 1px; align-self: stretch; margin: 12px 2px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+
+  /* Claude spark: turns slowly and breathes while a session works */
+  .spark { flex-shrink: 0; display: block; }
+  .spark.on { animation: sparkSpin 6s linear infinite; }
+  .spark.on g { transform-box: fill-box; transform-origin: center; animation: sparkBreath 1.3s ease-in-out infinite; }
+  .spark.fast { animation-duration: 2.6s; }
+  @keyframes sparkSpin { to { transform: rotate(360deg); } }
+  @keyframes sparkBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(.72); } }
+
+  /* ---------- notch ---------- */
+  /* Sizes come from the Settings screen (CSS variables on .stage). */
+  .stage { --pill-w: 340px; --pill-h: 40px; --mid-w: 620px; --mid-h: 64px; --panel-w: 780px; --gap: 8px; --fs: 1; }
+  .island { position: absolute; left: 50%; top: var(--gap); transform: translateX(-50%); overflow: hidden;
+    transition: width .42s cubic-bezier(.32,1.25,.5,1), height .42s cubic-bezier(.32,1.25,.5,1), border-radius .42s ease, top .3s ease;
+    width: var(--pill-w); height: var(--pill-h); border-radius: calc(var(--pill-h) / 2); }
+  .island.alert { width: calc(var(--pill-w) + 150px * var(--fs)); height: calc(var(--pill-h) + 4px); border-radius: calc(var(--pill-h) / 2 + 2px); }
+  .island.mid { width: var(--mid-w); height: var(--mid-h); border-radius: calc(var(--mid-h) / 2); }
+  .island.open { width: var(--panel-w); border-radius: 28px; }
+  .pill { height: 100%; padding: 0 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; zoom: var(--fs); }
+  .claude-ico { flex-shrink: 0; object-fit: contain; image-rendering: auto; }
+  .island.alert .pill { padding: 0 8px 0 16px; }
+  .island.mid .pill { padding: 0 12px 0 20px; gap: 12px; }
+  .mid-block { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mid-block .t1 { font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .mid-block .t2 { font-size: 12px; color: var(--faint); white-space: nowrap; }
+  .panel { zoom: var(--fs); width: calc((var(--panel-w) - 2px) / var(--fs)); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+  @keyframes wbIn { from { opacity: 0; transform: translateY(-6px) scale(.99); } to { opacity: 1; transform: none; } }
+  .tabs { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--input); }
+  .tabs button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 999px; color: var(--faint); transition: background .2s, color .2s; }
+  .tabs button.on { background: rgba(255,255,255,0.18); color: var(--text); }
+  .search-pill { all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 12px; border-radius: 999px; background: var(--input); color: var(--faint); font-size: 12px; }
+  .tab-body { flex-grow: 1; min-height: 0; }
+  @keyframes wbTab { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .search { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 12px; background: var(--input); color: var(--sub); }
+  .search input { all: unset; flex-grow: 1; font-size: 13px; color: var(--text); }
+  .clip-list { display: flex; flex-direction: column; gap: 2px; overflow: auto; min-height: 0; flex-grow: 1; margin: 0 -8px; }
+  .clip { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 10px; cursor: grab; color: var(--sub); }
+  .clip .txt { flex-grow: 1; font-size: 13px; color: var(--text); }
+  .clip .time { font-size: 11px; color: var(--faint); font-family: var(--mono); }
+  .session { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; cursor: pointer; }
+  .badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--input); color: var(--sub); }
+  .bar-track { height: 6px; border-radius: 6px; background: var(--track); }
+  .bar-track > i { display: block; height: 100%; border-radius: 6px; }
+  .big-num { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-family: var(--mono); }
+  .big-num small { font-size: 14px; color: var(--faint); }
+  .sys-btn { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px; border-radius: 12px; background: var(--input); font-size: 13px; color: var(--text); }
+  .sys-btn:hover { background: rgba(255,255,255,0.13); }
+  .sys-btn.icon { width: 42px; padding: 0; justify-content: center; flex-shrink: 0; }
+  .sys-btn.on { background: rgba(255,255,255,0.18); }
+  .power-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; animation: wbIn .2s ease-out both; }
+  .power-grid .sys-btn { height: 38px; font-size: 12px; }
+  .note-line { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sub); }
+
+  /* ---------- motion ---------- */
+  .panel.enter { animation: wbIn .3s ease-out .1s both; }
+  .tab-body.tab-in { animation: wbTab .24s ease-out both; }
+  .card.card-in { animation: cardIn .26s ease-out both; animation-delay: calc(var(--i, 0) * 45ms + 90ms); }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  /* alert: grow with a little overshoot, then a short shake */
+  .island.alert, .island.mid.alerting { transition-timing-function: cubic-bezier(.34,1.56,.64,1), cubic-bezier(.34,1.56,.64,1), ease, ease; transition-duration: .48s, .48s, .42s, .3s; }
+  .pill.shake { animation: wbShake .38s ease-in-out .46s 1 both; }
+  @keyframes wbShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-3px); } 40% { transform: translateX(3px); } 60% { transform: translateX(-2px); } 80% { transform: translateX(2px); } }
+  /* track change: artwork + titles slide in from the direction of travel */
+  .track-in.next { animation: trackNext .32s ease-out both; }
+  .track-in.prev { animation: trackPrev .32s ease-out both; }
+  @keyframes trackNext { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+  @keyframes trackPrev { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+  /* copy: the item flashes once */
+  .clip.flash { animation: clipFlash .55s ease-out; }
+  @keyframes clipFlash { from { background: rgba(255,255,255,.24); } to { background: transparent; } }
+  .pill.copied-in { animation: wbTab .24s ease-out both; }
+  /* reduced motion: no bounce/shake/stagger/count, only quick fades */
+  body.reduce *, body.reduce *::before, body.reduce *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: .12s !important; transition-timing-function: ease !important; }
+
+  /* ---------- command bar ---------- */
+  .cmd { position: absolute; width: 660px; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transform-origin: 50% 0; transition: opacity .18s ease-out, transform .18s ease-out; }
+  .cmd.closed { opacity: 0; transform: scale(.96); pointer-events: none; transition-duration: .12s; }
+  .cmd-top { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 18px 0 12px; }
+  .cmd-top input { all: unset; flex-grow: 1; font-size: 18px; color: var(--text); }
+  .grip { cursor: grab; color: var(--faint); display: flex; padding: 8px 4px; touch-action: none; }
+  .grip.dragging { cursor: grabbing; }
+  .sep { height: 1px; background: rgba(255,255,255,0.08); }
+  .results { padding: 6px 10px 10px; display: flex; flex-direction: column; max-height: 420px; overflow: auto; position: relative; }
+  .sel-hl { position: absolute; left: 10px; right: 10px; top: 0; height: 0; border-radius: 12px; background: var(--hover); transition: top .12s ease-out, height .12s ease-out; pointer-events: none; }
+  .group { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); font-weight: 600; padding: 12px 10px 6px; }
+  .row { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; cursor: pointer; }
+  .tile { width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; background: var(--input); color: var(--sub); }
+  .row .verb { display: none; align-items: center; gap: 6px; font-size: 12px; color: var(--sub); flex-shrink: 0; }
+  .row.sel .verb { display: flex; }
+  .calc { margin: 10px; display: flex; align-items: center; gap: 16px; padding: 16px 14px; border-radius: 14px; background: var(--hover); }
+  .cmd-foot { display: flex; align-items: center; gap: 14px; height: 40px; padding: 0 16px; font-size: 12px; color: var(--faint); }
+  .cmd-foot span { display: flex; align-items: center; gap: 6px; }
+  .toast { position: absolute; left: 50%; bottom: 52px; padding: 8px 14px; border-radius: 999px; background: var(--text); color: var(--on-text); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap; animation: wbToast 1.6s ease-in-out both; }
+  @keyframes wbToast { 0% { opacity: 0; transform: translate(-50%, 6px); } 15%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
+
+  /* ---------- settings ---------- */
+  .settings { position: absolute; left: 110px; top: 96px; width: 1060px; height: 620px; border-radius: 20px; display: flex; overflow: hidden; }
+  .settings aside { width: 210px; padding: 22px 14px; border-right: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .settings aside h3 { margin: 0 8px 14px; font-size: 16px; font-weight: 600; }
+  .settings aside a { display: block; padding: 8px 10px; border-radius: 10px; font-size: 13px; color: var(--sub); text-decoration: none; }
+  .settings aside a:hover { background: rgba(255,255,255,.08); color: var(--text); }
+  .settings main { height: 100%; padding: 22px 28px 28px; display: flex; flex-direction: column; gap: 22px; }
+  /* ScrollArea (shadcn/Radix style): native scrollbar hidden, thin overlay thumb shown on hover or while scrolling */
+  .scroll-area { position: relative; overflow: hidden; min-width: 0; min-height: 0; }
+  .scroll-viewport { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .scroll-viewport::-webkit-scrollbar { display: none; }
+  .scroll-bar { position: absolute; top: 0; right: 0; bottom: 0; width: 10px; padding: 1px; border-left: 1px solid transparent; display: flex; touch-action: none; user-select: none; opacity: 0; transition: opacity .16s ease; }
+  .scroll-area:hover > .scroll-bar, .scroll-bar.active { opacity: 1; }
+  .scroll-bar[hidden] { display: none; }
+  .scroll-thumb { position: relative; width: 100%; border-radius: 999px; background: rgba(255,255,255,.22); transition: background .15s; }
+  .scroll-thumb:hover, .scroll-bar.dragging .scroll-thumb { background: rgba(255,255,255,.38); }
+  .scroll-thumb::before { content: ''; position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; min-width: 44px; min-height: 44px; transform: translate(-50%, -50%); }
+  .preview { border-radius: 16px; background: var(--wall); border: 1px solid rgba(255,255,255,.10); padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .preview .island { position: relative; left: auto; top: auto; transform: none; transition: none; }
+  .set-sec h4 { margin: 0 0 4px; font-size: 13px; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .set-row .t { font-size: 14px; }
+  .set-row .d { font-size: 12px; color: var(--faint); margin-top: 2px; }
+  .set-row .seg button { font-size: 12px; }
+  .range { display: flex; align-items: center; gap: 12px; }
+  .range input { width: 200px; accent-color: #f6f7f9; }
+  .range output { font-family: var(--mono); font-size: 12px; color: var(--sub); min-width: 44px; text-align: right; }
+  .switch { all: unset; cursor: pointer; width: 36px; height: 20px; border-radius: 999px; background: rgba(255,255,255,.18); position: relative; transition: background .2s; flex-shrink: 0; }
+  .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: #fff; transition: left .2s; }
+  .switch.on { background: oklch(0.70 0.12 150); }
+  .switch.on::after { left: 18px; }
+  .w-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .w-row .order { display: flex; gap: 2px; }
+  .w-row .order button { all: unset; cursor: pointer; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 13px; }
+  .w-row .order button:hover { background: rgba(255,255,255,.08); }
+  .w-row .order button:disabled { opacity: .25; cursor: default; background: none; }
+  .tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--input); color: var(--sub); }
+
+  /* ---------- states sheet ---------- */
+  .states { position: absolute; inset: 0; padding: 34px 56px; display: flex; flex-direction: column; gap: 22px; }
+  .states h2 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+  .states .lead { font-size: 14px; color: rgba(255,255,255,.72); margin-top: 6px; }
+  .state-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 48px; }
+  .state { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .state.wide { grid-column: span 2; }
+  .state b { font-size: 14px; font-weight: 600; }
+  .state p { margin: 3px 0 0; font-size: 12px; color: rgba(255,255,255,.7); max-width: 560px; text-wrap: pretty; }
+  .spill { height: 40px; border-radius: 20px; display: flex; align-items: center; gap: 10px; padding: 0 16px; font-size: 13px; }
+  .specs { display: flex; gap: 36px; flex-wrap: wrap; padding: 14px 22px; border-radius: 16px; background: rgba(10,14,22,.45); border: 1px solid rgba(255,255,255,.10); }
+  .specs div { display: flex; flex-direction: column; gap: 3px; }
+  .specs span { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: rgba(255,255,255,.55); font-weight: 600; }
+  .specs code { font-size: 13px; font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="brand">Winbar</span>
+  <div class="seg" id="viewSeg">
+    <button data-view="notch" class="on">Notch</button>
+    <button data-view="cmd">Command bar</button>
+    <button data-view="states">Trạng thái pill</button>
+    <button data-view="settings">Cài đặt</button>
+  </div>
+  <label class="ctl" data-for="notch">Mode
+    <span class="seg" data-opt="mode"><button data-v="hover" class="on">hover</button><button data-v="click">click</button><button data-v="always">always</button></span>
+  </label>
+  <label class="ctl" data-for="notch">Pill ưu tiên
+    <span class="seg" data-opt="priority"><button data-v="claude" class="on">Claude</button><button data-v="media">Media</button></span>
+  </label>
+  <label class="ctl" data-for="notch">Claude
+    <span class="seg" data-opt="phase"><button data-v="idle">idle</button><button data-v="thinking">Thinking</button><button data-v="tool" class="on">Cooking</button><button data-v="permission">wait for you</button></span>
+  </label>
+  <label class="ctl" data-for="notch">Ảnh bìa
+    <span class="seg" data-opt="art"><button data-v="image" class="on">có</button><button data-v="none">không</button></span>
+  </label>
+  <span class="ctl" data-for="notch">Mô phỏng
+    <span class="seg"><button id="simCopy" title="Như khi bạn nhấn Ctrl+C ở app khác">Ctrl+C</button><button id="simNext">Bài kế tiếp</button></span>
+  </span>
+  <span class="ctl" data-for="cmd" hidden>
+    <span class="seg"><button id="cmdToggle">Mở / đóng · Ctrl+Space</button></span>
+  </span>
+  <label class="ctl" data-for="cmd" hidden>Ví dụ
+    <span class="seg" data-opt="preset"><button data-v="recent">gần đây</button><button data-v="search" class="on">tìm "fi"</button><button data-v="calculator">máy tính</button></span>
+  </label>
+</div>
+
+<div class="stage-wrap" id="stageWrap">
+  <div class="stage" id="stage">
+
+    <!-- ================= NOTCH ================= -->
+    <section class="view" id="view-notch">
+      <div class="win-light"><div class="bar"></div><div class="lines"><i style="width:55%;height:14px;background:rgba(0,0,0,.12)"></i><i style="width:88%;background:rgba(0,0,0,.07)"></i><i style="width:76%;background:rgba(0,0,0,.07)"></i><i style="width:82%;background:rgba(0,0,0,.07)"></i></div></div>
+      <div class="win-dark"><div class="bar"></div><div class="lines"><i style="width:40%;background:rgba(160,190,255,.25)"></i><i style="width:70%;background:rgba(255,255,255,.10)"></i><i style="width:58%;background:rgba(255,210,150,.20)"></i><i style="width:64%;background:rgba(255,255,255,.10)"></i></div></div>
+      <div class="caption"><b>Notch · kính mờ + widget</b><span id="notchHint"></span></div>
+      <div class="island glass" id="island"></div>
+    </section>
+
+    <!-- ================= COMMAND BAR ================= -->
+    <section class="view" id="view-cmd" hidden>
+      <div class="win-light"><div class="bar"></div><div class="lines"><i style="width:55%;height:14px;background:rgba(0,0,0,.12)"></i><i style="width:88%;background:rgba(0,0,0,.07)"></i><i style="width:76%;background:rgba(0,0,0,.07)"></i></div></div>
+      <div class="win-dark"><div class="bar"></div><div class="lines"><i style="width:40%;background:rgba(160,190,255,.25)"></i><i style="width:70%;background:rgba(255,255,255,.10)"></i><i style="width:58%;background:rgba(255,210,150,.20)"></i></div></div>
+      <div class="caption"><b>Command bar</b><span>Gõ để tìm · ↑↓ chọn · Enter chạy · Esc xóa rồi đóng · Ctrl+Space mở lại · kéo ⠿ để di chuyển (app thật sẽ nhớ vị trí)</span></div>
+      <div class="cmd glass" id="cmd" style="left:310px;top:150px">
+        <div class="cmd-top">
+          <span class="grip" id="grip" title="Kéo để di chuyển"></span>
+          <span style="color:var(--sub);display:flex" data-icon="search20"></span>
+          <input id="cmdInput" placeholder="Tìm app, file, clipboard hoặc gõ phép tính…" autocomplete="off" spellcheck="false">
+          <button class="btn sm hov" id="cmdClear" style="background:transparent;color:var(--faint)">Xóa</button>
+        </div>
+        <div class="sep"></div>
+        <div id="cmdBody"></div>
+        <div class="sep"></div>
+        <div class="cmd-foot">
+          <span><i class="kbd">↑</i><i class="kbd">↓</i> chọn</span>
+          <span><i class="kbd">↵</i> chạy</span>
+          <span><i class="kbd">Esc</i> xóa / đóng</span>
+          <span class="grow"></span>
+          <span><b class="mono" style="color:var(--sub);font-weight:500">=</b> tính <b class="mono" style="color:var(--sub);font-weight:500;margin-left:6px">cb</b> clipboard <b class="mono" style="color:var(--sub);font-weight:500;margin-left:6px">f</b> file</span>
+        </div>
+        <div id="toastHost"></div>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section class="view" id="view-settings" hidden>
+      <div class="settings glass" id="settings"></div>
+    </section>
+
+    <!-- ================= STATES ================= -->
+    <section class="view" id="view-states" hidden>
+      <div class="states" id="statesSheet"></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================ icons */
+const I = {
+  play: (s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>`,
+  pause: (s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>`,
+  prev: (s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-10-6z"/></svg>`,
+  next: (s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6v12l10-6z"/></svg>`,
+  search: (s = 15) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>`,
+  sliders: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
+  chevUp: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>',
+  pin: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></svg>',
+  text: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg>',
+  link: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>',
+  code: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4M16 8l4 4-4 4"/></svg>',
+  image: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m20 16-5-5-9 8"/></svg>',
+  file: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>',
+  bolt: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>',
+  calc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg>',
+  note: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></svg>',
+  shield: (s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z"/></svg>`,
+  check: (s = 14) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>`,
+  grip: '<svg width="12" height="18" viewBox="0 0 12 18" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="3" cy="15" r="1.5"/><circle cx="9" cy="15" r="1.5"/></svg>',
+  activity: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M6 13h3l2-4 3 7 2-3h2"/></svg>',
+  power: (s = 17) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>`,
+  moon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>',
+  restart: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg>',
+  users: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M15.5 5.2a3.2 3.2 0 0 1 0 5.6M17.5 14.2A5.5 5.5 0 0 1 20.5 19"/></svg>',
+};
+// Claude icons: animated GIF while a session works (Thinking / Cooking / wait for you), headstone PNG when idle.
+const CLAUDE_WORKING = 'assets/claude-fu-transparent.gif';
+const CLAUDE_IDLE = 'assets/claude_headstone.png';
+function spark(size, state) {
+  const src = state === 'idle' ? CLAUDE_IDLE : CLAUDE_WORKING;
+  return `<img class="claude-ico" src="${src}" alt="" style="width:${size}px;height:${size}px">`;
+}
+const ring = (pct, color, size = 18) => {
+  const c = 2 * Math.PI * 7;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 18 18" style="flex-shrink:0"><circle cx="9" cy="9" r="7" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2.5"/><circle cx="9" cy="9" r="7" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${(c * pct / 100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 9 9)"/></svg>`;
+};
+const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+const kbd = (t) => `<i class="kbd">${t}</i>`;
+const eq = (on) => `<span class="eq ${on ? 'on' : ''}"><i></i><i></i><i></i><i></i></span>`;
+
+// Sample album artwork (stands in for the thumbnail Windows media sessions provide).
+const ART = 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1e4b"/><stop offset=".55" stop-color="#7a2f72"/><stop offset="1" stop-color="#f29a63"/></linearGradient></defs><rect width="120" height="120" fill="url(#s)"/><circle cx="84" cy="36" r="13" fill="#ffd9a8" opacity=".92"/><g fill="#fff" opacity=".7"><circle cx="20" cy="18" r=".9"/><circle cx="46" cy="28" r=".7"/><circle cx="62" cy="12" r=".8"/><circle cx="104" cy="16" r=".7"/></g><path d="M0 120V88h9V74h12v10h8V60h14v26h6V70h10v16h8V52h16v34h8V76h12v12h17v32z" fill="#0d0f24"/><g fill="#ffd27a" opacity=".85"><rect x="32" y="66" width="2" height="2"/><rect x="37" y="72" width="2" height="2"/><rect x="72" y="60" width="2" height="2"/><rect x="77" y="68" width="2" height="2"/><rect x="72" y="76" width="2" height="2"/></g></svg>`);
+const artVariant = (top, mid, bottom, sun) => 'data:image/svg+xml,' + encodeURIComponent(decodeURIComponent(ART.slice(19))
+  .replace('#1b1e4b', top).replace('#7a2f72', mid).replace('#f29a63', bottom).replace('#ffd9a8', sun));
+const TRACKS = [
+  { title: 'Midnight City', artist: 'M83', album: "Hurry Up, We're Dreaming", art: ART },
+  { title: 'Kids', artist: 'MGMT', album: 'Oracular Spectacular', art: artVariant('#0f3b4a', '#1f7a6d', '#e8d27a', '#fff3c4') },
+  { title: 'Sunset Lover', artist: 'Petit Biscuit', album: 'Presence', art: artVariant('#3a1c55', '#c2456f', '#ffb36b', '#ffe3b0') },
+];
+const track = () => TRACKS[N.track];
+const hasArt = () => opts.art === 'image';
+const art = (size, radius) => hasArt()
+  ? `<img class="art" src="${track().art}" alt="" style="width:${size}px;height:${size}px;border-radius:${radius}px">`
+  : `<span class="art" style="width:${size}px;height:${size}px;border-radius:${radius}px">${size > 30 ? I.note : ''}</span>`;
+
+/* ============================================================ stage scaling + options */
+const stage = document.getElementById('stage');
+const wrap = document.getElementById('stageWrap');
+let scale = 1;
+function fit() {
+  const r = wrap.getBoundingClientRect();
+  scale = Math.min((r.width - 32) / 1280, (r.height - 32) / 760, 1);
+  stage.style.transform = `scale(${scale})`;
+  stage.style.margin = `${(760 * scale - 760) / 2}px ${(1280 * scale - 1280) / 2}px`;
+}
+window.addEventListener('resize', fit);
+
+const opts = { view: 'notch', mode: 'hover', priority: 'claude', phase: 'tool', art: 'image', preset: 'search' };
+document.getElementById('viewSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  opts.view = b.dataset.view;
+  document.querySelectorAll('#viewSeg button').forEach((x) => x.classList.toggle('on', x === b));
+  ['notch', 'cmd', 'states', 'settings'].forEach((v) => { document.getElementById('view-' + v).hidden = v !== opts.view; });
+  document.querySelectorAll('.ctl').forEach((c) => { c.hidden = c.dataset.for !== opts.view; });
+  if (opts.view === 'cmd') cmdInput.focus();
+  if (opts.view === 'notch') renderNotch();
+  if (opts.view === 'settings') renderSettings();
+});
+document.querySelectorAll('[data-opt]').forEach((seg) => seg.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  e.preventDefault();
+  seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+  const key = seg.dataset.opt; opts[key] = b.dataset.v;
+  if (key === 'phase') N.decision = null;
+  if (key === 'mode') N.open = false;
+  if (key === 'preset') { C.q = PRESETS[opts.preset]; C.sel = 0; cmdInput.value = C.q; renderCmd(); return; }
+  renderNotch();
+  if (opts.view === 'settings') renderSettings();
+}));
+
+/* ============================================================ NOTCH */
+// Sample clipboard images (stand-ins for real copied pictures).
+const svgData = (svg) => 'data:image/svg+xml,' + encodeURIComponent(svg);
+const IMG_SHOT = svgData(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100"><rect width="160" height="100" fill="#eef1f5"/><rect width="160" height="14" fill="#d9dee6"/><circle cx="8" cy="7" r="2.5" fill="#f06b5b"/><circle cx="16" cy="7" r="2.5" fill="#f5bf4f"/><circle cx="24" cy="7" r="2.5" fill="#5ec26a"/><rect x="0" y="14" width="34" height="86" fill="#e3e7ee"/><rect x="6" y="22" width="22" height="4" rx="2" fill="#b9c1ce"/><rect x="6" y="31" width="18" height="4" rx="2" fill="#c9d0db"/><rect x="6" y="40" width="20" height="4" rx="2" fill="#c9d0db"/><rect x="44" y="24" width="70" height="7" rx="3" fill="#39424f"/><rect x="44" y="38" width="104" height="4" rx="2" fill="#b9c1ce"/><rect x="44" y="47" width="92" height="4" rx="2" fill="#c9d0db"/><rect x="44" y="60" width="50" height="28" rx="4" fill="#5f86b8"/><rect x="100" y="60" width="48" height="28" rx="4" fill="#e59a6b"/></svg>`);
+const IMG_CHART = svgData(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100"><rect width="160" height="100" fill="#ffffff"/><rect x="14" y="12" width="60" height="6" rx="3" fill="#2d3440"/><g fill="#6a8fd8"><rect x="22" y="58" width="14" height="30" rx="2"/><rect x="44" y="44" width="14" height="44" rx="2"/><rect x="66" y="50" width="14" height="38" rx="2"/><rect x="88" y="32" width="14" height="56" rx="2"/></g><rect x="110" y="24" width="14" height="64" rx="2" fill="#e5875a"/><rect x="132" y="40" width="14" height="48" rx="2" fill="#6a8fd8"/><rect x="14" y="88" width="136" height="1.5" fill="#cfd5de"/></svg>`);
+
+const CLIPS = [
+  { id: 1, type: 'text', preview: 'Gửi lại bản brief cho freelancer trước thứ 6 nhé', time: '2m', pinned: true },
+  { id: 2, type: 'link', preview: 'https://github.com/laurennguyen1304/yasb', time: '9m' },
+  { id: 3, type: 'code', preview: 'git worktree add ../firefish -b firefish', time: '14m' },
+  { id: 4, type: 'image', preview: 'Ảnh chụp màn hình', meta: '1920×1080 · PNG', img: IMG_SHOT, time: '1h' },
+  { id: 7, type: 'image', preview: 'final-figures chart', meta: '1280×800 · PNG', img: IMG_CHART, time: '2h' },
+  { id: 5, type: 'text', preview: 'Project brief – A/B test kết quả tuần 37', time: '3h' },
+  { id: 6, type: 'link', preview: 'https://www.tryonenotch.com/vi', time: '5h' },
+];
+const FILTERS = [['all', 'Tất cả'], ['text', 'Text'], ['link', 'Link'], ['code', 'Code'], ['image', 'Ảnh']];
+const PHASES = {
+  idle: { text: 'idle', color: 'var(--faint)', elapsed: '' },
+  thinking: { text: 'Thinking', color: 'var(--claude)', elapsed: '0m 48s' },
+  tool: { text: 'Cooking', color: 'var(--claude)', elapsed: '3m 12s' },
+  permission: { text: 'wait for you', color: 'var(--warn)', elapsed: '3m 40s' },
+};
+const POWER = [
+  { id: 'sleep', label: 'Ngủ', icon: I.moon, confirm: false, done: 'Đang chuyển sang chế độ ngủ…' },
+  { id: 'restart', label: 'Khởi động lại', icon: I.restart, confirm: true, ask: 'Khởi động lại máy? App đang mở sẽ bị đóng.', done: 'Đang khởi động lại…' },
+  { id: 'shutdown', label: 'Tắt máy', icon: I.power(15), confirm: true, ask: 'Tắt máy? App đang mở sẽ bị đóng.', done: 'Đang tắt máy…' },
+  { id: 'switch', label: 'Đổi người dùng', icon: I.users, confirm: false, done: 'Đang mở màn hình đổi người dùng…' },
+];
+const N = { open: false, tab: 'core', playing: true, q: '', filter: 'all', decision: null, copied: null, power: false, confirm: null, sysMsg: '' };
+const island = document.getElementById('island');
+let hoverTimer = null, copyTimer = null, sysTimer = null, copyToastTimer = null;
+N.track = 0; N.trackDir = null; N.anim = null; N.wasPending = false; N.copyToast = false;
+document.getElementById('simCopy').addEventListener('click', () => {
+  if (N.open) { N.copied = 3; refreshClips(); clearTimeout(copyTimer); copyTimer = setTimeout(() => { N.copied = null; refreshClips(); }, 1200); return; }
+  N.copyToast = true; renderNotch();
+  clearTimeout(copyToastTimer); copyToastTimer = setTimeout(() => { N.copyToast = false; renderNotch(); }, 1200);
+});
+document.getElementById('simNext').addEventListener('click', () => changeTrack('next'));
+
+function notchModel() {
+  const raw = opts.phase;
+  const pending = raw === 'permission' && N.decision === null;
+  const key = raw === 'permission' && N.decision !== null ? (N.decision === 'allow' ? 'tool' : 'idle') : raw;
+  return { pending, key, phase: PHASES[key], decided: raw === 'permission' && N.decision !== null };
+}
+
+/* ---- collapsed pills ---- */
+function smallPill(m) {
+  if (m.pending) return `<div class="pill" data-act="open">
+      <span class="pulse" style="color:var(--warn);display:flex">${I.shield(16)}</span>
+      ${spark(22, 'permission')}<b style="font-weight:600;white-space:nowrap">wait for you</b>
+      <span class="mono ellipsis" style="font-size:12px;color:var(--faint)">Bash · git push</span>
+      <span class="grow"></span>
+      <button class="btn sm" data-act="deny">Từ chối</button>
+      <button class="btn sm primary" data-act="allow">Cho phép</button></div>`;
+  if (N.copyToast) return copiedPill();
+  if (opts.priority === 'media') return `<div class="pill" data-act="open">
+      <span class="track-in ${N.trackDir || ''}" style="display:flex;align-items:center;gap:10px;min-width:0">${art(24, 6)}<span class="ellipsis" style="font-weight:500">${track().title}</span><span style="font-size:12px;color:var(--faint);white-space:nowrap">${track().artist}</span></span>
+      <span class="grow"></span>${eq(N.playing)}</div>`;
+  const p = m.phase;
+  return `<div class="pill" data-act="open">
+      ${spark(24, m.key)}
+      <span style="font-weight:500;white-space:nowrap">${p.text}</span>
+      <span class="grow"></span>
+      ${p.elapsed ? `<span class="mono" style="font-size:12px;color:var(--faint)">${p.elapsed}</span>` : ''}
+      <span class="mono" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--sub)">${ring(62, 'oklch(0.76 0.12 45)')}62%</span></div>`;
+}
+function copiedPill() {
+  return `<div class="pill copied-in" data-act="open">
+      <span style="color:var(--ok);display:flex">${I.check(16)}</span>
+      <span style="font-weight:500;white-space:nowrap">Đã copy</span>
+      <span class="ellipsis" style="font-size:12px;color:var(--faint)">git worktree add ../firefish</span></div>`;
+}
+// "always" mode: a slightly larger pill that shows Claude and media side by side.
+function midPill(m) {
+  if (N.copyToast && !m.pending) return copiedPill();
+  if (m.pending) return `<div class="pill" data-act="open">
+      <span class="pulse" style="color:var(--warn);display:flex">${I.shield(20)}</span>
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0" class="grow">
+        <span class="t1" style="font-size:14px;font-weight:600">firefish · wait for you</span>
+        <span class="mono ellipsis" style="font-size:12px;color:var(--faint)">Bash · git push origin firefish</span></div>
+      <button class="btn" data-act="deny">Từ chối</button>
+      <button class="btn primary" data-act="allow">Cho phép</button></div>`;
+  const p = m.phase;
+  const claude = `<div class="mid-block" style="flex:1 1 0">
+      ${spark(38, m.key)}
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+        <span class="t1">${p.text}</span>
+        <span class="t2 mono">${p.elapsed ? p.elapsed + ' · ' : ''}5h ${'62%'}</span></div></div>`;
+  const media = `<div class="mid-block" style="flex:1 1 0">
+      <span class="track-in ${N.trackDir || ''}" style="display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 0">${art(40, 9)}
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0" class="grow">
+        <span class="t1 ellipsis">${track().title}</span>
+        <span class="t2">${track().artist}</span></div></span>
+      <button class="icon-btn" data-act="play" style="color:var(--text)">${N.playing ? I.pause(16) : I.play(16)}</button></div>`;
+  const first = opts.priority === 'media' ? media : claude;
+  const second = opts.priority === 'media' ? claude : media;
+  return `<div class="pill" data-act="open">${first}<span class="vsep"></span>${second}</div>`;
+}
+
+/* ---- expanded panel ---- */
+function clipsHTML() {
+  const q = N.q.trim().toLowerCase();
+  const list = CLIPS.filter((c) => N.filter === 'all' || c.type === N.filter).filter((c) => !q || c.preview.toLowerCase().includes(q));
+  if (!list.length) return `<div style="font-size:13px;color:var(--faint);padding:8px 16px">Không có item khớp.</div>`;
+  return list.map((c) => `<div class="clip hov ${N.copied === c.id ? 'flash' : ''}" draggable="true" data-act="copy" data-id="${c.id}">
+      ${c.img
+        ? `<img src="${c.img}" alt="" style="width:84px;height:52px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.14);flex-shrink:0">
+           <span class="grow" style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="txt ellipsis">${esc(c.preview)}</span><span class="ellipsis" style="font-size:11px;color:var(--faint)">${c.meta}</span></span>`
+        : `${I[c.type]}<span class="txt ellipsis" style="${c.type === 'code' ? 'font-family:var(--mono)' : ''}">${esc(c.preview)}</span>`}
+      ${c.pinned ? `<span style="color:var(--claude);display:flex">${I.pin}</span>` : ''}
+      ${N.copied === c.id ? `<span style="color:var(--ok);display:flex;align-items:center;gap:4px;font-size:11px">${I.check(13)}Đã copy</span>` : `<span class="time">${c.time}</span>`}
+    </div>`).join('');
+}
+function chipsHTML() {
+  return FILTERS.map(([id, l]) => `<button class="chip ${N.filter === id ? 'on' : ''}" data-act="filter" data-id="${id}">${l}</button>`).join('');
+}
+function systemHTML() {
+  const confirmItem = POWER.find((x) => x.id === N.confirm);
+  return `<div class="card">
+    <div class="label"><span>Hệ thống</span><span class="aside">Ctrl+Shift+Esc</span></div>
+    <div style="display:flex;gap:8px">
+      <button class="sys-btn grow" data-act="taskmgr">${I.activity}<span>Task Manager</span></button>
+      <button class="sys-btn icon ${N.power ? 'on' : ''}" data-act="power" title="Nguồn">${I.power(17)}</button>
+    </div>
+    ${N.power && !confirmItem ? `<div class="power-grid">${POWER.map((x) => `<button class="sys-btn" data-act="pw" data-id="${x.id}">${x.icon}<span>${x.label}</span></button>`).join('')}</div>` : ''}
+    ${confirmItem ? `<div class="power-grid" style="grid-template-columns:1fr">
+        <div class="note-line" style="color:var(--text)"><span style="color:var(--danger);display:flex">${confirmItem.icon}</span>${confirmItem.ask}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm" data-act="pwcancel">Hủy</button><button class="btn sm danger" data-act="pwgo" data-id="${confirmItem.id}">${confirmItem.label}</button></div>
+      </div>` : ''}
+    ${N.sysMsg ? `<div class="note-line"><span style="color:var(--ok);display:flex">${I.check(13)}</span>${N.sysMsg}</div>` : ''}
+  </div>`;
+}
+function mediaHTML() {
+  return `      <div class="card" style="flex-shrink:0">
+        ${hasArt() ? `<img class="card-bg" src="${track().art}" alt="">` : ''}
+        <div class="label"><span>Đang phát</span><span class="aside">Spotify</span></div>
+        <div style="display:flex;gap:14px;align-items:stretch">
+          <span class="track-in ${N.trackDir || ''}" style="display:flex">${art(140, 16)}</span>
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:0" class="grow">
+            <div class="track-in ${N.trackDir || ''}" style="display:flex;flex-direction:column;gap:4px;min-width:0">
+              <span class="ellipsis" style="font-size:16px;font-weight:600">${track().title}</span>
+              <span class="ellipsis" style="font-size:13px;color:var(--sub)">${track().artist}</span>
+              <span class="ellipsis" style="font-size:12px;color:var(--faint)">${track().album}</span></div>
+            <span class="grow"></span>
+            <div class="bar-track" style="height:4px"><i style="width:42%;background:var(--text)"></i></div>
+            <div class="mono" style="display:flex;justify-content:space-between;font-size:11px;color:var(--faint)"><span>1:42</span><span>4:03</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
+              <button class="icon-btn" data-act="prev" style="color:var(--text)">${I.prev()}</button>
+              <button class="icon-btn" data-act="play" style="width:38px;height:38px;background:var(--text);color:var(--on-text)">${N.playing ? I.pause(17) : I.play(17)}</button>
+              <button class="icon-btn" data-act="next" style="color:var(--text)">${I.next()}</button></div>
+          </div>
+        </div>
+      </div>`;
+}
+function clipboardHTML() {
+  return `    <div class="card">
+      <div class="label"><span>Clipboard</span><span class="aside">Kéo item ra app khác</span></div>
+      <div class="search">${I.search(15)}<input id="clipQ" placeholder="Tìm trong clipboard…" value="${esc(N.q)}"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="clipChips">${chipsHTML()}</div>
+      <div class="clip-list" id="clipList">${clipsHTML()}</div>
+    </div>`;
+}
+const widgetsOn = (tab) => S.widgets.filter((w) => w.tab === tab && w.on).map((w) => w.id);
+function coreHTML() {
+  const ids = widgetsOn('core');
+  const render = { media: mediaHTML, system: systemHTML, clipboard: clipboardHTML };
+  if (!ids.length) return `<div class="tab-body" style="padding:18px;font-size:13px;color:var(--faint)">Chưa bật widget nào trong Core. Bật trong Cài đặt › Widget.</div>`;
+  // Clipboard is tall, so it gets its own column; the other widgets stack in the other column, in the chosen order.
+  if (ids.includes('clipboard') && ids.length > 1) {
+    const stack = `<div style="display:flex;flex-direction:column;gap:10px;min-height:0">${ids.filter((id) => id !== 'clipboard').map((id) => render[id]()).join('')}</div>`;
+    const clipFirst = ids.indexOf('clipboard') === 0;
+    return `<div class="tab-body grid2">${clipFirst ? clipboardHTML() + stack : stack + clipboardHTML()}</div>`;
+  }
+  return `<div class="tab-body grid2" style="align-items:start">${ids.map((id) => render[id]()).join('')}</div>`;
+}
+function claudeHTML(m) {
+  const p = m.phase;
+  const first = m.pending ? 'wait for you · Bash' : (m.key === 'tool' ? p.text + ' · Edit' : p.text);
+  const sessions = [
+    { name: 'firefish', badge: 'cli', status: first, elapsed: p.elapsed, color: m.pending ? 'var(--warn)' : p.color, state: m.key === 'permission' ? 'thinking' : m.key },
+    { name: 'brain', badge: 'desktop', status: 'idle', elapsed: '', color: 'var(--faint)', state: 'idle' },
+    { name: 'yasb-py312', badge: 'cli', status: 'idle', elapsed: '', color: 'var(--faint)', state: 'idle' },
+  ];
+  const usage = (name, pct, reset, color) => `<div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;color:var(--sub)">${name}</span><span class="big-num"><span class="count" data-to="${pct}">${pct}</span><small>%</small></span></div>
+      <div class="bar-track"><i style="width:${pct}%;background:${color}"></i></div>
+      <div style="font-size:11px;color:var(--faint)">${reset}</div></div>`;
+  const cards = {
+    sessions: () => `<div class="card">
+        <div class="label"><span>Phiên Claude</span><span class="aside">3 đang mở</span></div>
+        <div style="display:flex;flex-direction:column;margin:0 -8px">${sessions.map((s) => `<div class="session hov">
+          ${spark(26, s.state)}
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0" class="grow">
+            <div style="display:flex;gap:6px;align-items:center"><span style="font-size:14px;font-weight:600">${s.name}</span><span class="badge">${s.badge}</span></div>
+            <div style="font-size:12px;color:${s.color}">${s.status}</div></div>
+          <span class="mono" style="font-size:12px;color:var(--faint)">${s.elapsed}</span></div>`).join('')}</div>
+      </div>`,
+    usage: () => `<div class="card">
+        <div class="label"><span>Hạn mức</span><span class="aside">cập nhật 1 phút trước</span></div>
+        ${usage('5 giờ', 62, 'Reset sau 2h 14m', 'var(--claude)')}
+        ${usage('7 ngày', 31, 'Reset T7, 06:00', 'var(--media)')}
+      </div>`,
+  };
+  const ids = widgetsOn('claude');
+  return `<div class="tab-body" style="display:flex;flex-direction:column;gap:10px">
+    ${ids.length ? `<div class="${ids.length > 1 ? 'grid2' : ''}">${ids.map((id) => cards[id]()).join('')}</div>` : ''}
+    ${m.pending ? `<div class="card" style="border-color:color-mix(in oklch, var(--warn) 35%, transparent)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in oklch, var(--warn) 18%, transparent);color:var(--warn);flex-shrink:0">${I.shield(18)}</span>
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0" class="grow">
+          <span style="font-size:14px;font-weight:600">firefish cần cấp quyền</span>
+          <span class="mono ellipsis" style="font-size:12px;color:var(--sub)">Bash · git push origin firefish</span></div>
+        <div style="display:flex;gap:8px;flex-shrink:0"><button class="btn" data-act="deny">Từ chối</button><button class="btn primary" data-act="allow">Cho phép</button></div>
+      </div></div>` : ''}
+    ${m.decided ? `<div class="card"><div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--sub)">
+      <span style="color:${N.decision === 'allow' ? 'var(--ok)' : 'var(--faint)'};display:flex">${I.check(15)}</span>
+      ${N.decision === 'allow' ? 'Đã cho phép · firefish tiếp tục chạy' : 'Đã từ chối · Claude sẽ hỏi cách khác trong terminal'}</div></div>` : ''}
+  </div>`;
+}
+
+function renderNotch() {
+  const m = notchModel();
+  const always = opts.mode === 'always';
+  const open = N.open;
+  island.classList.toggle('open', open);
+  island.classList.toggle('mid', !open && always);
+  island.classList.toggle('alert', !open && !always && m.pending);
+  document.getElementById('notchHint').textContent = always
+    ? 'Always: pill lớn luôn hiện Claude + media. Bấm vào pill để mở đầy đủ.'
+    : opts.mode === 'hover'
+      ? 'Rê chuột vào notch (chờ 250ms) để mở. Khi có cảnh báo cấp quyền: bấm vào pill để mở, hoặc duyệt ngay trên pill.'
+      : 'Click: bấm vào pill để mở.';
+  const newAlert = m.pending && !N.wasPending;
+  N.wasPending = m.pending;
+  island.classList.toggle('alerting', !open && always && m.pending);
+  if (!open) {
+    island.style.height = ''; island.innerHTML = always ? midPill(m) : smallPill(m);
+    if (newAlert) island.querySelector('.pill').classList.add('shake');
+    N.anim = null; N.trackDir = null;
+    return;
+  }
+  const anim = N.anim;
+  island.innerHTML = `<div class="panel ${anim === 'open' ? 'enter' : ''}">
+    <div style="display:flex;align-items:center;gap:8px;padding:0 2px">
+      <div class="tabs">
+        <button class="${N.tab === 'core' ? 'on' : ''}" data-act="tab" data-id="core">Core</button>
+        <button class="${N.tab === 'claude' ? 'on' : ''}" data-act="tab" data-id="claude">${spark(20, m.key)}Claude${m.pending ? '<span class="dot pulse" style="width:7px;height:7px;background:var(--warn)"></span>' : ''}</button>
+      </div>
+      <span class="grow"></span>
+      <button class="search-pill" data-act="gocmd">${I.search(14)}<span>Tìm app, file…</span>${kbd('Ctrl')}${kbd('Space')}</button>
+      <button class="icon-btn" data-act="settings" title="Cài đặt">${I.sliders}</button>
+      <button class="icon-btn" data-act="close" title="Thu gọn">${I.chevUp}</button>
+    </div>
+    ${(N.tab === 'core' ? coreHTML() : claudeHTML(m)).replace('class="tab-body', `class="tab-body ${anim ? 'tab-in' : ''}`)}
+  </div>`;
+  fitIsland();
+  if (anim) {
+    island.querySelectorAll('.tab-body .card').forEach((card, i) => { card.classList.add('card-in'); card.style.setProperty('--i', i); });
+    if (N.tab === 'claude') countUp();
+  }
+  N.anim = null; N.trackDir = null;
+}
+const reduced = () => document.body.classList.contains('reduce');
+// Usage numbers count up from 0 when the Claude tab appears.
+function countUp() {
+  if (reduced()) return;
+  island.querySelectorAll('.count').forEach((el) => {
+    const to = +el.dataset.to, start = performance.now(), dur = 650;
+    const step = (now) => {
+      const t = Math.min((now - start - 150) / dur, 1);
+      el.textContent = Math.round(to * (t <= 0 ? 0 : 1 - Math.pow(1 - t, 3)));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    el.textContent = '0';
+    requestAnimationFrame(step);
+    // rAF pauses in background tabs; always land on the real value.
+    setTimeout(() => { el.textContent = to; }, dur + 250);
+  });
+}
+function changeTrack(dir) {
+  N.track = (N.track + (dir === 'next' ? 1 : TRACKS.length - 1)) % TRACKS.length;
+  N.trackDir = dir;
+  renderNotch();
+}
+// The panel is laid out at its final width, so its height can be measured before the size transition runs.
+function fitIsland() {
+  const panel = island.querySelector('.panel');
+  if (panel) island.style.height = panel.getBoundingClientRect().height / scale + 2 + 'px';
+}
+function refreshClips() {
+  const list = document.getElementById('clipList'); if (list) list.innerHTML = clipsHTML();
+  const chips = document.getElementById('clipChips'); if (chips) chips.innerHTML = chipsHTML();
+  fitIsland();
+}
+function sysMessage(text) {
+  N.sysMsg = text; N.power = false; N.confirm = null; renderNotch();
+  clearTimeout(sysTimer); sysTimer = setTimeout(() => { N.sysMsg = ''; if (N.open) renderNotch(); }, 2000);
+}
+
+island.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act, m = notchModel();
+  if (act === 'open') { clearTimeout(hoverTimer); if (!N.open) N.anim = 'open'; N.open = true; if (m.pending) N.tab = 'claude'; renderNotch(); }
+  else if (act === 'close') { N.open = false; N.power = false; N.confirm = null; renderNotch(); }
+  else if (act === 'allow' || act === 'deny') { e.stopPropagation(); clearTimeout(hoverTimer); N.decision = act; renderNotch(); }
+  else if (act === 'tab') { if (N.tab !== el.dataset.id) N.anim = 'tab'; N.tab = el.dataset.id; renderNotch(); }
+  else if (act === 'next' || act === 'prev') { e.stopPropagation(); changeTrack(act); }
+  else if (act === 'play') { e.stopPropagation(); N.playing = !N.playing; renderNotch(); }
+  else if (act === 'filter') { N.filter = el.dataset.id; refreshClips(); }
+  else if (act === 'copy') {
+    N.copied = +el.dataset.id; refreshClips();
+    clearTimeout(copyTimer); copyTimer = setTimeout(() => { N.copied = null; refreshClips(); }, 1200);
+  }
+  else if (act === 'gocmd') { document.querySelector('#viewSeg [data-view="cmd"]').click(); }
+  else if (act === 'settings') { document.querySelector('#viewSeg [data-view="settings"]').click(); }
+  else if (act === 'taskmgr') { sysMessage('Đã mở Task Manager'); }
+  else if (act === 'power') { N.power = !N.power; N.confirm = null; renderNotch(); }
+  else if (act === 'pw') {
+    const item = POWER.find((x) => x.id === el.dataset.id);
+    if (item.confirm) { N.confirm = item.id; renderNotch(); } else sysMessage(item.done);
+  }
+  else if (act === 'pwcancel') { N.confirm = null; renderNotch(); }
+  else if (act === 'pwgo') { sysMessage(POWER.find((x) => x.id === el.dataset.id).done + ' (mockup, không tắt thật)'); }
+});
+island.addEventListener('input', (e) => { if (e.target.id === 'clipQ') { N.q = e.target.value; refreshClips(); } });
+island.addEventListener('mouseenter', () => {
+  if (opts.mode !== 'hover' || N.open || notchModel().pending) return;
+  clearTimeout(hoverTimer);
+  hoverTimer = setTimeout(() => { N.open = true; N.anim = 'open'; renderNotch(); }, 250);
+});
+island.addEventListener('mouseleave', () => {
+  if (opts.mode !== 'hover') return;
+  clearTimeout(hoverTimer);
+  if (N.open) { N.open = false; N.power = false; N.confirm = null; renderNotch(); }
+});
+
+/* ============================================================ COMMAND BAR */
+const PRESETS = { recent: '', search: 'fi', calculator: '12*7+3' };
+const APPS = [['Visual Studio Code', 'oklch(0.62 0.13 245)'], ['Windows Terminal', 'oklch(0.55 0.02 260)'], ['Figma', 'oklch(0.66 0.16 30)'], ['Spotify', 'oklch(0.70 0.16 150)'], ['Google Chrome', 'oklch(0.72 0.14 85)'], ['Notion', 'oklch(0.92 0 0)'], ['File Explorer', 'oklch(0.80 0.13 90)']]
+  .map(([title, bg]) => ({ kind: 'app', title, sub: 'Ứng dụng', bg }));
+const FILES = [['CAPABILITY-MAP.md', 'orca › workspaces › winbar › firefish'], ['project-brief.docx', 'Documents › Acme › Briefs'], ['invoice-2026-08.pdf', 'Downloads'], ['config.yaml', '.config › yasb'], ['final-figures.xlsx', 'Documents › Reports']]
+  .map(([title, sub]) => ({ kind: 'file', title, sub }));
+const CCLIPS = [['Gửi lại bản brief cho freelancer trước thứ 6 nhé', 'Clipboard · 2 phút trước'], ['git worktree add ../firefish -b firefish', 'Clipboard · 14 phút trước'], ['https://github.com/laurennguyen1304/yasb', 'Clipboard · 9 phút trước']]
+  .map(([title, sub]) => ({ kind: 'clip', title, sub }));
+const ACTIONS = [['Mở Task Manager', 'Hệ thống'], ['Tạm dừng nhạc', 'Media · Midnight City'], ['Mở notch · tab Claude', 'Claude'], ['Ngủ', 'Nguồn'], ['Khởi động lại', 'Nguồn · cần xác nhận'], ['Tắt máy', 'Nguồn · cần xác nhận'], ['Đổi người dùng', 'Nguồn'], ['Xóa lịch sử clipboard', 'Clipboard · cần xác nhận']]
+  .map(([title, sub]) => ({ kind: 'action', title, sub }));
+const VERB = { app: 'Mở', file: 'Mở', clip: 'Copy', action: 'Chạy' };
+const GROUP = { app: 'Ứng dụng', file: 'File', clip: 'Clipboard', action: 'Hành động' };
+const C = { q: PRESETS.search, sel: 0, items: [], calc: null };
+const cmd = document.getElementById('cmd');
+const cmdInput = document.getElementById('cmdInput');
+const cmdBody = document.getElementById('cmdBody');
+document.getElementById('grip').innerHTML = I.grip;
+document.querySelector('[data-icon="search20"]').innerHTML = I.search(20);
+
+function calc(raw) {
+  const expr = raw.replace(/^=\s*/, '').trim();
+  if (!expr || !/^[0-9+\-*/().%^\s]+$/.test(expr) || !/[+\-*/^%]/.test(expr.replace(/^-/, ''))) return null;
+  try {
+    const v = Function('"use strict"; return (' + expr.replace(/\^/g, '**') + ')')();
+    return typeof v === 'number' && isFinite(v) ? { expr, value: Math.round(v * 1e10) / 1e10 } : null;
+  } catch (e) { return null; }
+}
+function search() {
+  const c = calc(C.q);
+  if (c) return { calc: c, items: [], recent: false };
+  let q = C.q.trim().toLowerCase(), pools = [APPS, FILES, CCLIPS, ACTIONS];
+  if (q === 'cb' || q.startsWith('cb ')) { pools = [CCLIPS]; q = q.slice(2).trim(); }
+  else if (q === 'f' || q.startsWith('f ')) { pools = [FILES]; q = q.slice(1).trim(); }
+  if (!q && pools.length > 1) return { calc: null, items: [APPS[0], APPS[1], FILES[0], CCLIPS[0], ACTIONS[0]], recent: true };
+  return { calc: null, items: pools.flatMap((p) => p.filter((it) => it.title.toLowerCase().includes(q) || it.sub.toLowerCase().includes(q)).slice(0, 4)), recent: false };
+}
+function renderCmd() {
+  const r = search();
+  C.items = r.items; C.calc = r.calc;
+  C.sel = Math.min(C.sel, Math.max(r.items.length - 1, 0));
+  document.getElementById('cmdClear').hidden = !C.q;
+  if (r.calc) {
+    cmdBody.innerHTML = `<div class="calc">
+      <span class="tile" style="width:40px;height:40px;border-radius:12px;color:var(--text)">${I.calc}</span>
+      <div style="display:flex;flex-direction:column;gap:2px" class="grow">
+        <span class="mono" style="font-size:30px;font-weight:600;letter-spacing:-.02em">= ${r.calc.value.toLocaleString('en-US', { maximumFractionDigits: 10 })}</span>
+        <span class="mono" style="font-size:12px;color:var(--faint)">${esc(r.calc.expr)}</span></div>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)">Copy ${kbd('↵')}</span></div>`;
+    return;
+  }
+  if (!r.items.length) {
+    cmdBody.innerHTML = `<div style="font-size:14px;color:var(--faint);padding:18px 20px">Không tìm thấy kết quả. Thử <b class="mono" style="color:var(--sub);font-weight:500">f</b> để tìm file hoặc <b class="mono" style="color:var(--sub);font-weight:500">=</b> để tính.</div>`;
+    return;
+  }
+  let html = '', last = null;
+  if (r.recent) html += `<div class="group">Gần đây</div>`;
+  r.items.forEach((it, i) => {
+    if (!r.recent && it.kind !== last) { html += `<div class="group">${GROUP[it.kind]}</div>`; last = it.kind; }
+    const tile = it.kind === 'app' ? `<span class="tile" style="background:${it.bg};color:#101217">${it.title[0]}</span>`
+      : `<span class="tile">${it.kind === 'file' ? I.file : it.kind === 'clip' ? I.text : I.bolt}</span>`;
+    html += `<div class="row ${i === C.sel ? 'sel' : ''}" data-i="${i}">${tile}
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:0" class="grow">
+        <span class="ellipsis" style="font-size:14px">${esc(it.title)}</span>
+        <span class="ellipsis" style="font-size:12px;color:var(--faint)">${esc(it.sub)}</span></div>
+      <span class="verb">${VERB[it.kind]} ${kbd('↵')}</span></div>`;
+  });
+  cmdBody.innerHTML = `<div class="results" id="results"><div class="sel-hl" id="selHl"></div>${html}</div>`;
+  placeHighlight(false);
+}
+// One highlight element slides between rows instead of each row toggling its own background.
+function placeHighlight(animate = true) {
+  const hl = document.getElementById('selHl');
+  const row = cmdBody.querySelector(`.row[data-i="${C.sel}"]`);
+  if (!hl || !row) return;
+  if (!animate) hl.style.transition = 'none';
+  hl.style.top = row.offsetTop + 'px';
+  hl.style.height = row.offsetHeight + 'px';
+  if (!animate) { hl.getBoundingClientRect(); hl.style.transition = ''; }
+}
+function setCmdOpen(open) {
+  cmd.classList.toggle('closed', !open);
+  if (open) { cmdInput.focus(); cmdInput.select(); } else { document.getElementById('toastHost').innerHTML = ''; cmdInput.blur(); }
+}
+function setSel(i) {
+  C.sel = i;
+  cmdBody.querySelectorAll('.row').forEach((row) => row.classList.toggle('sel', +row.dataset.i === i));
+  const el = cmdBody.querySelector('.row.sel'); if (el) el.scrollIntoView({ block: 'nearest' });
+  placeHighlight(true);
+}
+function toast(text) {
+  document.getElementById('toastHost').innerHTML = `<div class="toast">${I.check(14)}${esc(text)}</div>`;
+}
+function run(i) {
+  if (C.calc) return toast('Đã copy ' + C.calc.value);
+  const it = C.items[i]; if (!it) return;
+  toast(it.kind === 'clip' ? 'Đã copy vào clipboard' : it.kind === 'action' ? 'Đã chạy: ' + it.title : 'Đang mở ' + it.title);
+}
+cmdInput.value = C.q;
+cmdInput.addEventListener('input', () => { C.q = cmdInput.value; C.sel = 0; renderCmd(); });
+cmdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (C.items.length) setSel(Math.min(C.sel + 1, C.items.length - 1)); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (C.items.length) setSel(Math.max(C.sel - 1, 0)); }
+  else if (e.key === 'Enter') { e.preventDefault(); run(C.sel); }
+  else if (e.key === 'Escape') { if (C.q) { C.q = ''; cmdInput.value = ''; C.sel = 0; renderCmd(); } else setCmdOpen(false); }
+});
+document.getElementById('cmdToggle').addEventListener('click', () => setCmdOpen(cmd.classList.contains('closed')));
+document.addEventListener('keydown', (e) => {
+  if (opts.view === 'cmd' && e.ctrlKey && e.code === 'Space') { e.preventDefault(); setCmdOpen(cmd.classList.contains('closed')); }
+});
+document.getElementById('cmdClear').addEventListener('click', () => { C.q = ''; cmdInput.value = ''; C.sel = 0; renderCmd(); cmdInput.focus(); });
+cmdBody.addEventListener('mousemove', (e) => { const row = e.target.closest('.row'); if (row && +row.dataset.i !== C.sel) setSel(+row.dataset.i); });
+cmdBody.addEventListener('click', (e) => { const row = e.target.closest('.row'); if (row) run(+row.dataset.i); });
+
+// drag (coordinates converted from screen px to the 1280x760 stage)
+const grip = document.getElementById('grip');
+let drag = null;
+grip.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  grip.setPointerCapture(e.pointerId);
+  const rect = stage.getBoundingClientRect();
+  const px = (e.clientX - rect.left) / scale, py = (e.clientY - rect.top) / scale;
+  drag = { dx: px - cmd.offsetLeft, dy: py - cmd.offsetTop, rect };
+  grip.classList.add('dragging');
+});
+grip.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const px = (e.clientX - drag.rect.left) / scale, py = (e.clientY - drag.rect.top) / scale;
+  cmd.style.left = Math.max(0, Math.min(1280 - cmd.offsetWidth, px - drag.dx)) + 'px';
+  cmd.style.top = Math.max(0, Math.min(760 - cmd.offsetHeight, py - drag.dy)) + 'px';
+});
+const endDrag = () => { drag = null; grip.classList.remove('dragging'); };
+grip.addEventListener('pointerup', endDrag);
+grip.addEventListener('pointercancel', endDrag);
+
+/* ============================================================ STATES */
+function renderStates() {
+  const spill = (inner, w, extra = '') => `<div class="spill glass" style="width:${w}px;${extra}">${inner}</div>`;
+  const t = (s, extra = '') => `<span style="font-weight:500;white-space:nowrap;${extra}">${s}</span>`;
+  const mo = (s) => `<span class="mono" style="font-size:12px;color:var(--faint);white-space:nowrap">${s}</span>`;
+  const pct = (n, color) => `<span class="mono" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--sub)">${ring(n, color)}${n}%</span>`;
+  const g = '<span class="grow"></span>';
+  const img = (size, radius) => `<img class="art" src="${ART}" alt="" style="width:${size}px;height:${size}px;border-radius:${radius}px">`;
+  const cells = [
+    ['wide', 'Always · pill lớn', 'Không mở cả panel. Pill cao hơn, hiện cùng lúc Claude và media (có ảnh bìa); thứ tự theo widget ưu tiên. Bấm vào để mở đầy đủ.',
+      `<div class="spill glass" style="width:620px;height:64px;border-radius:32px;padding:0 12px 0 20px;gap:12px">
+        <div class="mid-block" style="flex:1 1 0">${spark(38, 'tool')}<div style="display:flex;flex-direction:column;gap:2px"><span class="t1">Cooking</span><span class="t2 mono">3m 12s · 5h 62%</span></div></div>
+        <span class="vsep"></span>
+        <div class="mid-block" style="flex:1 1 0">${img(40, 9)}<div style="display:flex;flex-direction:column;gap:2px" class="grow"><span class="t1">Midnight City</span><span class="t2">M83</span></div><span class="icon-btn" style="color:var(--text)">${I.pause(16)}</span></div>
+      </div>`],
+    ['', 'idle', 'Không phiên nào đang chạy: biểu tượng bia mộ.',
+      spill(`${spark(24, 'idle')}${t('idle')}${g}${pct(62, 'oklch(0.76 0.12 45)')}`, 340)],
+    ['', 'Thinking / Cooking', 'Đang chạy: GIF chuyển động. Thinking khi Claude đang nghĩ, Cooking khi đang chạy tool.',
+      spill(`${spark(24, 'tool')}${t('Cooking')}${g}${mo('3m 12s')}${pct(62, 'oklch(0.76 0.12 45)')}`, 340)],
+    ['', 'wait for you', 'Chờ cấp quyền: tạm thay nội dung pill để duyệt ngay trên pill; xong thì pill trở lại như cũ.',
+      spill(`<span class="pulse" style="color:var(--warn);display:flex">${I.shield(16)}</span>${spark(22, 'permission')}${t('wait for you', 'font-weight:600')}${mo('Bash · git push')}${g}<span class="btn sm">Từ chối</span><span class="btn sm primary">Cho phép</span>`, 480, 'height:44px;border-radius:22px;padding:0 8px 0 16px')],
+    ['', 'Media ưu tiên', 'Ảnh bìa thật nếu app phát nhạc có cung cấp; không có thì dùng ô màu + nốt nhạc.',
+      spill(`${img(24, 6)}${t('Midnight City')}<span style="font-size:12px;color:var(--faint)">M83</span>${g}${eq(true)}`, 340)],
+    ['', 'Hạn mức ≥ 80%', 'Vòng và chữ chuyển đỏ; hiện giờ reset.',
+      spill(`<span style="display:flex">${ring(84, 'oklch(0.72 0.14 25)', 20)}</span>${t('Hạn mức 5 giờ · 84%', 'color:var(--danger)')}${g}${mo('reset 38m')}`, 340)],
+    ['', 'Vừa copy', 'Nháy nhẹ 1.2 giây rồi trở lại; không hiện với nội dung nhạy cảm.',
+      spill(`<span style="color:var(--ok);display:flex">${I.check(16)}</span>${t('Đã copy vào clipboard')}<span class="ellipsis" style="font-size:12px;color:var(--faint)">git worktree add…</span>`, 340)],
+  ];
+  document.getElementById('statesSheet').innerHTML = `
+    <div><h2>Trạng thái pill</h2><div class="lead">Pill thu gọn hiện widget ưu tiên; yêu cầu cấp quyền (wait for you) tạm thời chiếm chỗ.</div></div>
+    <div class="state-grid">${cells.map(([cls, title, rule, pill]) => `<div class="state ${cls}"><div><b>${title}</b><p>${rule}</p></div>${pill}</div>`).join('')}</div>
+    <div class="specs">
+      <div><span>Mở rộng</span><code>420ms · cubic-bezier(.32,1.25,.5,1)</code></div>
+      <div><span>Hover delay</span><code>250ms mở · đóng ngay khi rời</code></div>
+      <div><span>Alert</span><code>480ms nảy · rung 380ms</code></div>
+      <div><span>Card</span><code>260ms · lệch 45ms/card</code></div>
+      <div><span>Kích thước</span><code>mặc định: pill 340×40 · always 620×64 · mở 780 × theo nội dung · cách mép 8px (chỉnh trong Cài đặt)</code></div>
+    </div>`;
+}
+
+/* ============================================================ SETTINGS */
+const SIZES = {
+  pill: { s: [300, 36, 'Nhỏ'], m: [340, 40, 'Vừa'], l: [400, 46, 'Lớn'] },
+  mid: { m: [620, 64, 'Vừa'], l: [700, 76, 'Lớn'] },
+  panel: { s: [720, 0, 'Hẹp'], m: [780, 0, 'Vừa'], l: [860, 0, 'Rộng'] },
+};
+const S = {
+  pill: 'm', mid: 'm', panel: 'm', gap: 8, fs: 100, motion: 'system',
+  widgets: [
+    { id: 'media', tab: 'core', label: 'Đang phát', desc: 'Ảnh bìa, tiến độ, điều khiển nhạc', on: true },
+    { id: 'system', tab: 'core', label: 'Hệ thống', desc: 'Task Manager, nguồn', on: true },
+    { id: 'clipboard', tab: 'core', label: 'Clipboard', desc: 'Lịch sử, tìm kiếm, ảnh', on: true },
+    { id: 'sessions', tab: 'claude', label: 'Phiên Claude', desc: 'Các phiên đang mở và trạng thái', on: true },
+    { id: 'usage', tab: 'claude', label: 'Hạn mức', desc: '5 giờ và 7 ngày', on: true },
+  ],
+};
+function applySettings() {
+  const st = stage.style;
+  st.setProperty('--pill-w', SIZES.pill[S.pill][0] + 'px');
+  st.setProperty('--pill-h', SIZES.pill[S.pill][1] + 'px');
+  st.setProperty('--mid-w', SIZES.mid[S.mid][0] + 'px');
+  st.setProperty('--mid-h', SIZES.mid[S.mid][1] + 'px');
+  st.setProperty('--panel-w', SIZES.panel[S.panel][0] + 'px');
+  st.setProperty('--gap', S.gap + 'px');
+  st.setProperty('--fs', S.fs / 100);
+  const systemReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.body.classList.toggle('reduce', S.motion === 'reduce' || (S.motion === 'system' && systemReduce));
+}
+function segHTML(key, table) {
+  return `<span class="seg">${Object.entries(table).map(([k, v]) => `<button data-set="${key}" data-v="${k}" class="${S[key] === k ? 'on' : ''}">${v[2]}${v[1] ? ` <span class="mono" style="opacity:.6">${v[0]}×${v[1]}</span>` : ` <span class="mono" style="opacity:.6">${v[0]}</span>`}</button>`).join('')}</span>`;
+}
+function previewHTML() {
+  const m = notchModel();
+  return `<div class="label" style="align-self:stretch"><span>Xem trước</span><span class="aside">Pill thường · Pill always</span></div>
+    <div class="island glass ${m.pending ? 'alert' : ''}">${smallPill(m)}</div>
+    <div class="island glass mid">${midPill(m)}</div>`;
+}
+function renderSettings() {
+  const row = (t, d, control) => `<div class="set-row"><div><div class="t">${t}</div><div class="d">${d}</div></div>${control}</div>`;
+  const widgetRows = (tab) => {
+    const list = S.widgets.filter((w) => w.tab === tab);
+    return list.map((w, i) => `<div class="w-row">
+        <div class="order"><button data-move="${w.id}" data-dir="-1" ${i === 0 ? 'disabled' : ''} title="Lên">↑</button><button data-move="${w.id}" data-dir="1" ${i === list.length - 1 ? 'disabled' : ''} title="Xuống">↓</button></div>
+        <div class="grow"><div class="t" style="font-size:14px">${w.label}</div><div class="d" style="font-size:12px;color:var(--faint)">${w.desc}</div></div>
+        <button class="switch ${w.on ? 'on' : ''}" data-toggle="${w.id}" title="Bật/tắt"></button>
+      </div>`).join('');
+  };
+  document.getElementById('settings').innerHTML = `
+    <aside>
+      <h3>Cài đặt</h3>
+      <a href="#set-pill" data-jump="set-pill">Pill</a>
+      <a href="#set-widget" data-jump="set-widget">Widget</a>
+      <a href="#set-font" data-jump="set-font">Cỡ chữ và chuyển động</a>
+    </aside>
+    <div class="scroll-area" style="flex-grow:1">
+    <main id="setMain" class="scroll-viewport">
+      <div class="preview" id="setPreview">${previewHTML()}</div>
+
+      <section class="set-sec" id="set-pill">
+        <h4>Pill</h4>
+        ${row('Kích thước pill', 'Pill thu gọn ở chế độ hover / click', segHTML('pill', SIZES.pill))}
+        ${row('Kích thước pill always', 'Pill lớn hiện cùng lúc Claude và media', segHTML('mid', SIZES.mid))}
+        ${row('Độ rộng khi mở rộng', 'Chiều cao tự theo nội dung', segHTML('panel', SIZES.panel))}
+        ${row('Cách mép trên màn hình', 'Pill nổi, không dính mép', `<span class="range"><input type="range" min="0" max="24" step="1" value="${S.gap}" data-range="gap"><output id="out-gap">${S.gap}px</output></span>`)}
+        ${row('Cách mở', 'hover: rê chuột · click: bấm · always: pill lớn luôn hiện', `<span class="seg">${['hover', 'click', 'always'].map((v) => `<button data-mode="${v}" class="${opts.mode === v ? 'on' : ''}">${v}</button>`).join('')}</span>`)}
+        ${row('Pill ưu tiên hiện', 'Nội dung pill thu gọn; cấp quyền luôn chen lên trước', `<span class="seg">${[['claude', 'Claude'], ['media', 'Media']].map(([v, l]) => `<button data-prio="${v}" class="${opts.priority === v ? 'on' : ''}">${l}</button>`).join('')}</span>`)}
+      </section>
+
+      <section class="set-sec" id="set-widget">
+        <h4>Widget</h4>
+        <div class="d" style="font-size:12px;color:var(--faint);margin:6px 0 2px">Bật/tắt và sắp xếp thứ tự hiển thị trong panel.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px"><span class="tag">Tab Core</span></div>
+        ${widgetRows('core')}
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px"><span class="tag">Tab Claude</span></div>
+        ${widgetRows('claude')}
+      </section>
+
+      <section class="set-sec" id="set-font">
+        <h4>Cỡ chữ và chuyển động</h4>
+        ${row('Cỡ chữ trong pill và panel', 'Áp dụng cho toàn bộ chữ và biểu tượng bên trong notch', `<span class="range"><input type="range" min="85" max="130" step="5" value="${S.fs}" data-range="fs"><output id="out-fs">${S.fs}%</output></span>`)}
+        ${row('Chuyển động', 'Giảm: bỏ nảy, rung, đếm số, hiện lần lượt; chỉ còn mờ dần nhanh', `<span class="seg">${[['system', 'Theo Windows'], ['reduce', 'Giảm'], ['full', 'Đầy đủ']].map(([v, l]) => `<button data-set="motion" data-v="${v}" class="${S.motion === v ? 'on' : ''}">${l}</button>`).join('')}</span>`)}
+      </section>
+    </main>
+    <div class="scroll-bar"><div class="scroll-thumb"></div></div>
+    </div>`;
+  attachScrollArea(document.querySelector('#settings .scroll-area'));
+}
+// Minimal ScrollArea: sizes/positions the overlay thumb, drag to scroll, click the track to jump.
+function attachScrollArea(area) {
+  const viewport = area.querySelector('.scroll-viewport');
+  const bar = area.querySelector('.scroll-bar');
+  const thumb = bar.querySelector('.scroll-thumb');
+  let hideTimer = null;
+  const metrics = () => {
+    const track = bar.clientHeight - 2;
+    const max = viewport.scrollHeight - viewport.clientHeight;
+    const size = Math.max(24, track * viewport.clientHeight / viewport.scrollHeight);
+    return { track, max, size };
+  };
+  const update = () => {
+    const { track, max, size } = metrics();
+    bar.hidden = max <= 0;
+    thumb.style.height = size + 'px';
+    thumb.style.transform = `translateY(${max > 0 ? (viewport.scrollTop / max) * (track - size) : 0}px)`;
+  };
+  viewport.addEventListener('scroll', () => {
+    update();
+    bar.classList.add('active');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => bar.classList.remove('active'), 600);
+  });
+  let drag = null;
+  thumb.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    thumb.setPointerCapture(e.pointerId);
+    drag = { y: e.clientY, top: viewport.scrollTop };
+    bar.classList.add('dragging', 'active');
+  });
+  thumb.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const { track, max, size } = metrics();
+    viewport.scrollTop = drag.top + ((e.clientY - drag.y) / scale) * (max / (track - size));
+  });
+  const end = () => { drag = null; bar.classList.remove('dragging'); };
+  thumb.addEventListener('pointerup', end);
+  thumb.addEventListener('pointercancel', end);
+  bar.addEventListener('pointerdown', (e) => {
+    if (e.target !== bar) return;
+    const { max } = metrics();
+    const y = (e.clientY - bar.getBoundingClientRect().top) / scale;
+    viewport.scrollTo({ top: (y / bar.clientHeight) * max, behavior: 'smooth' });
+  });
+  bar.addEventListener('wheel', (e) => { viewport.scrollTop += e.deltaY; }, { passive: true });
+  new ResizeObserver(update).observe(viewport);
+  update();
+}
+const settingsEl = document.getElementById('settings');
+settingsEl.addEventListener('click', (e) => {
+  const jump = e.target.closest('[data-jump]');
+  if (jump) { e.preventDefault(); document.getElementById(jump.dataset.jump).scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  const set = e.target.closest('[data-set]');
+  const mode = e.target.closest('[data-mode]');
+  const prio = e.target.closest('[data-prio]');
+  const toggle = e.target.closest('[data-toggle]');
+  const move = e.target.closest('[data-move]');
+  if (set) { S[set.dataset.set] = set.dataset.v; applySettings(); }
+  else if (mode) { document.querySelector(`[data-opt="mode"] [data-v="${mode.dataset.mode}"]`).click(); }
+  else if (prio) { document.querySelector(`[data-opt="priority"] [data-v="${prio.dataset.prio}"]`).click(); }
+  else if (toggle) { const w = S.widgets.find((x) => x.id === toggle.dataset.toggle); w.on = !w.on; }
+  else if (move) {
+    const w = S.widgets.find((x) => x.id === move.dataset.move);
+    const same = S.widgets.filter((x) => x.tab === w.tab);
+    const j = same.indexOf(w) + +move.dataset.dir;
+    if (j < 0 || j >= same.length) return;
+    const other = same[j];
+    const a = S.widgets.indexOf(w), b = S.widgets.indexOf(other);
+    [S.widgets[a], S.widgets[b]] = [S.widgets[b], S.widgets[a]];
+  } else return;
+  const main = document.getElementById('setMain'), top = main ? main.scrollTop : 0;
+  renderSettings();
+  const vp = document.getElementById('setMain');
+  vp.scrollTop = top;
+  vp.dispatchEvent(new Event('scroll'));
+  renderNotch();
+});
+settingsEl.addEventListener('input', (e) => {
+  const key = e.target.dataset.range; if (!key) return;
+  S[key] = +e.target.value;
+  document.getElementById('out-' + key).textContent = key === 'gap' ? S.gap + 'px' : S.fs + '%';
+  applySettings();
+  document.getElementById('setPreview').innerHTML = previewHTML();
+});
+
+// Optional deep link, e.g. ?mode=always&phase=permission  or  ?view=notch&open=1&tab=claude
+(function applyQuery() {
+  const p = new URLSearchParams(location.search);
+  ['mode', 'priority', 'phase', 'art', 'preset'].forEach((k) => {
+    const v = p.get(k); if (!v) return;
+    const b = document.querySelector(`[data-opt="${k}"] [data-v="${v}"]`); if (b) b.click();
+  });
+  if (p.get('tab')) N.tab = p.get('tab');
+  if (p.get('open')) N.open = true;
+  if (p.get('power')) N.power = true;
+  if (p.get('fs')) S.fs = +p.get('fs');
+  applySettings();
+  if (p.get('view')) { const b = document.querySelector(`#viewSeg [data-view="${p.get('view')}"]`); if (b) b.click(); }
+})();
+
+renderStates();
+fit();
+renderNotch();
+renderCmd();
+</script>
+</body>
+</html>
