@@ -102,7 +102,7 @@ nếu có, mặc định `~/orca`; không khớp thì không đoán gì thêm. P
 
 | Việc | Cách làm | Vì sao |
 |---|---|---|
-| Theo dõi phiên đang sống | Xem tên + kích thước + `mtime` của từng file trong `state.d`, mỗi **2 giây** khi có hoạt động và **5 giây** khi mọi phiên nằm im; chỉ đọc lại khi có đổi | `mtime` của **thư mục** không đổi khi một file bị ghi đè tại chỗ — mà đó chính là lúc phiên đổi trạng thái. 2 giây là Lauren chọn (20/09): "có độ trễ cũng được" |
+| Theo dõi phiên đang sống | Xem tên + kích thước + `mtime` của từng file trong `state.d`, mỗi **3 giây** khi có hoạt động và **5 giây** khi mọi phiên nằm im; chỉ đọc lại khi có đổi | `mtime` của **thư mục** không đổi khi một file bị ghi đè tại chỗ — mà đó chính là lúc phiên đổi trạng thái. 2 giây là Lauren chọn (20/09): "có độ trễ cũng được" |
 | Gọi HTTPS | **WinHTTP** qua crate `windows` (feature `Win32_Networking_WinHttp`) | `reqwest` đã có trong cây phụ thuộc nhưng **không có TLS backend**; bật `rustls-tls` sẽ kéo thêm cả rustls + ring và làm build lâu hơn nhiều. App vốn đã chỉ chạy Windows và đã dùng nhiều Win32 |
 | Cache hạn mức | `%APPDATA%\winbar\claude-usage.json`, TTL **120 giây**, làm mới mỗi 5 phút khi panel mở | Endpoint không công khai, phải tôn trọng rate limit (capability map) |
 | Token | Đọc lại từ `.credentials.json` mỗi lần gọi, giữ trong bộ nhớ đúng lúc gọi | Không sao chép token sang chỗ khác, không ghi ra đĩa, **không bao giờ ghi log** |
@@ -338,11 +338,11 @@ trạng thái, và mã lỗi.
 9. Không có phiên nào: widget tự ẩn khỏi pill.
 10. Riêng tư: log không có token, không có đường dẫn đầy đủ, không có tiêu đề phiên.
 11. Hiệu năng (bản release): RAM tăng ≤ 12 MB; CPU khi panel đóng ≤ mức trước module + 0,02%.
-    RAM: **~0 MB**, đạt. CPU: **+0,00** khi mọi phiên nằm im; khi có phiên đang chạy tool thì **+0,021 trung
-    bình** (bốn lần: +0,017 / +0,030 / +0,015 / +0,023) — **quanh ngưỡng, chưa phải lần nào cũng đạt**.
-    Từng là +1,66 → +0,183 → +0,081 → +0,021. Chi phí thật không nằm ở việc phát sự kiện mà ở **quét lại 157
-    file lịch sử Desktop mỗi 60 giây trong luồng nền** (~86% tổng chi phí), nay đã tách khỏi đường của pill.
-    Toàn bộ số đo và **năm giả thuyết sai** của tôi: `tests/manual-claude.md` §7.
+    RAM: **~0 MB**, đạt. CPU: **đạt** — trung bình **+0,010** khi có phiên đang chạy tool (ba lần:
+    −0,018 / +0,031 / +0,017), tức đã **nhỏ hơn nhiễu** của phép đo; khi mọi phiên nằm im thì bằng 0.
+    Chặng đường: +1,66 → +0,183 → +0,081 → +0,021 → +0,010. Chi phí thật không nằm ở việc phát sự kiện mà ở
+    **quét lại 157 file lịch sử Desktop mỗi 60 giây trong luồng nền** (~86% tổng chi phí); bỏ nó khỏi luồng nền
+    rồi thì giãn nhịp quét mới có tác dụng. Số đo và **năm giả thuyết sai** của tôi: `tests/manual-claude.md` §7.
 12. `npm test`, `cargo test`, clippy, `npm run lint` qua; checklist thủ công chạy xong.
 
 ## 12. Rủi ro

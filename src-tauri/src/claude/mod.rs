@@ -27,10 +27,13 @@ pub use usage::Usage;
 /// costs, so the page still asks for the list itself.
 pub const SESSIONS_CHANGED: &str = "claude-sessions-changed";
 
-/// How often the watcher looks while something is happening. Two seconds rather than one is Lauren's trade
-/// (2026-09-19): "không cần phải ngay tức thì, có độ trễ cũng được". It is the one lever that actually moves the
-/// number — the cost is one read plus one re-render per pass, so halving the passes halves the cost.
-const WATCH_BUSY: Duration = Duration::from_secs(2);
+/// How often the watcher looks while something is happening. Lauren's trade, twice over: two seconds on
+/// 19/09 ("có độ trễ cũng được") and three on 21/09, to buy the last of the CPU criterion.
+///
+/// This lever only started working once the Desktop history scan left the background thread. Before that the
+/// cost was a 157-file rescan on a timer of its own and the poll rate barely showed; now every pass is one
+/// directory listing plus one read of a handful of small files, so the cost really does scale with this.
+const WATCH_BUSY: Duration = Duration::from_secs(3);
 /// …and while every session is idle. Lauren asked for this trade (2026-09-19): a couple of seconds of delay is
 /// fine, and a one-second loop is what made the layout cost 0.18 points of CPU while a session ran tools.
 const WATCH_IDLE: Duration = Duration::from_secs(5);

@@ -265,6 +265,29 @@ kéo theo 157 file nào.
 trước. Mấy lần chạy đầu đã **ghi đè lựa chọn của Lauren** (`dense` 65%) về `liquid`. Đã trả lại, và sửa cả hai
 script đo để **chụp settings sống ngay trước mỗi lần chạy** thay vì dùng file cũ.
 
+### Lần 5 — giãn nhịp quét lên 3 giây (21/09)
+
+Lauren bảo giãn nhịp. Lần này giãn **mới thật sự ăn**: ở lần 3 việc đổi 1 → 2 giây gần như không đổi gì, vì chi
+phí lúc đó là cú quét 157 file lịch sử chạy theo đồng hồ riêng. Lịch sử ra khỏi luồng nền rồi thì mỗi vòng chỉ
+còn một lần liệt kê thư mục và một lần đọc vài file nhỏ — tức chi phí tỉ lệ thẳng với nhịp quét.
+
+Ba lần chạy sạch (không build hay việc nặng nào chạy song song):
+
+| Lần | Bật | Tắt | Chênh |
+|---|---|---|---|
+| 1 | 0,027% | 0,045% | **−0,018** |
+| 2 | 0,031% | 0,000% | **+0,031** |
+| 3 | 0,017% | 0,000% | **+0,017** |
+
+- [x] ✅ Trung bình **+0,010**, dưới tiêu chí +0,02.
+- [x] ✅ Một lần ra **âm** — tức **tín hiệu đã nhỏ hơn nhiễu** của chính phép đo. Không thể đo chính xác hơn bằng
+      rig này nữa; muốn chắc hơn phải đo dài hàng giờ.
+
+Cả chặng: **+1,66 → +0,183 → +0,081 → +0,021 → +0,010 (trong nhiễu)**.
+
+**Một lần đo phải bỏ:** lần đầu tôi chạy đo trong lúc vẫn build và vẽ icon trên cùng máy — ra **0,552%**, vô
+nghĩa. Số chỉ dùng được khi máy yên.
+
 ## 8. Chưa làm / giới hạn đã biết
 
 - **Duyệt quyền ngay trên notch** không nằm trong bản này (`claude-approvals`, phải duyệt riêng vì nó ghi hook).
