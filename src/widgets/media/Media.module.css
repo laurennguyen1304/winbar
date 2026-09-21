@@ -63,6 +63,9 @@
   flex-direction: column;
   gap: 12px;
   align-items: stretch;
+  /* Takes the rest of the card, so a filled cover has room to grow into instead of leaving it empty. */
+  flex: 1 1 auto;
+  min-height: 0;
   animation: media-in var(--motion-quick-fade) both;
 }
 
