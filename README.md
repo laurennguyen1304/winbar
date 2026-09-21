@@ -108,4 +108,6 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 ## Tài liệu
 
-Đặc tả từng tính năng và thiết kế nằm trong [`docs/`](docs/); mockup giao diện trong [`design/`](design/).
+Mỗi phần có một đặc tả riêng ở gốc repo: [notch](SPEC-notch-shell.md), [Claude](SPEC-claude.md),
+[media](SPEC-media.md), [Core](SPEC-system.md), [command bar](SPEC-command-bar.md), [clipboard](SPEC-clipboard.md);
+bức tranh tổng thể ở [`CAPABILITY-MAP.md`](CAPABILITY-MAP.md), mockup giao diện trong [`design/`](design/).
