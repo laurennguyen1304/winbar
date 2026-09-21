@@ -79,6 +79,22 @@ Gọi `GET` với `Authorization: Bearer …` và `anthropic-beta: oauth-2025-04
 mục có `percent` cao nhất trong `limits` theo nhóm (`session` cho 5 giờ, `weekly` cho 7 ngày). Các mục
 `weekly_scoped` có `scope.model.display_name` thành dòng phụ "theo model".
 
+### 3.3b Nhiều tài khoản — CLI đổi tài khoản (tuỳ chọn, chờ duyệt)
+
+Khi đổi tài khoản Claude Code bằng một CLI đổi tài khoản, `.credentials.json` chỉ còn token của tài khoản đang
+active, nên §3.3 chỉ thấy được một tài khoản. Nếu máy có CLI in ra JSON schema `accounts@1` thì hỏi nó thay:
+
+- `status --json`: gọi usage live cho mọi tài khoản (~3 giây). `list --json`: số cache, nhanh (~1 giây).
+- Mỗi tài khoản có `uuid`, `alias`, `email`, `active`, `state`, và `usage.{five_hour, seven_day}` với
+  `utilization`, `resets_at` (epoch giây), `polled_at`, `token_expired`.
+- Output **không chứa token**. winbar không đọc file token của CLI đó và không bao giờ refresh token: việc đó
+  là của CLI.
+
+CLI mặc định: `~/.local/bin/token-slayer.cmd`; `claude.accountSwitcherPath` đổi được đường dẫn. winbar gọi
+`status --json` (cache trong bộ nhớ 120 giây như §4), hỏng thì thử `list --json`. Không có CLI, CLI lỗi, hết giờ,
+hoặc sai schema → dùng §3.3 như cũ, không báo lỗi gì thêm. Số 5 giờ / 7 ngày của tài khoản active vẫn lấy từ §3.3
+để pill, card và cảnh báo cùng một nguồn; CLI chỉ cho số của các tài khoản còn lại.
+
 ### 3.4 Orca: `project` là tên **worktree**, không phải tên project
 
 Bạn làm việc qua Orca, nên gần hết phiên nằm trong `~/orca/workspaces/<project>/<worktree>`. Hook chỉ lấy
@@ -109,6 +125,9 @@ nếu có, mặc định `~/orca`; không khớp thì không đoán gì thêm. P
 | Không đi theo redirect | `WINHTTP_OPTION_REDIRECT_POLICY_NEVER` | WinHTTP mặc định **có** đi theo; một redirect đổi host sẽ mang header `Authorization` tới đó |
 | Từ chối header dị dạng | Kiểm ASCII, không ký tự điều khiển, trước khi gửi | Ký tự CR/LF trong token sẽ chèn thêm header |
 | Xóa token khỏi bộ nhớ | Ghi đè cả chuỗi token lẫn dòng header sau khi gửi | Che một phần thôi — nói rõ ở §13 |
+| Cache theo tài khoản | Cache khoá theo `accountUuid` (lấy từ `~/.claude.json`, không phải secret) | Bản cũ chỉ có một bản ghi: vừa đổi tài khoản thì 2 phút đầu card hiện số của tài khoản trước |
+| Gọi CLI đổi tài khoản (§3.3b) | Đường dẫn tuyệt đối cố định, tham số cố định, không qua `PATH`, không nhận đường dẫn mạng, `CREATE_NO_WINDOW`, timeout cứng, giới hạn kích thước output | Không chạy nhầm chương trình cùng tên; không nháy console; không treo app |
+| `claude_usage` chạy ngoài luồng chính | `#[tauri::command(async)]` | Lệnh Tauri đồng bộ chạy trên luồng chính; CLI mất ~3 giây sẽ làm đứng giao diện |
 | Lịch sử Desktop | Quét khi panel mở và mỗi 60 giây, không quét khi panel đóng | 156 file; không đáng quét liên tục |
 | Tên project qua Orca | Tách `cwd` theo `<gốc>/workspaces/<project>/<worktree>` (§3.4) | Không có nó thì card chỉ toàn tên cá |
 | Ảnh trạng thái | Bộ ảnh kèm app + thư mục người dùng, xem §5.4 | Bạn muốn tự thêm ảnh mà không phải build lại |
@@ -213,6 +232,10 @@ Dưới đó, khi payload có `weekly_scoped`, thêm dòng nhỏ mỗi model: `F
 - Lỗi `auth` (401/403): "Cần đăng nhập lại Claude Code" — số cũ vẫn hiện, ghi rõ là số cũ.
 - Lỗi mạng: giữ số cache, ghi "không cập nhật được, số từ <n> phút trước".
 - Chưa có `.credentials.json`: "Chưa đăng nhập Claude Code", không gọi mạng.
+- Nhiều tài khoản (§3.3b): hai thanh lớn vẫn là tài khoản active, có tên tài khoản ở đầu. Dưới đó mỗi tài khoản
+  còn lại một khối nhỏ 5 giờ / 7 ngày, theo thứ tự CLI trả về. Pill và cảnh báo §5.6 chỉ theo tài khoản active.
+  Tên hiện `alias`, không có thì email đã che (`ab…@domain`). Tài khoản cần đăng nhập lại: giữ số cũ, ghi "cần
+  đăng nhập lại". Đã qua `resets_at` thì cửa sổ đó hiện 0% thay vì số cũ.
 
 ### 5.6 Cảnh báo ngưỡng
 
@@ -270,6 +293,20 @@ export interface ClaudeUsage {
   /** Epoch ms của lần gọi thành công gần nhất. */
   fetchedAt: number;
   error: "auth" | "network" | "no-login" | null;
+  /** Chỉ có khi đọc được CLI đổi tài khoản (§3.3b). Các trường trên là của tài khoản active. */
+  accounts?: ClaudeAccountUsage[];
+}
+
+export interface ClaudeAccountUsage {
+  /** `uuid` của tài khoản. */
+  id: string;
+  /** `alias`, hoặc email đã che. Không bao giờ là email đầy đủ. */
+  label: string;
+  active: boolean;
+  fiveHour: ClaudeWindow | null;
+  sevenDay: ClaudeWindow | null;
+  fetchedAt: number;
+  needsLogin: boolean;
 }
 ```
 
@@ -288,6 +325,8 @@ export interface ClaudeUsage {
 | `claude.iconRotateSeconds` | 0 (không luân phiên) · 4 · 6 · 10 | `6` |
 | `claude.usageWarnPercent` | 0 (tắt) · 80 · 90 | `90` |
 | `claude.showDesktopSessions` | bool | `true` |
+| `claude.multiAccount` | bật/tắt §3.3b | `true` (không có CLI thì tự bỏ qua) |
+| `claude.accountSwitcherPath` | đường dẫn tuyệt đối tới `.exe`/`.cmd` của CLI; chỉ sửa tay trong file | `""` (dùng mặc định §3.3b) |
 
 ## 8. Cấu trúc thư mục
 
@@ -356,6 +395,7 @@ trạng thái, và mã lỗi.
 | Token lộ ra log hoặc ảnh chụp màn hình | **Cao** | Không log; không đưa token vào bất kỳ struct nào phát ra frontend; checklist có mục kiểm |
 | WinHTTP viết tay sai, rò handle | Trung bình | Một hàm GET duy nhất, đóng handle bằng `Drop`; test với URL sai và không có mạng |
 | Poll làm tốn CPU | ~~Trung bình~~ **Đã xảy ra** | Đo ở Task 6: +1,66 điểm lúc đầu (quét lại 156 file lịch sử mỗi lần đổi), còn +0,081 sau khi cache lịch sử và giãn nhịp quét. Vẫn trên tiêu chí 11 |
+| CLI đổi tài khoản đổi schema hoặc bỏ lệnh `--json` | Trung bình | Kiểm tên + major của `schema`; sai thì quay về §3.3 |
 | Ảnh động làm tốn CPU | Trung bình | Bài học media: chỉ chạy khi thấy được; đo CPU khi panel đóng |
 
 ## 13. Giới hạn khi làm
@@ -381,8 +421,11 @@ trạng thái, và mã lỗi.
 | Chạy nhầm một `wt.exe` do người khác đặt vào | Gọi terminal bằng **đường dẫn đầy đủ** (`%LOCALAPPDATA%\…\wt.exe`, rồi `%SystemRoot%\…\powershell.exe`), không để Windows tự dò theo `PATH` hay thư mục làm việc |
 | Rò chứng thực NTLM qua đường dẫn mạng | Đường dẫn mạng bị từ chối **trước khi** chạm vào ổ đĩa, ở cả hai chỗ: lúc dựng danh sách (chạy mỗi 2 giây cho mọi phiên) và lúc mở terminal. Chỉ cần `is_dir()` một đường dẫn UNC là Windows đã mở kết nối SMB. Kiểm bằng **prefix của đường dẫn đã parse**, không phải bằng chuỗi: Windows nhận cả hai loại gạch chéo nên `//server/share`, `/\server\share`, `\/server/share` cũng là đường dẫn mạng — cách kiểm "bắt đầu bằng hai dấu \\" cho ba dạng đó lọt hết |
 
+| Email tài khoản ra đĩa, log hoặc màn hình (§3.3b) | Chỉ đọc các trường cần dùng; không lưu output thô; không log stdout/stderr của CLI; cache khoá theo `uuid`, không có email; nhãn là alias hoặc email đã che |
+
 | **Chưa chặn được** | Vì sao |
 |---|---|
+| Ai sửa được file CLI đổi tài khoản thì winbar sẽ chạy code của họ | Gọi bằng đường dẫn tuyệt đối chỉ tránh được chương trình **cùng tên ở chỗ khác**, không chống được việc chính file đó bị sửa. Ghi được vào thư mục home thì cũng đã sửa được hook của Claude Code |
 | Token nằm **plaintext** trong `~/.claude/.credentials.json` | Đó là file của Claude Code, không phải của winbar. Ai đọc được máy bạn thì đọc được token, bất kể winbar làm gì |
 | Ghi đè bộ nhớ chỉ che một phần | Hệ điều hành có thể đã sao chép trang nhớ (pagefile, crash dump) trước đó. Việc ghi đè chỉ rút ngắn khoảng thời gian, không xóa được dấu vết đã có |
 | Proxy hệ thống | Dùng đúng proxy Windows đang cấu hình, giống Claude Code. Nếu máy bị cài proxy MITM thì đó là vấn đề ở tầng máy |
