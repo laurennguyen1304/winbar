@@ -9,6 +9,10 @@
   bài nhạc nào đang phát, máy đang bận ra sao, và mở ra một command bar bằng <kbd>Ctrl</kbd>+<kbd>Space</kbd>.
 </p>
 
+<p align="center">
+  <img src="design/demo-panel.png" width="820" alt="Panel của winbar khi mở: nhạc đang phát, các phiên Claude, CPU/RAM và hạn mức usage">
+</p>
+
 ---
 
 ## Tính năng
