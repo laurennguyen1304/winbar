@@ -40,6 +40,10 @@ Mỗi widget bật/tắt và sắp thứ tự được trong Cài đặt.
 
 ### Command bar (<kbd>Ctrl</kbd>+<kbd>Space</kbd>)
 
+<p align="center">
+  <img src="design/demo-command-bar.png" width="560" alt="Command bar khi vừa mở: mục gần đây và lịch sử clipboard">
+</p>
+
 Một ô tìm kiếm nổi giữa màn hình, gõ là ra:
 
 - **Ứng dụng** đã cài và **lịch sử** những gì bạn hay mở.
