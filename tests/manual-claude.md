@@ -31,7 +31,7 @@
 - [x] ✅ `makara` và `fangtooth` cùng hiện `qikify-theme-v3` — thấy được là cùng một project.
 - [x] ✅ Phiên idle quá 2 giờ xuống mục "Đã lâu không hoạt động", chữ mờ.
 - [x] ✅ Bấm một dòng mở đúng thư mục (test component).
-- [ ] 👤 Mở một phiên Claude mới ở cửa sổ khác: card đổi trong 1 giây.
+- [ ] 👤 Mở một phiên Claude mới ở cửa sổ khác: card đổi trong **2–3 giây** (nhịp quét 2 giây, xem tiêu chí 1).
 - [ ] 👤 Một phiên **chờ duyệt quyền**: pill chuyển vàng "wait for you" và dòng đó nổi lên đầu.
 
 ## 2. Hạn mức (tiêu chí 4, 5, 6)
