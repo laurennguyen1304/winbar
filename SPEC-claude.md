@@ -127,7 +127,7 @@ nếu có, mặc định `~/orca`; không khớp thì không đoán gì thêm. P
 | Xóa token khỏi bộ nhớ | Ghi đè cả chuỗi token lẫn dòng header sau khi gửi | Che một phần thôi — nói rõ ở §13 |
 | Cache theo tài khoản | Cache khoá theo `accountUuid` (lấy từ `~/.claude.json`, không phải secret) | Bản cũ chỉ có một bản ghi: vừa đổi tài khoản thì 2 phút đầu card hiện số của tài khoản trước |
 | Gọi CLI đổi tài khoản (§3.3b) | Đường dẫn tuyệt đối cố định, tham số cố định, không qua `PATH`, không nhận đường dẫn mạng, `CREATE_NO_WINDOW`, timeout cứng, giới hạn kích thước output | Không chạy nhầm chương trình cùng tên; không nháy console; không treo app |
-| `claude_usage` chạy ngoài luồng chính | `#[tauri::command(async)]` | Lệnh Tauri đồng bộ chạy trên luồng chính; CLI mất ~3 giây sẽ làm đứng giao diện |
+| `claude_usage` / `claude_accounts` chạy ngoài luồng chính | `#[tauri::command(async)]`, hai lệnh riêng | Lệnh Tauri đồng bộ chạy trên luồng chính; CLI mất 3–6 giây sẽ làm đứng giao diện và giữ cả số của tài khoản active |
 | Lịch sử Desktop | Quét khi panel mở và mỗi 60 giây, không quét khi panel đóng | 156 file; không đáng quét liên tục |
 | Tên project qua Orca | Tách `cwd` theo `<gốc>/workspaces/<project>/<worktree>` (§3.4) | Không có nó thì card chỉ toàn tên cá |
 | Ảnh trạng thái | Bộ ảnh kèm app + thư mục người dùng, xem §5.4 | Bạn muốn tự thêm ảnh mà không phải build lại |
@@ -315,6 +315,7 @@ export interface ClaudeAccountUsage {
 | `claude_sessions()` → `ClaudeSession[]` | Phiên CLI + Desktop, đã sắp thứ tự |
 | sự kiện `claude-sessions-changed` | `state.d` vừa đổi (đẩy từ Rust, không phải poll ở TS) |
 | `claude_usage(force?)` → `ClaudeUsage` | Hạn mức; dùng cache khi còn hạn |
+| `claude_accounts(force?)` → `ClaudeAccountUsage[] \| null` | §3.3b, lệnh riêng để số của tài khoản active không phải chờ CLI (đo được 3–6 giây); store gắn vào `ClaudeUsage.accounts` |
 | `claude_icons()` → `Record<ClaudePhase, string[]>` | Danh sách ảnh mỗi trạng thái (data URL), gồm cả ảnh bạn thêm |
 
 ## 7. Cài đặt
@@ -425,7 +426,9 @@ trạng thái, và mã lỗi.
 
 | **Chưa chặn được** | Vì sao |
 |---|---|
-| Ai sửa được file CLI đổi tài khoản thì winbar sẽ chạy code của họ | Gọi bằng đường dẫn tuyệt đối chỉ tránh được chương trình **cùng tên ở chỗ khác**, không chống được việc chính file đó bị sửa. Ghi được vào thư mục home thì cũng đã sửa được hook của Claude Code |
+| Ai sửa được file CLI đổi tài khoản thì winbar sẽ chạy code của họ | Gọi bằng đường dẫn tuyệt đối chỉ tránh được chương trình **cùng tên ở chỗ khác**, không chống được việc chính file đó bị sửa. Ghi được vào thư mục home thì cũng đã sửa được hook của Claude Code. `accountSwitcherPath` cũng vậy: ai sửa được file settings thì chọn được chương trình winbar chạy — nhưng chỉ với quyền của chính bạn |
+| CLI treo quá giờ: tiến trình con có thể còn chạy | winbar dừng `cmd.exe`, nhưng tiến trình mà `.cmd` gọi tiếp có thể chạy nốt tới khi xong. Dọn cả cây cần Job Object (feature `windows` mới — phải hỏi trước, §13) |
+| Nhãn đã che vẫn lộ domain email | `ab…@domain` đủ để phân biệt hai tài khoản; muốn giấu hẳn thì đặt `alias` trong CLI |
 | Token nằm **plaintext** trong `~/.claude/.credentials.json` | Đó là file của Claude Code, không phải của winbar. Ai đọc được máy bạn thì đọc được token, bất kể winbar làm gì |
 | Ghi đè bộ nhớ chỉ che một phần | Hệ điều hành có thể đã sao chép trang nhớ (pagefile, crash dump) trước đó. Việc ghi đè chỉ rút ngắn khoảng thời gian, không xóa được dấu vết đã có |
 | Proxy hệ thống | Dùng đúng proxy Windows đang cấu hình, giống Claude Code. Nếu máy bị cài proxy MITM thì đó là vấn đề ở tầng máy |

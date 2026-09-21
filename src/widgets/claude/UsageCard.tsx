@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardLabel } from "../../shell/ui";
 import { refreshUsage, useClaude } from "./store";
-import { errorNote, fetchedAgo, level, resetIn } from "./usage";
-import type { ClaudeWindow } from "./native";
+import { errorNote, fetchedAgo, level, resetIn, windowNow } from "./usage";
+import type { ClaudeAccountUsage, ClaudeWindow } from "./native";
 import styles from "./Claude.module.css";
 
 /** How often the card asks again while it is open. Rust still serves its 120-second cache in between. */
@@ -45,6 +45,22 @@ function Meter({ label, window, now }: { label: string; window: ClaudeWindow | u
   );
 }
 
+/** One of the other accounts: a small 5-hour / 7-day pair under its name (SPEC-claude §5.5). */
+function OtherAccount({ account, now }: { account: ClaudeAccountUsage; now: number }) {
+  return (
+    <div className={styles.account}>
+      <div className={styles.accountHead}>
+        <span className={styles.accountName}>{account.label}</span>
+        <span>{account.needsLogin ? "cần đăng nhập lại" : fetchedAgo(account.fetchedAt, now)}</span>
+      </div>
+      <div className={`${styles.meters} ${styles.accountMeters}`}>
+        <Meter label="5 giờ" window={windowNow(account.fiveHour, now)} now={now} />
+        <Meter label="7 ngày" window={windowNow(account.sevenDay, now)} now={now} />
+      </div>
+    </div>
+  );
+}
+
 /**
  * Asks for the limits and swallows a failure into the log.
  *
@@ -68,6 +84,9 @@ export function UsageCard() {
   }, []);
 
   const note = errorNote(usage, now);
+  // One account is what the card always showed; the names only earn their space once there is a second.
+  const accounts = usage.accounts && usage.accounts.length > 1 ? usage.accounts : [];
+  const active = accounts.find((a) => a.active);
 
   return (
     <Card className={styles.card}>
@@ -86,6 +105,14 @@ export function UsageCard() {
         Hạn mức
       </CardLabel>
 
+      {active && (
+        <div className={styles.accountHead}>
+          <span className={styles.accountName} data-active="">
+            {active.label}
+          </span>
+        </div>
+      )}
+
       <div className={styles.meters}>
         <Meter label="5 giờ" window={usage.fiveHour} now={now} />
         <Meter label="7 ngày" window={usage.sevenDay} now={now} />
@@ -96,6 +123,12 @@ export function UsageCard() {
       )}
 
       {note && <p className={note.hasNumbers ? styles.note : `${styles.note} ${styles.noteError}`}>{note.text}</p>}
+
+      {accounts
+        .filter((a) => !a.active)
+        .map((a) => (
+          <OtherAccount key={a.id} account={a} now={now} />
+        ))}
     </Card>
   );
 }

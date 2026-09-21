@@ -235,6 +235,49 @@
   color: var(--text-faint);
 }
 
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--track);
+}
+
+.accountHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.accountName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountName[data-active]::before {
+  content: "●";
+  margin-right: 5px;
+  color: var(--claude);
+}
+
+.accountMeters {
+  display: flex;
+  gap: 12px;
+}
+
+.accountMeters .meterValue {
+  font-size: 14px;
+}
+
+.accountMeters .meterValue small {
+  font-size: 11px;
+}
+
 .perModel {
   margin: 0;
   font-size: 11px;

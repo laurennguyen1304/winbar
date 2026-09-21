@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createShell } from "../../shell/shell";
 import { ShellProvider } from "../../shell/shell-context";
 import { ClaudeBackground, ClaudePill } from "./ClaudePill";
-import type { ClaudeSession, ClaudeUsage } from "./native";
+import type { ClaudeAccountUsage, ClaudeSession, ClaudeUsage } from "./native";
 import { resetForTests } from "./store";
 import { UsageCard } from "./UsageCard";
 
 const { native } = vi.hoisted(() => ({
   native: {
     usage: { perModel: [], fetchedAt: 0 } as ClaudeUsage,
+    accounts: null as ClaudeAccountUsage[] | null,
+    /** The CLI never answers, as when it hangs until its timeout. */
+    accountsHang: false,
     sessions: [] as ClaudeSession[],
     forced: [] as boolean[],
     /** Number of leading calls that should fail, as they do when Rust has not managed its state yet. */
@@ -29,6 +32,7 @@ vi.mock("./native", () => ({
     }
     return Promise.resolve(native.usage);
   },
+  getAccounts: () => (native.accountsHang ? new Promise(() => {}) : Promise.resolve(native.accounts)),
   onSessionsChanged: () => () => {},
 }));
 
@@ -42,6 +46,8 @@ describe("UsageCard", () => {
     native.forced = [];
     native.sessions = [];
     native.failFirst = 0;
+    native.accounts = null;
+    native.accountsHang = false;
     native.usage = {
       fiveHour: { percent: 52, resetsAt: new Date(Date.now() + 134 * 60_000).toISOString() },
       sevenDay: { percent: 24 },
@@ -106,6 +112,52 @@ describe("UsageCard", () => {
     native.usage = { perModel: [], fetchedAt: 0, error: "auth" };
     render(<UsageCard />);
     expect(await screen.findByText("Cần đăng nhập lại Claude Code")).toBeInTheDocument();
+  });
+
+  it("names the active account and shows the others under it", async () => {
+    native.accounts = [
+      { id: "a", label: "Work", active: true, fiveHour: { percent: 99 }, fetchedAt: Date.now(), needsLogin: false },
+      {
+        id: "b",
+        label: "ja…@example.com",
+        active: false,
+        fiveHour: { percent: 37, resetsAt: new Date(Date.now() + 60 * 60_000).toISOString() },
+        sevenDay: { percent: 21 },
+        fetchedAt: Date.now(),
+        needsLogin: false,
+      },
+      {
+        id: "c",
+        label: "Old",
+        active: false,
+        fiveHour: { percent: 80, resetsAt: new Date(Date.now() - 60_000).toISOString() },
+        fetchedAt: 0,
+        needsLogin: true,
+      },
+    ];
+    render(<UsageCard />);
+    expect(await screen.findByText("Work")).toBeInTheDocument();
+    // The big numbers stay the active account's own read, not the CLI's copy of it.
+    expect(screen.getByText("52")).toBeInTheDocument();
+    expect(screen.queryByText("99")).not.toBeInTheDocument();
+    expect(screen.getByText("ja…@example.com")).toBeInTheDocument();
+    expect(screen.getByText("37")).toBeInTheDocument();
+    expect(screen.getByText("cần đăng nhập lại")).toBeInTheDocument();
+    // Its window reset a minute ago: the 80% is gone, not shown as if still true.
+    expect(screen.queryByText("80")).not.toBeInTheDocument();
+  });
+
+  it("shows the active account's numbers without waiting for the other accounts", async () => {
+    native.accountsHang = true;
+    render(<UsageCard />);
+    expect(await screen.findByText("52")).toBeInTheDocument();
+  });
+
+  it("looks as it always did with a single account", async () => {
+    native.accounts = [{ id: "a", label: "Only", active: true, fetchedAt: Date.now(), needsLogin: false }];
+    render(<UsageCard />);
+    expect(await screen.findByText("52")).toBeInTheDocument();
+    expect(screen.queryByText("Only")).not.toBeInTheDocument();
   });
 });
 

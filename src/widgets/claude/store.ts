@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from "../../shell/settings";
 import { loadSettings, onSettingsChanged } from "../../shell/native";
 import {
   extraIcons,
+  getAccounts,
   getUsage,
   listSessions,
   onSessionsChanged,
@@ -41,9 +42,19 @@ export function refresh(): Promise<void> {
   return listSessions().then((sessions) => set({ ...view, sessions }));
 }
 
-/** Re-reads the limits. Rust serves a cached answer unless `force` asks for a fresh one. */
+/**
+ * Re-reads the limits. Rust serves a cached answer unless `force` asks for a fresh one.
+ *
+ * The other accounts are asked for alongside, not before: the CLI behind them takes seconds, and the active
+ * account's numbers should not wait for it. The promise is the active account's read only; the accounts land
+ * whenever they come, and a failure there just keeps the last list.
+ */
 export function refreshUsage(force = false): Promise<void> {
-  return getUsage(force).then((usage) => set({ ...view, usage }));
+  Promise.resolve()
+    .then(() => getAccounts(force))
+    .then((accounts) => set({ ...view, usage: { ...view.usage, accounts: accounts ?? undefined } }))
+    .catch((err: unknown) => console.error("claude_accounts failed", err));
+  return getUsage(force).then((usage) => set({ ...view, usage: { ...usage, accounts: view.usage.accounts } }));
 }
 
 /** Re-reads the user's icon folder. Called when the panel opens, so a new file shows up without a restart. */

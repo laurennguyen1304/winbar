@@ -73,7 +73,14 @@ pub struct ClaudeSettings {
     pub icon_rotate_seconds: u32,
     /// Warn on the pill when the 5-hour limit passes this; 0 turns the warning off.
     pub usage_warn_percent: u32,
+    /// Ask an account-switcher CLI for every account's usage (SPEC-claude §3.3b).
+    pub multi_account: bool,
+    /// Absolute path to that CLI; empty uses the default one. Hand-edited only.
+    pub account_switcher_path: String,
 }
+
+/// A path is at most this long on Windows without the `\\?\` prefix, which is not accepted here anyway.
+const MAX_PATH_SETTING: usize = 260;
 
 /// Clipboard history (SPEC-clipboard §7).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -152,6 +159,8 @@ impl Default for Settings {
                 enabled: true,
                 icon_rotate_seconds: 6,
                 usage_warn_percent: 90,
+                multi_account: true,
+                account_switcher_path: String::new(),
             },
         }
     }
@@ -371,6 +380,21 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
                 1,
                 d.claude.usage_warn_percent,
             ),
+            multi_account: r.boolean(claude, "multiAccount", d.claude.multi_account),
+            account_switcher_path: match claude.and_then(|c| c.get("accountSwitcherPath")) {
+                None => d.claude.account_switcher_path.clone(),
+                Some(Value::String(s))
+                    if s.len() <= MAX_PATH_SETTING && !s.chars().any(char::is_control) =>
+                {
+                    s.trim().to_string()
+                }
+                Some(_) => {
+                    // The value is a path on this machine: say which field, not what was in it.
+                    r.warnings
+                        .push("accountSwitcherPath: invalid value, using default".into());
+                    d.claude.account_switcher_path.clone()
+                }
+            },
         },
     };
     (settings, warnings)
@@ -790,6 +814,32 @@ mod tests {
     fn null_priority_widget_means_none() {
         let (s, _) = from_value(&json!({ "pill": { "priorityWidget": null } }));
         assert_eq!(s.pill.priority_widget, None);
+    }
+
+    #[test]
+    fn the_account_switcher_settings_are_read_and_a_bad_path_never_echoed() {
+        let (s, w) = from_value(&json!({ "claude": {
+            "multiAccount": false, "accountSwitcherPath": "  D:\\tools\\switch.exe  " } }));
+        assert!(!s.claude.multi_account);
+        assert_eq!(s.claude.account_switcher_path, r"D:\tools\switch.exe");
+        assert!(w.is_empty());
+
+        let (d, _) = from_value(&json!({}));
+        assert!(
+            d.claude.multi_account,
+            "on by default; without the CLI it does nothing"
+        );
+        assert_eq!(d.claude.account_switcher_path, "");
+
+        for bad in [json!(42), json!("C:\\a\nb.exe"), json!("x".repeat(300))] {
+            let (s, w) = from_value(&json!({ "claude": { "accountSwitcherPath": bad } }));
+            assert_eq!(s.claude.account_switcher_path, "");
+            assert_eq!(w.len(), 1);
+            assert!(
+                !w[0].contains("C:\\a"),
+                "the warning names the field, not the path"
+            );
+        }
     }
 
     #[test]

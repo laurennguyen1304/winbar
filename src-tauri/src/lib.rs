@@ -58,6 +58,7 @@ pub fn run() {
             claude::claude_sessions,
             claude::claude_open_desktop,
             claude::claude_usage,
+            claude::claude_accounts,
             claude::claude_icons,
             clipboard::clipboard_list,
             clipboard::clipboard_text,

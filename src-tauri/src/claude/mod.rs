@@ -5,6 +5,7 @@
 //!
 //! Log lines carry counts and error kinds only — never a path, a session title, or a token (SPEC §9).
 
+mod accounts;
 mod http;
 mod icons;
 mod model;
@@ -73,9 +74,16 @@ pub struct ClaudeState {
     /// The `.claude` directory, resolved once at startup: `CLAUDE_CONFIG_DIR` when set, else the one under the
     /// user's home. Resolved here rather than on every read, so the watcher never touches the environment.
     claude_dir: PathBuf,
+    /// Claude Code's `.claude.json`, read for the active account's id only. Resolved once for the same reason.
+    config_file: PathBuf,
+    home: PathBuf,
     /// Where Orca keeps its worktrees, resolved once for the same reason.
     orca_root: String,
     appdata: PathBuf,
+    /// Every account's usage from the account-switcher CLI, and when it was asked (§3.3b). Memory only: the list
+    /// carries labels, which do not belong on disk. The lock is held while the CLI runs, so two callers never
+    /// start it twice.
+    accounts: Mutex<(u64, Option<Vec<accounts::AccountUsage>>)>,
     /// Last list handed out, so the watcher can tell a real change from a touched file.
     last: Mutex<Vec<Session>>,
     /// Desktop history and when it was read. Scanning it means parsing every session file the Desktop app has
@@ -86,13 +94,37 @@ pub struct ClaudeState {
 
 impl ClaudeState {
     pub fn load<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Self> {
+        let home = app.path().home_dir()?;
         Ok(ClaudeState {
-            claude_dir: sessions::claude_dir(&app.path().home_dir()?),
-            orca_root: sessions::orca_root(&app.path().home_dir()?),
+            claude_dir: sessions::claude_dir(&home),
+            config_file: sessions::config_file(&home),
+            orca_root: sessions::orca_root(&home),
+            home,
             appdata: app.path().config_dir()?,
+            accounts: Mutex::new((0, None)),
             last: Mutex::new(Vec::new()),
             history: Mutex::new((0, Vec::new())),
         })
+    }
+
+    /// Every account's usage, asked at most once per usage TTL unless `force`. A failed ask keeps the last list,
+    /// and is not retried before the TTL runs out either — the CLI polls the endpoint for every account.
+    fn accounts(
+        &self,
+        cli: &std::path::Path,
+        now: u64,
+        force: bool,
+    ) -> Option<Vec<accounts::AccountUsage>> {
+        let mut cached = self.accounts.lock().ok()?;
+        let fresh = cached.0 != 0 && now.saturating_sub(cached.0) < usage::CACHE_TTL_MS;
+        if force || !fresh {
+            let answer = accounts::fetch(cli);
+            cached.0 = now;
+            if answer.is_some() {
+                cached.1 = answer;
+            }
+        }
+        cached.1.clone()
     }
 
     /// The live sessions, and nothing else.
@@ -150,7 +182,9 @@ pub fn claude_icons(
 /// How much of the limit is left. Uses a recent answer unless `force` asks for a fresh one.
 ///
 /// With the layout turned off this touches nothing: no credentials file is opened and no request goes out.
-#[tauri::command]
+///
+/// Runs off the main thread, where a plain Tauri command would run: the request can take a while.
+#[tauri::command(async)]
 pub fn claude_usage<R: Runtime>(
     app: AppHandle<R>,
     state: tauri::State<'_, ClaudeState>,
@@ -161,10 +195,30 @@ pub fn claude_usage<R: Runtime>(
     }
     usage::fetch(
         &state.claude_dir,
+        &state.config_file,
         &state.appdata,
         now_ms(),
         force.unwrap_or(false),
     )
+}
+
+/// Every account's usage from the account-switcher CLI (SPEC-claude §3.3b), or `None` when there is no CLI, it is
+/// turned off, or it gave nothing usable.
+///
+/// A command of its own, off the main thread: the CLI took 3–6 s on this machine, and the active account's numbers
+/// should not wait for it.
+#[tauri::command(async)]
+pub fn claude_accounts<R: Runtime>(
+    app: AppHandle<R>,
+    state: tauri::State<'_, ClaudeState>,
+    force: Option<bool>,
+) -> Option<Vec<accounts::AccountUsage>> {
+    let settings = options(&app);
+    if !settings.enabled || !settings.multi_account {
+        return None;
+    }
+    let cli = accounts::cli_path(&state.home, &settings.account_switcher_path)?;
+    state.accounts(&cli, now_ms(), force.unwrap_or(false))
 }
 
 /// Brings Claude Desktop to the front.
@@ -269,8 +323,11 @@ mod tests {
 
         let state = ClaudeState {
             claude_dir: dir.clone(),
+            config_file: dir.join(".claude.json"),
+            home: dir.clone(),
             orca_root: String::new(),
             appdata: dir.clone(),
+            accounts: Mutex::new((0, None)),
             last: Mutex::new(Vec::new()),
             history: Mutex::new((0, Vec::new())),
         };

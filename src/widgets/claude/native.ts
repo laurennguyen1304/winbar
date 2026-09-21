@@ -43,6 +43,20 @@ export interface ClaudeUsage {
   /** Epoch ms of the last successful fetch; 0 when there has never been one. */
   fetchedAt: number;
   error?: UsageError;
+  /** Every account an account-switcher CLI manages (SPEC §3.3b). The fields above are the active account's. */
+  accounts?: ClaudeAccountUsage[];
+}
+
+export interface ClaudeAccountUsage {
+  id: string;
+  /** Alias, or a masked email. Never a full email. */
+  label: string;
+  active: boolean;
+  fiveHour?: ClaudeWindow;
+  sevenDay?: ClaudeWindow;
+  /** Epoch ms of the CLI's last poll for this account; 0 when unknown. */
+  fetchedAt: number;
+  needsLogin: boolean;
 }
 
 export const NO_USAGE: ClaudeUsage = { perModel: [], fetchedAt: 0 };
@@ -50,6 +64,12 @@ export const NO_USAGE: ClaudeUsage = { perModel: [], fetchedAt: 0 };
 export async function listSessions(): Promise<ClaudeSession[]> {
   if (!isTauri()) return [];
   return invoke<ClaudeSession[]>("claude_sessions");
+}
+
+/** Every account's usage from an account-switcher CLI; `null` when there is none (SPEC §3.3b). Can take seconds. */
+export async function getAccounts(force = false): Promise<ClaudeAccountUsage[] | null> {
+  if (!isTauri()) return null;
+  return invoke<ClaudeAccountUsage[] | null>("claude_accounts", { force });
 }
 
 export async function getUsage(force = false): Promise<ClaudeUsage> {

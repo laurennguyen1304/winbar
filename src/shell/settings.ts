@@ -54,6 +54,10 @@ export interface Settings {
     iconRotateSeconds: number;
     /** Warn on the pill when the 5-hour limit passes this; 0 turns it off. */
     usageWarnPercent: number;
+    /** Show every account an account-switcher CLI manages (SPEC-claude §3.3b). */
+    multiAccount: boolean;
+    /** Path to that CLI; empty uses the default. Hand-edited only, carried through so a save keeps it. */
+    accountSwitcherPath: string;
   };
   clipboard: {
     /** How long an unpinned item is kept, in days. */
@@ -100,7 +104,7 @@ export const DEFAULT_SETTINGS: Settings = {
   launchAtStartup: true,
   commandBar: { position: null, fileSearch: "auto", webSearch: "google" },
   clipboard: { retentionDays: 1, ignoredApps: DEFAULT_IGNORED_APPS, paused: false },
-  claude: { enabled: true, iconRotateSeconds: 6, usageWarnPercent: 90 },
+  claude: { enabled: true, iconRotateSeconds: 6, usageWarnPercent: 90, multiAccount: true, accountSwitcherPath: "" },
 };
 
 /** Stored order and flags win; widgets that no longer exist are dropped; new widgets are appended, enabled. */
