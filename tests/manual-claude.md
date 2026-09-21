@@ -288,6 +288,26 @@ Cả chặng: **+1,66 → +0,183 → +0,081 → +0,021 → +0,010 (trong nhiễu
 **Một lần đo phải bỏ:** lần đầu tôi chạy đo trong lúc vẫn build và vẽ icon trên cùng máy — ra **0,552%**, vô
 nghĩa. Số chỉ dùng được khi máy yên.
 
+### Sự cố 21/09: đo xong, widget Claude biến mất
+
+Lauren báo: vừa bật nhạc vừa chạy Claude mà **không thấy widget Claude**. Không phải lỗi bố cục — là **lỗi tôi**.
+
+Script đo tắt layout Claude ở nửa sau mỗi lần chạy rồi bật lại trong `finally`. Giữa chừng tôi **force-kill**
+winbar (để dọn một tiến trình còn sót), nên `finally` **không bao giờ chạy** và `settings.json` nằm lại ở trạng
+thái `claude.enabled = false`. App mở lên vẫn đúng — chỉ là layout Claude đã bị tắt trong cài đặt.
+
+- [x] ✅ Sửa: dừng app (không ghi đè settings dưới chân app đang chạy — lỗi 18/09), đặt lại `enabled = true`,
+      mở lại. Pill hiện đủ cả hai: `Cooking · Bash · winbar · 5h 5%` | ảnh bìa + "Fantasy (feat. …)" + nút.
+- [x] ✅ Sửa gốc: cả hai script đo giờ ghi một **file mốc** trỏ vào bản sao lưu ngay khi bắt đầu, và xoá nó khi
+      kết thúc sạch. Lần chạy sau thấy file mốc còn sót thì **tự khôi phục** settings của lần bị ngắt trước khi
+      làm gì tiếp. Đã kiểm cả hai script còn parse sạch.
+
+**Bài học:** đừng force-kill app khi một script đang giữ trạng thái của nó. Và cái gì script sửa được thì script
+phải tự sửa lại được, kể cả khi nó bị giết.
+
+**Điểm đáng bàn cho sản phẩm:** layout Claude bị tắt thì widget **lặng lẽ biến mất**, không có dấu hiệu gì để
+người dùng lần ra. Giống hệt lúc media tự ẩn vì không có nhạc. Chưa sửa — cần Lauren quyết có nên báo gì không.
+
 ## 8. Chưa làm / giới hạn đã biết
 
 - **Duyệt quyền ngay trên notch** không nằm trong bản này (`claude-approvals`, phải duyệt riêng vì nó ghi hook).
