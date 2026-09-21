@@ -37,6 +37,17 @@ trên 8px, co giãn mượt thành lưới card widget. Mỗi tính năng là m�
 | `claude-usage` | Claude | % hạn mức 5 giờ và 7 ngày, giờ reset, cảnh báo ngưỡng | notch-shell |
 | `claude-approvals` | Claude | Approve/Deny yêu cầu cấp quyền ngay trên notch | notch-shell, claude-sessions |
 
+## Tình trạng (21/09/2026)
+
+| Module | Trạng thái |
+|---|---|
+| `notch-shell` · `command-bar` · `media` · `system` · `clipboard` | ✅ xong, dùng hằng ngày |
+| `claude-sessions` · `claude-usage` | ✅ xong |
+| `claude-approvals` | ⬜ **chưa làm** — Lauren hoãn ngày 21/09. Khả thi (đã khảo sát: hook `PermissionRequest` quyết định được), nhưng nó **ghi hook vào `~/.claude`** nên cần duyệt riêng trước khi bắt đầu |
+
+Ngoài phạm vi so với bản đầu: **menu nguồn** của `system` (Ngủ / Khởi động lại / Tắt máy / Đổi người dùng) —
+Lauren bỏ ngày 18/09, xem `SPEC-system.md` §1.
+
 Thứ tự build:
 
 ```

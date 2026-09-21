@@ -18,7 +18,7 @@
 - [x] Orca: `winbar · firefish`; `makara` và `fangtooth` **cùng** hiện `qikify-theme-v3`; `brain` không có tiền tố.
 - [x] Phiên idle 368/417/1420 phút bị đánh dấu `stale` và xuống dưới các phiên sống.
 - [x] Test Rust 24 test mới; tổng 180 pass, clippy sạch.
-- [ ] 👤 Mở một phiên Claude mới ở cửa sổ khác rồi xem card đổi trong 1 giây (kiểm ở Task 3, khi đã có giao diện).
+- [ ] 👤 Mở một phiên Claude mới ở cửa sổ khác rồi xem card đổi trong **3–4 giây** (nhịp quét 3 giây từ 21/09; kiểm ở Task 3, khi đã có giao diện).
 
 **Lỗi tự bắt được khi đang viết:**
 1. Bản đầu theo dõi bằng `mtime` của **thư mục** — nhưng sửa nội dung file không làm đổi mtime thư mục, nên đổi
@@ -116,8 +116,11 @@ quyền chỉ để test thì không đáng.
 ### Task 6: Đo hiệu năng, checklist thủ công
 
 **Tiêu chí chấp nhận:**
-- [ ] Bản release: RAM tăng ≤ 12 MB; CPU khi panel đóng ≤ trước module + 0,02%.
-- [ ] `tests/manual-claude.md` theo 12 tiêu chí của spec §11, gồm mục kiểm token không lọt ra log.
+- [x] ✅ Bản release: RAM tăng **~0 MB**; CPU **+0,010** trung bình (ba lần: −0,018 / +0,031 / +0,017) — đạt
+      ngưỡng +0,02, và đã nhỏ hơn nhiễu của phép đo. Mất **năm vòng** mới tìm ra thủ phạm thật là cú quét 157
+      file lịch sử Desktop trong luồng nền; xem `tests/manual-claude.md` §7.
+- [x] ✅ `tests/manual-claude.md` viết đủ theo 12 tiêu chí của spec §11, gồm mục kiểm token không lọt ra log
+      (`python token-leak-check.py`, quét 26 file, sạch).
 
 **Phụ thuộc:** Task 5
 **Quy mô:** S

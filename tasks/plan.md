@@ -44,7 +44,7 @@ Task 1 và Task 2 độc lập nhau; Task 2 rủi ro cao nhất (endpoint không
 ### Checkpoint: bạn dùng thử
 
 - [x] Task 5: Provider command bar + mục Cài đặt
-- [ ] Task 6: Đo hiệu năng, checklist thủ công
+- [x] Task 6: Đo hiệu năng, checklist thủ công — xong 21/09 (năm vòng đo, xem `tests/manual-claude.md` §7)
 
 ## Rủi ro
 
