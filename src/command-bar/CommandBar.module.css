@@ -300,3 +300,15 @@ img.tile {
   font-size: 12px;
   color: var(--text-sub);
 }
+
+/*
+ * Widget blocks under the search box (the clipboard). Same padding as the results so the two line up, and the
+ * card inside keeps its own scrolling list rather than growing the window.
+ */
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  min-height: 0;
+}

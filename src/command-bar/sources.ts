@@ -32,6 +32,17 @@ export function widgetSlots(stored: readonly WidgetSetting[], registered: readon
     });
 }
 
+/** Blocks of enabled widgets, in Settings order, for the command bar's empty state. */
+export function commandBarBlocks(stored: readonly WidgetSetting[], registered: readonly WidgetDefinition[]) {
+  const byId = new Map(registered.map((w) => [w.id, w]));
+  return mergeWidgets(stored, registered)
+    .filter((w) => w.enabled)
+    .flatMap((w) => {
+      const def = byId.get(w.id);
+      return def?.CommandBarBlock ? [{ id: def.id, title: def.title, Block: def.CommandBarBlock }] : [];
+    });
+}
+
 let preferredEngine: EngineId = "google";
 /** Web rows: every engine with "?", otherwise one row for the preferred engine when nothing else matched. */
 const web: Slot = { provider: createWebProvider(() => preferredEngine), limit: 1, fallback: true };

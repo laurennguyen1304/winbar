@@ -9,7 +9,9 @@ export const clipboardWidget: WidgetDefinition = {
   title: "Clipboard",
   description: "Lịch sử, tìm kiếm, ảnh",
   Card: ClipboardCard,
-  // The list needs the height, so it takes a column of its own (SPEC-notch-shell §6).
-  layout: { size: "medium" },
+  // Out of the notch, into the command bar (Lauren, 21/09): Ctrl+Space shows it under the search box. The
+  // widget stays enabled, so its search provider and the "Đã copy" flash still work.
+  layout: { size: "medium", inPanel: false },
+  CommandBarBlock: ClipboardCard,
   searchProvider: createClipboardProvider(),
 };

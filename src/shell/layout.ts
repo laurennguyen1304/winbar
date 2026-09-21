@@ -35,6 +35,8 @@ export function bentoLayout(widgets: readonly Sized[]): BentoLayout {
   const small: WidgetId[] = [];
   const medium: WidgetId[] = [];
   for (const w of widgets) {
+    // A widget that lives elsewhere (the clipboard, in the command bar) takes no tile here.
+    if (w.layout?.inPanel === false) continue;
     switch (sizeOf(w)) {
       case "large":
         (large.length < MAX_LARGE ? large : medium).push(w.id);

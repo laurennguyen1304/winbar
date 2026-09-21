@@ -26,10 +26,20 @@ export interface WidgetDefinition {
    *
    * `large` takes a tall tile two rows high, `medium` a full-width row of its own, `small` a single cell in the
    * narrow column. A widget that says nothing is treated as `small`.
+   *
+   * `inPanel: false` keeps the card out of the notch altogether while the widget stays enabled: its search
+   * provider and `Background` keep running. The clipboard lives in the command bar this way (Lauren, 21/09).
    */
-  layout?: { size?: WidgetSize };
+  layout?: { size?: WidgetSize; inPanel?: boolean };
   /** Collected by the shell for the command bar. */
   searchProvider?: SearchProvider;
+  /**
+   * A block the command bar shows under its search box while the input is empty (SPEC-command-bar §5).
+   *
+   * For a widget whose whole card is worth having one keystroke away rather than in the notch — the clipboard,
+   * since 21/09. The command bar only shows blocks of enabled widgets, and knows none of them by name.
+   */
+  CommandBarBlock?: ComponentType;
 }
 
 /** Panel weight: how much room a widget's card is worth. */

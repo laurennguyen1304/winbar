@@ -1,5 +1,12 @@
 # Spec: clipboard
 
+> **Đổi 21/09 (Lauren chốt):** clipboard **không còn nằm trong notch** mà chuyển vào **command bar** — bấm
+> Ctrl+Space là thấy block clipboard ngay dưới ô tìm kiếm, y nguyên card trước đây ở notch (tìm, lọc, ghim, xoá,
+> tạm dừng). Block chỉ hiện khi ô tìm kiếm còn trống; gõ chữ thì nhường chỗ cho kết quả, vốn đã có mục clipboard
+> qua provider. Widget vẫn **bật**, nên provider tìm kiếm và phần chạy nền không đổi. Mọi thứ khác của command bar
+> giữ nguyên.
+
+
 > Module id: `clipboard` (xem `CAPABILITY-MAP.md`). Phụ thuộc: `notch-shell`. Trạng thái: **CHỜ DUYỆT**.
 > Nguồn UI: `design/winbar-mockup.html` (card "Clipboard": ô tìm, chip lọc, danh sách item, ghim, kéo ra ngoài).
 

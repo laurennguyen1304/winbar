@@ -24,6 +24,16 @@ describe("bentoLayout", () => {
     });
   });
 
+  it("gives no tile to a widget that lives elsewhere", () => {
+    // The clipboard moved to the command bar: still enabled, just not in the notch.
+    const layout = bentoLayout([
+      w("media", "large"),
+      { id: "clipboard", layout: { size: "medium", inPanel: false } },
+      w("system", "small"),
+    ]);
+    expect(layout).toEqual({ large: ["media"], small: ["system"], medium: [] });
+  });
+
   it("treats a widget that says nothing as small", () => {
     expect(bentoLayout([w("media", "large"), w("quiet")]).small).toEqual(["quiet"]);
   });

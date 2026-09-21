@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Icon } from "../shell/Icon";
 import { useSettings } from "../shell/use-settings";
+import { WidgetBoundary } from "../shell/WidgetBoundary";
 import type { SearchResult, WidgetDefinition } from "../shell/widget-contract";
 import {
   hideCommandBar,
@@ -19,7 +20,7 @@ import { copyText } from "./clipboard";
 import { history, recentResults, useHistoryEntries } from "./history";
 import { calculatorOnly, instantAnswer, type Instant } from "./instant";
 import { flattenRows, INSTANT_KEY, InstantBlock, ResultList, type Row } from "./ResultList";
-import { allSlots } from "./sources";
+import { allSlots, commandBarBlocks } from "./sources";
 import { useCommandSearch } from "./use-command-search";
 import styles from "./CommandBar.module.css";
 
@@ -71,6 +72,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
 
   const { settings } = useSettings(registered);
   const slots = useMemo(() => allSlots(settings, registered), [settings, registered]);
+  const blocks = useMemo(() => commandBarBlocks(settings.widgets, registered), [settings.widgets, registered]);
   const instant = useMemo(() => instantAnswer(query), [query]);
   const { groups: searchGroups, settled } = useCommandSearch(calculatorOnly(query) ? "" : query, slots);
 
@@ -292,6 +294,22 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
       {query && !instant && groups.length === 0 && settled && (
         <>
           <div className={`${styles.body} ${styles.empty}`}>{noResults}</div>
+          <div className={styles.sep} />
+        </>
+      )}
+      {/*
+        Widget blocks, only while the input is empty: open Ctrl+Space and the clipboard is right there; start
+        typing and they give way to the results, which already carry clipboard items through its provider.
+      */}
+      {!query && blocks.length > 0 && (
+        <>
+          <div className={styles.blocks} data-testid="command-bar-blocks">
+            {blocks.map(({ id, title, Block }) => (
+              <WidgetBoundary key={id} title={title}>
+                <Block />
+              </WidgetBoundary>
+            ))}
+          </div>
           <div className={styles.sep} />
         </>
       )}

@@ -1,5 +1,10 @@
 # Spec: command-bar
 
+> **Thêm 21/09:** khi ô tìm kiếm trống, dưới "Gần đây" hiện **block của các widget đang bật** có khai
+> `CommandBarBlock` trong hợp đồng widget — hiện chỉ có clipboard. Command bar không biết tên widget nào; widget tự
+> khai block của mình. Gõ chữ thì block ẩn đi để nhường chỗ cho kết quả.
+
+
 > Module id: `command-bar` (xem `CAPABILITY-MAP.md`). Phụ thuộc: `notch-shell`. Trạng thái: **ĐÃ DUYỆT (2026-09-17)**.
 > UI chuẩn: phần **Command bar** trong `design/winbar-mockup.html`. Hành vi tham khảo: Quick Launch của yasb fork.
 

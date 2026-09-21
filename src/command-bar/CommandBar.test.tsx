@@ -112,6 +112,27 @@ describe("CommandBar", () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it("shows widget blocks under an empty input, and hides them once you type", () => {
+    const withBlock: WidgetDefinition = {
+      id: "clipboard",
+      tab: "core",
+      title: "Clipboard",
+      description: "",
+      Card: () => null,
+      CommandBarBlock: () => <p>clipboard block</p>,
+    };
+    render(<CommandBar registered={[withBlock]} />);
+    expect(screen.getByText("clipboard block")).toBeInTheDocument();
+    // Typing hands the space to the results, which carry clipboard items through its provider anyway.
+    fireEvent.change(screen.getByRole("textbox", { name: "Tìm kiếm" }), { target: { value: "abc" } });
+    expect(screen.queryByText("clipboard block")).not.toBeInTheDocument();
+  });
+
+  it("shows no block for a widget without one", () => {
+    render(<CommandBar registered={[]} />);
+    expect(screen.queryByTestId("command-bar-blocks")).not.toBeInTheDocument();
+  });
+
   it("focuses the input and selects the previous text when opened", () => {
     render(<CommandBar registered={[]} />);
     fireEvent.change(input(), { target: { value: "code" } });
