@@ -30,7 +30,7 @@ function Meter({ label, value, percent }: { label: string; value: string; percen
   );
 }
 
-/** "Hệ thống" card: CPU, memory and a Task Manager button (SPEC-system §5). */
+/** "Core" card: CPU, memory and a Task Manager button (SPEC-system §5). */
 export function SystemCard() {
   const { stats, failed } = useSystemStats();
   const [note, setNote] = useState<{ text: string; failed: boolean } | undefined>(undefined);
@@ -64,7 +64,9 @@ export function SystemCard() {
           </button>
         }
       >
-        Hệ thống
+        {/* "Core", not "Hệ thống": in the bento's narrow column the longer word pushed "Task Manager" onto a
+            second line (Lauren, 21/09). */}
+        Core
       </CardLabel>
       <div className={styles.meters}>
         <Meter label="CPU" value={formatPercent(stats?.cpuPercent)} percent={stats?.cpuPercent} />

@@ -74,6 +74,9 @@
   color: var(--text);
   font-size: 12px;
   cursor: pointer;
+  /* The card sits in the bento's narrow column; without this "Task Manager" breaks across two lines. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .button:hover {

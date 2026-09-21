@@ -22,7 +22,7 @@ Liếc notch là biết máy đang nặng hay nhẹ, và mở Task Manager ngay 
 
 | Hạng mục | Ghi chú |
 |---|---|
-| Card "Hệ thống" | CPU (%) + RAM (đã dùng / tổng), mỗi cái một thanh mức; nút Task Manager |
+| Card **"Core"** | CPU (%) + RAM (đã dùng / tổng), mỗi cái một thanh mức; nút Task Manager. Nhãn là "Core" chứ không phải "Hệ thống" (Lauren chốt 21/09): card nằm ở cột hẹp của bento, chữ dài hơn đẩy "Task Manager" xuống hai dòng. Tên widget trong Cài đặt vẫn là "Hệ thống" |
 | Nhịp đo | 2 giây một lần, **chỉ khi card đang hiện** (panel mở). Panel đóng thì dừng hẳn |
 | Search provider | Một dòng "Mở Task Manager" trong command bar, tìm được cả khi gõ không dấu |
 | Lỗi | Đo lỗi thì hiện "—" thay cho số; mở Task Manager lỗi thì hiện lý do trong card |
