@@ -152,8 +152,9 @@
   flex-shrink: 0;
 }
 
+/* Pinned to the bottom of the card, which fills its tile: the count reads as a footnote, not a stranded line. */
 .groupLabel {
-  margin: 6px 8px 2px;
+  margin: auto 8px 2px;
   font-size: 11px;
   color: var(--text-faint);
 }

@@ -94,6 +94,16 @@
   flex-direction: column;
 }
 
+/*
+ * A row is as tall as its tallest tile, so the card inside a short one fills the rest rather than leaving a
+ * hole of bare panel beside it — one running session next to a full column of meters, say.
+ */
+.large > *,
+.medium > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .smalls {
   gap: 10px;
 }
