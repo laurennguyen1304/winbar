@@ -64,7 +64,7 @@ export function MediaCard() {
         {art && <img className={styles.backdrop} src={art} alt="" />}
         <CardLabel aside={aside}>Đang phát</CardLabel>
         <div className={styles.body} key={track.trackKey} data-testid="media-body">
-          <Artwork url={art} size={140} radius={16} />
+          <Artwork url={art} size={132} radius={16} />
           <div className={styles.info}>
             <span className={styles.title}>{track.title || "Không rõ tên bài"}</span>
             {track.artist && <span className={styles.artist}>{track.artist}</span>}

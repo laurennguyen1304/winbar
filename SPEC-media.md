@@ -29,7 +29,7 @@ trình duyệt (YouTube, SoundCloud…), Apple Music, VLC… miễn là app báo
 | Thông tin bài | Tên bài, nghệ sĩ, album, ảnh bìa, trạng thái phát, vị trí/độ dài, tên app |
 | Điều khiển | Phát/tạm dừng, bài kế, bài trước, tua; nút mờ và không bấm được khi app không cho |
 | Nhiều app | Theo phiên Windows chọn; đổi tay bằng nút ‹ › hoặc lăn chuột trên card (§5.3) |
-| Card | Theo mockup: ảnh bìa 140, nền card là ảnh bìa làm mờ, thanh tiến độ tua được |
+| Card | **Hai hàng** (Lauren chốt 20/09): ảnh bìa 132 chiếm riêng hàng trên, phía dưới là tên bài / nghệ sĩ / album, thanh tua và ba nút. Trước đây ảnh nằm cạnh phần chữ; từ khi card là ô `large` cao hai hàng trong bento thì xếp dọc hợp hơn. Nền card vẫn là ảnh bìa làm mờ |
 | Pill ưu tiên | Ảnh bìa 24, tên bài, nghệ sĩ, nút ⏮ ⏯ ⏭ |
 | Pill always | Ảnh bìa 40, tên bài, nghệ sĩ, nút ⏮ ⏯ ⏭ |
 | Tự ẩn | Không có phiên nào thì ẩn card, pill và nửa always |
