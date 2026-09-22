@@ -58,8 +58,8 @@ function Bento({ widgets }: { widgets: WidgetDefinition[] }) {
   }
 
   return (
-    // How many tall tiles there are decides how the row is split; CSS cannot count them on its own.
-    <div className={styles.bento} data-large={layout.large.length}>
+    // How many tall and small tiles there are decides how the row is split; CSS cannot count them on its own.
+    <div className={styles.bento} data-large={layout.large.length} data-small={layout.small.length}>
       {layout.large.map((id) => (
         <div key={id} className={styles.large} data-tile="large">
           {card(id)}

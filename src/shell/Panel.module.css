@@ -124,6 +124,14 @@
   grid-template-columns: 1.2fr 1fr;
 }
 
+/*
+ * Two tall tiles and no small ones — only music and the sessions switched on — would leave the narrow column
+ * standing empty, a ~180px hole on the right of the panel. The two wide columns take the whole row instead.
+ */
+.bento[data-large="2"][data-small="0"] {
+  grid-template-columns: 1.1fr 1.25fr;
+}
+
 .bento[data-large="0"] > .smalls {
   grid-column: 1 / -1;
   flex-direction: row;
