@@ -6,6 +6,7 @@ import {
   alertSize,
   duoSize,
   panelHeight,
+  panelFitWidth,
   panelMaxHeight,
   pillRadius,
 } from "./notch-sizes";
@@ -51,5 +52,12 @@ describe("notch sizes", () => {
     }
     expect(panelMaxHeight(1080)).toBe(864);
     expect(panelMaxHeight(0)).toBe(120);
+  });
+
+  it("narrows the panel only on a screen too small for it", () => {
+    expect(panelFitWidth(PANEL_WIDTHS.l, 1920)).toBe(860);
+    expect(panelFitWidth(PANEL_WIDTHS.l, 853)).toBe(813);
+    expect(panelFitWidth(PANEL_WIDTHS.m, 200)).toBe(400);
+    expect(panelFitWidth(PANEL_WIDTHS.m, 0)).toBe(780);
   });
 });

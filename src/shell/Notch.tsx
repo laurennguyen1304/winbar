@@ -21,6 +21,7 @@ import {
   RESIZE_MS,
   alertSize,
   duoSize,
+  panelFitWidth,
   panelHeight,
   panelMaxHeight,
   pillRadius,
@@ -91,7 +92,7 @@ export function Notch({
   mode = "hover",
   pillSize = PILL_SIZES.m,
   alwaysSize = ALWAYS_SIZES.m,
-  panelWidth = PANEL_WIDTHS.m,
+  panelWidth: wantedPanelWidth = PANEL_WIDTHS.m,
   topGap = DEFAULT_TOP_GAP,
   layout = "attached",
   material = "liquid",
@@ -102,6 +103,7 @@ export function Notch({
   fontScale = 1,
 }: NotchProps) {
   const { shell, snapshot } = useShellRuntime();
+  const panelWidth = panelFitWidth(wantedPanelWidth, window.screen.width);
   const { alert, flash } = snapshot;
   const { visual, dispatch } = useNotchMachine(mode, alert !== undefined);
   const expanded = visual === "expanded";
