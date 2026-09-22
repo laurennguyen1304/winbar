@@ -31,6 +31,14 @@ describe("ClaudeSection", () => {
     expect(onChange).toHaveBeenCalledWith({ ...value, usageWarnPercent: 80 });
   });
 
+  it("turns the other accounts off and keeps the hand-set path", () => {
+    const onChange = vi.fn();
+    const custom = { ...value, accountSwitcherPath: "D:\\tools\\switch.exe" };
+    render(<ClaudeSection value={custom} onChange={onChange} />);
+    fireEvent.click(screen.getByLabelText("Hạn mức của mọi tài khoản"));
+    expect(onChange).toHaveBeenCalledWith({ ...custom, multiAccount: false });
+  });
+
   it("says plainly what turning the layout off means", () => {
     render(<ClaudeSection value={value} onChange={vi.fn()} />);
     expect(

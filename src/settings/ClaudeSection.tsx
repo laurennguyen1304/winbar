@@ -86,6 +86,18 @@ export function ClaudeSection({ value, onChange }: Props) {
           ))}
         </ToggleGroup>
       </Row>
+
+      <Row
+        title="Hạn mức của mọi tài khoản"
+        description="Hỏi công cụ đổi tài khoản nếu máy có; không có thì chỉ hiện tài khoản đang đăng nhập"
+      >
+        <Switch
+          aria-label="Hạn mức của mọi tài khoản"
+          checked={value.multiAccount}
+          className="data-[state=checked]:bg-[var(--switch-on)]"
+          onCheckedChange={(multiAccount) => onChange({ ...value, multiAccount })}
+        />
+      </Row>
     </section>
   );
 }

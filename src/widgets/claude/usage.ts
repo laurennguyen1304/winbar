@@ -1,5 +1,5 @@
 // Reading the usage numbers out loud (SPEC-claude §5.5). Pure, so all of it is tested.
-import type { ClaudeUsage, UsageError } from "./native";
+import type { ClaudeUsage, ClaudeWindow, UsageError } from "./native";
 
 /** Above these, the bar changes colour. Same bands as the system widget's meters. */
 export const HIGH_PERCENT = 75;
@@ -56,6 +56,16 @@ export function errorNote(usage: ClaudeUsage, now: number): { text: string; hasN
   const hasNumbers = Boolean(usage.fiveHour ?? usage.sevenDay);
   const since = hasNumbers ? ` · số từ ${fetchedAgo(usage.fetchedAt, now).replace(/^cập nhật /, "")}` : "";
   return { text: ERROR_TEXT[usage.error] + since, hasNumbers };
+}
+
+/**
+ * An account's window as it stands now. Another account's numbers can be hours old; once its reset time has
+ * passed, the old percentage is simply wrong, and the window has started again from 0 (SPEC §5.5).
+ */
+export function windowNow(window: ClaudeWindow | undefined, now: number): ClaudeWindow | undefined {
+  if (!window?.resetsAt) return window;
+  const at = Date.parse(window.resetsAt);
+  return !Number.isNaN(at) && at <= now ? { percent: 0 } : window;
 }
 
 /** The short "5h 52%" the pill carries, or nothing when there is no number yet. */

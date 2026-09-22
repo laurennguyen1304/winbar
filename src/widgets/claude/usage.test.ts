@@ -1,6 +1,30 @@
 import { describe, expect, it } from "vitest";
 import type { ClaudeUsage } from "./native";
-import { CRITICAL_PERCENT, HIGH_PERCENT, errorNote, fetchedAgo, level, pillUsage, resetIn } from "./usage";
+import {
+  CRITICAL_PERCENT,
+  HIGH_PERCENT,
+  errorNote,
+  fetchedAgo,
+  level,
+  pillUsage,
+  resetIn,
+  windowNow,
+} from "./usage";
+
+describe("windowNow", () => {
+  const at = Date.parse("2026-09-18T12:00:00Z");
+  it("starts a window from 0 once its reset time has passed", () => {
+    expect(windowNow({ percent: 80, resetsAt: "2026-09-18T11:59:00Z" }, at)).toEqual({ percent: 0 });
+    expect(windowNow({ percent: 80, resetsAt: "2026-09-18T12:00:00Z" }, at)).toEqual({ percent: 0 });
+  });
+  it("leaves a window alone before its reset, or when there is no reset time to go by", () => {
+    const later = { percent: 80, resetsAt: "2026-09-18T13:00:00Z" };
+    expect(windowNow(later, at)).toBe(later);
+    expect(windowNow({ percent: 5 }, at)).toEqual({ percent: 5 });
+    expect(windowNow({ percent: 5, resetsAt: "garbage" }, at)).toEqual({ percent: 5, resetsAt: "garbage" });
+    expect(windowNow(undefined, at)).toBeUndefined();
+  });
+});
 
 const NOW = Date.parse("2026-09-18T12:00:00Z");
 

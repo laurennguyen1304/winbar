@@ -63,9 +63,12 @@ pub struct Usage {
     pub fetched_at: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<UsageError>,
+    /// Every account an account-switcher CLI manages (§3.3b). Filled in by the caller, never cached to disk.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub accounts: Option<Vec<super::accounts::AccountUsage>>,
 }
 
-fn round_percent(value: f64) -> u32 {
+pub(super) fn round_percent(value: f64) -> u32 {
     value.clamp(0.0, 100.0).round() as u32
 }
 
@@ -162,6 +165,7 @@ pub fn parse(payload: &Value, fetched_at: u64) -> Usage {
         per_model: per_model(payload),
         fetched_at,
         error: None,
+        accounts: None,
     }
 }
 
@@ -203,13 +207,49 @@ fn wipe(mut text: String) {
     drop(text);
 }
 
-fn load_cache(path: &Path) -> Option<Usage> {
-    let text = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str(&text).ok()
+/// What is kept on disk: the numbers, and which account they belong to.
+#[derive(Serialize, Deserialize)]
+struct Cached {
+    /// `accountUuid` of the account the numbers are for. A file written before this field existed has none, and
+    /// is treated as belonging to nobody.
+    #[serde(default)]
+    account: Option<String>,
+    #[serde(flatten)]
+    usage: Usage,
 }
 
-fn save_cache(path: &Path, usage: &Usage) {
-    let Ok(json) = serde_json::to_string(usage) else {
+/// The active account's `accountUuid`, from Claude Code's own config file. Not a secret.
+///
+/// Without it the one cache record could not tell whose numbers it held: just after a switch, the card showed the
+/// previous account's numbers until the cache ran out.
+pub fn active_account(config_file: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(config_file).ok()?;
+    let value: Value = serde_json::from_str(text.trim_start_matches('\u{feff}')).ok()?;
+    let id = value
+        .get("oauthAccount")?
+        .get("accountUuid")?
+        .as_str()?
+        .trim();
+    (!id.is_empty()).then(|| id.to_string())
+}
+
+/// The cached numbers, only when they belong to `account`.
+fn load_cache(path: &Path, account: Option<&str>) -> Option<Usage> {
+    let text = std::fs::read_to_string(path).ok()?;
+    let cached: Cached = serde_json::from_str(&text).ok()?;
+    (cached.account.as_deref() == account).then_some(cached.usage)
+}
+
+fn save_cache(path: &Path, account: Option<&str>, usage: &Usage) {
+    let record = Cached {
+        account: account.map(str::to_string),
+        // The account list carries labels; it stays in memory only.
+        usage: Usage {
+            accounts: None,
+            ..usage.clone()
+        },
+    };
+    let Ok(json) = serde_json::to_string(&record) else {
         return;
     };
     if let Some(dir) = path.parent() {
@@ -230,9 +270,18 @@ fn with_error(cache: Option<Usage>, error: UsageError) -> Usage {
 }
 
 /// Fetches usage, or reuses a recent answer. `force` skips the cache for a manual refresh.
-pub fn fetch(claude_dir: &Path, config_dir: &Path, now_ms: u64, force: bool) -> Usage {
+///
+/// `config_file` is Claude Code's `.claude.json`, read only for the active account's id.
+pub fn fetch(
+    claude_dir: &Path,
+    config_file: &Path,
+    config_dir: &Path,
+    now_ms: u64,
+    force: bool,
+) -> Usage {
     let path = cache_path(config_dir);
-    let cache = load_cache(&path);
+    let account = active_account(config_file);
+    let cache = load_cache(&path, account.as_deref());
     if !force {
         if let Some(cached) = &cache {
             if cached.error.is_none() && now_ms.saturating_sub(cached.fetched_at) < CACHE_TTL_MS {
@@ -259,7 +308,7 @@ pub fn fetch(claude_dir: &Path, config_dir: &Path, now_ms: u64, force: bool) -> 
         Ok(body) => match serde_json::from_slice::<Value>(&body) {
             Ok(payload) => {
                 let usage = parse(&payload, now_ms);
-                save_cache(&path, &usage);
+                save_cache(&path, account.as_deref(), &usage);
                 usage
             }
             Err(_) => {
@@ -440,11 +489,67 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         let path = cache_path(&dir);
         let usage = parse(&real_payload(), NOW);
-        save_cache(&path, &usage);
-        assert_eq!(load_cache(&path), Some(usage));
+        save_cache(&path, Some("acc-a"), &usage);
+        assert_eq!(load_cache(&path, Some("acc-a")), Some(usage));
 
         std::fs::write(&path, "{ not json").expect("writes");
-        assert_eq!(load_cache(&path), None);
+        assert_eq!(load_cache(&path, Some("acc-a")), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn after_an_account_switch_the_other_accounts_numbers_are_not_reused() {
+        // The regression this pins: one cache record with no owner, so for two minutes after a switch the card
+        // showed the previous account's numbers as if they were the new one's.
+        let dir = std::env::temp_dir().join("winbar-claude-usage-cache-switch");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = cache_path(&dir);
+        save_cache(&path, Some("acc-a"), &parse(&real_payload(), NOW));
+        assert_eq!(load_cache(&path, Some("acc-b")), None);
+        assert_eq!(load_cache(&path, None), None);
+
+        // A file from before the owner was recorded belongs to nobody.
+        std::fs::write(&path, r#"{"perModel":[],"fetchedAt":1}"#).expect("writes");
+        assert_eq!(load_cache(&path, Some("acc-a")), None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_account_list_is_never_written_to_disk() {
+        let dir = std::env::temp_dir().join("winbar-claude-usage-cache-accounts");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = cache_path(&dir);
+        let mut usage = parse(&real_payload(), NOW);
+        usage.accounts = Some(vec![super::super::accounts::AccountUsage {
+            id: "u".into(),
+            label: "Label-on-screen".into(),
+            active: false,
+            five_hour: None,
+            seven_day: None,
+            fetched_at: 0,
+            needs_login: false,
+        }]);
+        save_cache(&path, Some("acc-a"), &usage);
+        let text = std::fs::read_to_string(&path).expect("reads");
+        assert!(!text.contains("Label-on-screen") && !text.contains("accounts"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_active_account_comes_from_claude_codes_config() {
+        let dir = std::env::temp_dir().join("winbar-claude-active-account");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("creates");
+        let file = dir.join(".claude.json");
+        assert_eq!(active_account(&file), None, "no file");
+        std::fs::write(
+            &file,
+            "\u{feff}{\"oauthAccount\":{\"accountUuid\":\" acc-a \",\"emailAddress\":\"x@y.z\"}}",
+        )
+        .expect("writes");
+        assert_eq!(active_account(&file).as_deref(), Some("acc-a"));
+        std::fs::write(&file, r#"{"oauthAccount":{"accountUuid":""}}"#).expect("writes");
+        assert_eq!(active_account(&file), None);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -490,7 +595,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&home);
         std::fs::create_dir_all(&home).expect("creates");
         let config = home.join("config");
-        let usage = fetch(&home, &config, NOW, true);
+        let usage = fetch(&home, &home.join(".claude.json"), &config, NOW, true);
         assert_eq!(usage.error, Some(UsageError::NoLogin));
         let _ = std::fs::remove_dir_all(&home);
     }

@@ -64,6 +64,20 @@ fn claude_dir_from(home: &Path, configured: Option<&str>) -> PathBuf {
         .map_or_else(|| home.join(".claude"), PathBuf::from)
 }
 
+/// Claude Code's `.claude.json`: inside `CLAUDE_CONFIG_DIR` when that is set, otherwise **next to** `.claude` in
+/// the home directory rather than inside it.
+pub fn config_file(home: &Path) -> PathBuf {
+    config_file_from(home, std::env::var("CLAUDE_CONFIG_DIR").ok().as_deref())
+}
+
+fn config_file_from(home: &Path, configured: Option<&str>) -> PathBuf {
+    configured
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .map_or_else(|| home.to_path_buf(), PathBuf::from)
+        .join(".claude.json")
+}
+
 /// Where the per-session state files live, inside an already-resolved `.claude` directory.
 pub fn state_dir(claude_dir: &Path) -> PathBuf {
     claude_dir.join("statusbar").join("state.d")
@@ -485,6 +499,17 @@ mod tests {
         // An empty or blank value is someone unsetting it, not a request to read the drive root.
         assert_eq!(claude_dir_from(home, Some("")), home.join(".claude"));
         assert_eq!(claude_dir_from(home, Some("   ")), home.join(".claude"));
+    }
+
+    #[test]
+    fn the_config_file_sits_beside_dot_claude_unless_the_directory_moved() {
+        let home = Path::new(r"C:\Users\someone");
+        assert_eq!(config_file_from(home, None), home.join(".claude.json"));
+        assert_eq!(config_file_from(home, Some(" ")), home.join(".claude.json"));
+        assert_eq!(
+            config_file_from(home, Some(r"D:\claude")),
+            PathBuf::from(r"D:\claude\.claude.json")
+        );
     }
 
     #[test]
