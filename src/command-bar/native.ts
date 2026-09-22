@@ -9,9 +9,10 @@ export async function hideCommandBar(): Promise<void> {
 }
 
 /** Keeps the native window as tall as the bar; Rust keeps the top edge where it is. */
-export async function resizeCommandBar(height: number): Promise<void> {
+export async function resizeCommandBar(height: number, scale?: number): Promise<void> {
   if (!isTauri()) return;
-  await invoke("command_bar_resize", { height });
+  // `scale` is the page's devicePixelRatio, which includes the Windows text size the monitor's scale leaves out.
+  await invoke("command_bar_resize", { height, scale });
 }
 
 /** Turns an async Tauri subscription into a synchronous unsubscribe for effects. */
@@ -31,6 +32,8 @@ function subscribe(start: () => Promise<UnlistenFn>, what: string): () => void {
 export interface Opened {
   /** Logical px the bar may grow to before it leaves its screen. */
   maxHeight: number;
+  /** The screen's scale; with `devicePixelRatio` it turns `maxHeight` into CSS px. */
+  scale?: number;
 }
 
 /** The hotkey or tray showed the window or brought it forward. */

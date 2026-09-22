@@ -27,6 +27,7 @@ import {
   pillRadius,
   type Size,
 } from "./notch-sizes";
+import { useDevicePixelRatio } from "./use-device-pixel-ratio";
 import { useNotchDrag } from "./notch-drag";
 import { stickyHeight, windowSizeFor, type NotchLayout, type NotchMaterial } from "./notch-shape";
 import { NotchShape } from "./NotchShape";
@@ -104,6 +105,8 @@ export function Notch({
 }: NotchProps) {
   const { shell, snapshot } = useShellRuntime();
   const panelWidth = panelFitWidth(wantedPanelWidth, window.screen.width);
+  // Windows text size makes CSS px bigger than the monitor's logical px; the native window is sized by this instead.
+  const pixelRatio = useDevicePixelRatio();
   const { alert, flash } = snapshot;
   const { visual, dispatch } = useNotchMachine(mode, alert !== undefined);
   const expanded = visual === "expanded";
@@ -188,20 +191,34 @@ export function Notch({
     lastTarget.current = target;
     const timer = setTimeout(() => {
       // Attached: flush with the top edge, window wider by the flares (SPEC §15).
-      requestNotchLayout(windowSizeFor(target, layout), layout === "attached" ? 0 : topGap, drag.offsetX).catch(
-        (err: unknown) => console.error("notch_layout failed", err),
-      );
+      requestNotchLayout(
+        windowSizeFor(target, layout),
+        layout === "attached" ? 0 : topGap,
+        drag.offsetX,
+        pixelRatio,
+      ).catch((err: unknown) => console.error("notch_layout failed", err));
     }, delay);
     return () => clearTimeout(timer);
     // Depend on the numbers, not the object identities.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, panel.width, panel.height, collapsed.width, collapsed.height, topGap, layout, drag.offsetX]);
+  }, [
+    expanded,
+    panel.width,
+    panel.height,
+    collapsed.width,
+    collapsed.height,
+    topGap,
+    layout,
+    drag.offsetX,
+    pixelRatio,
+  ]);
 
   // Sticky: reserve the collapsed notch's strip; the shell only re-lays out windows when the height changes.
   const reserve = sticky ? stickyHeight(mode === "always" ? alwaysSize : pillSize, layout, topGap) : null;
+  // The strip is measured with the page's scale too, so it is asked for again when that changes.
   useEffect(() => {
     requestSticky(reserve).catch((err: unknown) => console.error("notch_sticky failed", err));
-  }, [reserve]);
+  }, [reserve, pixelRatio]);
 
   // Esc and clicks elsewhere close the panel.
   useEffect(() => {
