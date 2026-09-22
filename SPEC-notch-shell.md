@@ -188,6 +188,9 @@ Lưới ba cột `1.1fr 1.25fr 0.78fr`, widget tự khai mình đáng bao nhiêu
 Shell **không biết tên widget nào**: widget khai kích cỡ, shell xếp chỗ (`bentoLayout()` trong `src/shell/layout.ts`).
 Hai trường hợp lệch được xử lý ngay trong hàm đó: `large` thứ ba rơi xuống thành hàng trọn chiều ngang thay vì bóp
 hết lại; và một `large` đứng một mình (nhạc tắt chẳng hạn) thì trải rộng chứ không để hở một cột trống.
+Khi chỉ còn **một** `large` bên cạnh cột hẹp, lưới đổi thành hai cột `1.2fr 1fr` (CSS, `data-large="1"`): chỗ của
+ô vắng mặt chia phần lớn cho cột `small`, thay vì để ô `large` chiếm ~75% và bóp `system` / `claude-usage` như
+khi có nhạc (chủ dự án, 22/09).
 
 Quy tắc:
 - Widget đăng ký qua `registerWidget(def)` trong `src/widgets/index.ts`; shell không import widget cụ thể nào khác.
