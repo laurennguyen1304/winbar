@@ -16,10 +16,17 @@ const CHROME: (f64, f64) = (48.0, 72.0);
 /// A fixed 1000 x 680 ran off the bottom of a 1920 x 1080 laptop at 150% (1280 x 672 logical once the taskbar is
 /// taken off), hiding the lower part of the page and the window's own edge (the owner, 22/09).
 pub fn fit_size(width: u32, height: u32, scale: f64) -> ((f64, f64), (f64, f64)) {
-    let scale = if scale.is_finite() && scale > 0.0 { scale } else { 1.0 };
+    let scale = if scale.is_finite() && scale > 0.0 {
+        scale
+    } else {
+        1.0
+    };
     let room_w = (f64::from(width) / scale - CHROME.0).max(0.0);
     let room_h = (f64::from(height) / scale - CHROME.1).max(0.0);
-    let size = (PREFERRED.0.min(room_w).floor(), PREFERRED.1.min(room_h).floor());
+    let size = (
+        PREFERRED.0.min(room_w).floor(),
+        PREFERRED.1.min(room_h).floor(),
+    );
     let min = (MINIMUM.0.min(size.0), MINIMUM.1.min(size.1));
     (size, min)
 }
