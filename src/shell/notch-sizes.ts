@@ -75,3 +75,15 @@ export function panelMaxHeight(screenHeight: number): number {
 export function panelHeight(contentHeight: number, screenHeight: number): number {
   return Math.min(Math.max(Math.ceil(contentHeight), PANEL_MIN_HEIGHT), panelMaxHeight(screenHeight));
 }
+
+/** Room left at the screen's sides when the panel is squeezed: the attached notch's flares, and a little air. */
+const PANEL_SIDE_ROOM = 40;
+
+/**
+ * Panel width that still fits the screen. The widest setting is 860 px, and a 1280 px laptop at 150% is only
+ * 853 px wide, so there the panel would otherwise lose both edges.
+ */
+export function panelFitWidth(width: number, screenWidth: number): number {
+  if (!(screenWidth > 0)) return width;
+  return Math.min(width, Math.max(PILL_SIZES.l.width, Math.floor(screenWidth - PANEL_SIDE_ROOM)));
+}

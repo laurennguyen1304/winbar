@@ -223,7 +223,7 @@ Lưu ở `%APPDATA%\winbar\settings.json` (Rust tự đọc/ghi JSON, ghi nguyê
 |---|---|
 | `pill.size` | `s` 300×32 · `m` 340×36 · `l` 400×40 (đổi 2026-09-17, §15 V5) |
 | `pill.alwaysSize` | `m` 620×64 · `l` 700×76 |
-| `pill.panelWidth` | `s` 720 · `m` 780 · `l` 860 |
+| `pill.panelWidth` | `s` 720 · `m` 780 · `l` 860; màn hẹp hơn độ rộng này + 40 thì panel co lại cho vừa (`panelFitWidth`) |
 | `pill.topGap` | 0–48 (px) — *mở rộng từ 0–24 ở Task 9 để đặt được pill dưới thanh yasb (R6)* |
 | `pill.openMode` | `hover` · `click` · `always` |
 | `fontScale` | 85–130, bước 5 (%), áp dụng cho chữ và biểu tượng trong notch |
