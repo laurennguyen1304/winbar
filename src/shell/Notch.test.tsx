@@ -43,6 +43,18 @@ describe("Notch", () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it("sends the page's pixel ratio with each layout, so Windows text size is counted in the window size", () => {
+    const before = window.devicePixelRatio;
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1.25 });
+    try {
+      render(<Notch widgets={[]} />);
+      tick(0);
+      expect((requestNotchLayout.mock.calls.at(-1) as unknown[] | undefined)?.[3]).toBe(1.25);
+    } finally {
+      Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: before });
+    }
+  });
+
   it("starts as a 340x36 attached notch: flush with the top, window wider by the flares, rounded bottom", () => {
     render(<Notch />);
     tick(0);

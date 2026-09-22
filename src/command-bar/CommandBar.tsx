@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Icon } from "../shell/Icon";
+import { useDevicePixelRatio } from "../shell/use-device-pixel-ratio";
 import { useSettings } from "../shell/use-settings";
 import { WidgetBoundary } from "../shell/WidgetBoundary";
 import type { SearchResult, WidgetDefinition } from "../shell/widget-contract";
@@ -14,6 +15,7 @@ import {
   saveCommandBarPosition,
   startDragging,
 } from "./native";
+import { cssMaxHeight } from "./max-height";
 import { runActionById } from "./providers/actions";
 import type { Group } from "./search";
 import { copyText } from "./clipboard";
@@ -62,6 +64,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(true);
   const [maxHeight, setMaxHeight] = useState<number | undefined>();
+  const pixelRatio = useDevicePixelRatio();
   const [toast, setToast] = useState<{ id: number; text: string } | undefined>();
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -124,7 +127,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
       onCommandBarOpened((opened) => {
         clearTimeout(hideTimer.current);
         void history.refresh();
-        setMaxHeight(opened.maxHeight);
+        setMaxHeight(cssMaxHeight(opened, window.devicePixelRatio));
         setOpen(true);
         setFocused(true);
         inputRef.current?.focus();
@@ -167,7 +170,7 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
         dragTimer.current = setTimeout(() => {
           dragging.current = false;
           saveCommandBarPosition()
-            .then((opened) => opened && setMaxHeight(opened.maxHeight))
+            .then((opened) => opened && setMaxHeight(cssMaxHeight(opened, window.devicePixelRatio)))
             .catch((err: unknown) => console.error("command_bar_save_position failed", err));
         }, DROP_SETTLE_MS);
       }),
@@ -189,13 +192,14 @@ export function CommandBar({ registered }: { registered: readonly WidgetDefiniti
     if (!root || typeof ResizeObserver === "undefined") return;
     const report = () => {
       const height = Math.ceil(root.getBoundingClientRect().height);
-      if (height > 0) resizeCommandBar(height).catch((err: unknown) => console.error("command_bar_resize failed", err));
+      if (height > 0)
+        resizeCommandBar(height, pixelRatio).catch((err: unknown) => console.error("command_bar_resize failed", err));
     };
     report();
     const observer = new ResizeObserver(report);
     observer.observe(root);
     return () => observer.disconnect();
-  }, []);
+  }, [pixelRatio]);
 
   const close = useCallback(() => {
     setOpen(false);

@@ -78,6 +78,8 @@ pub struct NotchState {
     layout: Mutex<HashMap<String, LayoutRequest>>,
     /// Screen each notch window belongs to, by window label.
     monitors: Mutex<HashMap<String, MonitorGeometry>>,
+    /// Physical px per CSS px, as each notch page last reported it (`devicePixelRatio`), by window label.
+    page_scale: Mutex<HashMap<String, f64>>,
     /// "Ẩn notch tạm thời" from the tray: layout calls keep sizing the windows but never show them.
     pub hidden: AtomicBool,
 }
@@ -159,6 +161,34 @@ pub fn wanted_screens<R: Runtime>(app: &AppHandle<R>) -> Result<Vec<MonitorGeome
     Ok(screen_order(primary, &all))
 }
 
+/// A scale a page may report: anything else is a bug on the page side.
+pub fn valid_page_scale(scale: f64) -> bool {
+    scale.is_finite() && (0.5..=8.0).contains(&scale)
+}
+
+/// `screen` with its scale replaced by the page's own, when the page has reported one.
+///
+/// WebView2 draws a page at the monitor's DPI scale *times* the Windows text size (Accessibility > Text size), so on
+/// a machine with bigger text every CSS px is bigger than the logical px the monitor reports. Sizing the window from
+/// the monitor alone cut the open panel off on both sides and at the bottom there (the owner, 22/09).
+pub fn with_page_scale(screen: MonitorGeometry, page_scale: Option<f64>) -> MonitorGeometry {
+    match page_scale {
+        Some(scale) if valid_page_scale(scale) => MonitorGeometry { scale, ..screen },
+        _ => screen,
+    }
+}
+
+/// Screen a notch window sits on, measured in its page's px: what sizes and gaps from the page are converted with.
+pub fn page_screen<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
+    let page_scale = window
+        .state::<NotchState>()
+        .page_scale
+        .lock()
+        .ok()
+        .and_then(|m| m.get(window.label()).copied());
+    Ok(with_page_scale(screen_of_window(window)?, page_scale))
+}
+
 /// Screen a notch window sits on.
 pub fn screen_of_window<R: Runtime>(window: &WebviewWindow<R>) -> Result<MonitorGeometry, String> {
     let assigned = window
@@ -176,7 +206,7 @@ pub fn screen_of_window<R: Runtime>(window: &WebviewWindow<R>) -> Result<Monitor
 fn apply<R: Runtime>(window: &WebviewWindow<R>, req: LayoutRequest) -> Result<(), String> {
     let strip_top = crate::sticky::strip_top(window.app_handle(), window.label());
     let p = place_notch(
-        screen_of_window(window)?,
+        page_screen(window)?,
         req.width,
         req.height,
         req.top_gap,
@@ -220,7 +250,18 @@ pub fn notch_layout<R: Runtime>(
     height: f64,
     top_gap: f64,
     offset_x: f64,
+    scale: Option<f64>,
 ) -> Result<(), String> {
+    if let Some(s) = scale {
+        if !valid_page_scale(s) {
+            return Err(format!("invalid page scale {s}"));
+        }
+        state
+            .page_scale
+            .lock()
+            .map_err(|e| e.to_string())?
+            .insert(window.label().to_string(), s);
+    }
     if !(width.is_finite() && height.is_finite() && top_gap.is_finite() && offset_x.is_finite())
         || width <= 0.0
         || height <= 0.0
@@ -320,6 +361,9 @@ pub fn sync_windows<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         if let Ok(mut monitors) = app.state::<NotchState>().monitors.lock() {
             monitors.remove(&label);
         }
+        if let Ok(mut scales) = app.state::<NotchState>().page_scale.lock() {
+            scales.remove(&label);
+        }
     }
     Ok(())
 }
@@ -357,6 +401,29 @@ mod tests {
             width,
             height,
             scale,
+        }
+    }
+
+    #[test]
+    fn sizes_by_the_page_scale_when_text_is_bigger() {
+        // 100% monitor with Windows text size at 125%: the page draws 1.25 physical px per CSS px.
+        let screen = with_page_scale(monitor(1920, 1080, 1.0), Some(1.25));
+        let p = place_notch(screen, 808.0, 400.0, 0.0, 0.0, None);
+        assert_eq!((p.width, p.height), (1010, 500));
+    }
+
+    #[test]
+    fn ignores_a_page_scale_that_makes_no_sense() {
+        let m = monitor(1920, 1080, 1.5);
+        for bad in [
+            None,
+            Some(0.0),
+            Some(-1.0),
+            Some(f64::NAN),
+            Some(f64::INFINITY),
+            Some(40.0),
+        ] {
+            assert_eq!(with_page_scale(m, bad), m);
         }
     }
 

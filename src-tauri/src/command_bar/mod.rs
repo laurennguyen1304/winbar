@@ -12,8 +12,8 @@ pub mod placement;
 use serde::Serialize;
 use serde_json::{json, Value};
 use tauri::{
-    AppHandle, Emitter, LogicalSize, Manager, Monitor, PhysicalPosition, Runtime, WebviewUrl,
-    WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Emitter, LogicalSize, Manager, Monitor, PhysicalPosition, PhysicalSize, Runtime,
+    WebviewUrl, WebviewWindow, WebviewWindowBuilder,
 };
 
 use crate::settings::{self, Position, SettingsState};
@@ -55,6 +55,8 @@ pub fn valid_height(height: f64) -> Option<f64> {
 pub struct Opened {
     /// Logical px the bar may grow to before it would leave its screen.
     pub max_height: f64,
+    /// The screen's scale, so the page can turn `max_height` into its own px (bigger with Windows text size).
+    pub scale: f64,
 }
 
 pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>> {
@@ -108,9 +110,18 @@ fn saved_position<R: Runtime>(app: &AppHandle<R>) -> Option<(i32, i32)> {
 }
 
 /// Room below the bar's top edge on the screen it is on.
-fn max_height_at<R: Runtime>(app: &AppHandle<R>, pos: (i32, i32)) -> f64 {
+fn opened_at<R: Runtime>(app: &AppHandle<R>, pos: (i32, i32)) -> Opened {
     let area = placement::area_for_saved(pos, WIDTH, &work_areas(app)).or_else(|| cursor_area(app));
-    area.map_or(INITIAL_HEIGHT, |a| placement::max_height(pos.1, a))
+    area.map_or(
+        Opened {
+            max_height: INITIAL_HEIGHT,
+            scale: 1.0,
+        },
+        |a| Opened {
+            max_height: placement::max_height(pos.1, a),
+            scale: a.scale,
+        },
+    )
 }
 
 /// Puts the hidden window where it should open (SPEC-command-bar §5.3).
@@ -151,9 +162,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>) {
             }
         };
         window.set_focus()?;
-        let opened = Opened {
-            max_height: max_height_at(app, pos),
-        };
+        let opened = opened_at(app, pos);
         window.emit_to(LABEL, OPENED_EVENT, opened)
     })();
     if let Err(e) = result {
@@ -177,13 +186,26 @@ pub fn command_bar_hide<R: Runtime>(window: WebviewWindow<R>) -> Result<(), Stri
 }
 
 /// Keeps the native window exactly as tall as the content; the top edge stays put.
+///
+/// `scale` is the page's `devicePixelRatio`. It is bigger than the monitor's scale when Windows text size is up, and
+/// sizing from the monitor then left the window shorter and narrower than the bar drawn in it.
 #[tauri::command]
-pub fn command_bar_resize<R: Runtime>(window: WebviewWindow<R>, height: f64) -> Result<(), String> {
+pub fn command_bar_resize<R: Runtime>(
+    window: WebviewWindow<R>,
+    height: f64,
+    scale: Option<f64>,
+) -> Result<(), String> {
     ensure_command_bar(&window)?;
     let height = valid_height(height).ok_or_else(|| format!("invalid height {height}"))?;
-    window
-        .set_size(LogicalSize::new(WIDTH, height))
-        .map_err(|e| e.to_string())
+    let result = match scale {
+        Some(s) if crate::window::valid_page_scale(s) => window.set_size(PhysicalSize::new(
+            (WIDTH * s).round() as u32,
+            (height * s).round() as u32,
+        )),
+        Some(s) => return Err(format!("invalid page scale {s}")),
+        None => window.set_size(LogicalSize::new(WIDTH, height)),
+    };
+    result.map_err(|e| e.to_string())
 }
 
 /// Returns `settings` (as JSON) with `commandBar.position` replaced.
@@ -210,9 +232,7 @@ pub fn command_bar_save_position<R: Runtime>(
     let current = serde_json::to_value(state.get()).map_err(|e| e.to_string())?;
     let next = with_position(current, Some(Position { x: p.x, y: p.y }));
     settings::apply(&app, &state, &next)?;
-    Ok(Opened {
-        max_height: max_height_at(&app, (p.x, p.y)),
-    })
+    Ok(opened_at(&app, (p.x, p.y)))
 }
 
 #[cfg(test)]
