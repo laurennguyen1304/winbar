@@ -92,6 +92,10 @@ npm run tauri build -- --no-bundle   # build bản release: src-tauri\target\rel
 
 > Build bằng `npm run tauri build`, đừng dùng `cargo build --release` trực tiếp — cách sau không nhúng giao diện vào exe.
 
+**Cập nhật lên bản mới:** thoát winbar trước (icon khay → *Thoát winbar*), rồi `git pull`, `npm install` và build lại
+như trên, xong mở lại `winbar.exe`. Nếu winbar còn chạy, build sẽ dừng ở lỗi `failed to remove file ... winbar.exe`
+/ `Access is denied`, vì Windows khoá file exe đang chạy.
+
 ### Ghim lên taskbar
 
 Cửa sổ của winbar không có nút trên taskbar, nên hãy tạo một shortcut rồi ghim nó:
