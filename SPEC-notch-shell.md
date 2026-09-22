@@ -176,12 +176,12 @@ Trước đây panel có tab **Core** và tab **Claude**. Giờ **bỏ tab**: m�
 khi danh sách Claude rút gọn còn phiên đang chạy thì mọi thứ đáng xem đều vừa một màn, và một cái tab chỉ là một
 cú bấm chắn giữa bạn và thứ bạn mở notch ra để xem.
 
-Lưới ba cột `1.1fr 1.25fr 0.78fr`, widget tự khai mình đáng bao nhiêu chỗ:
+Lưới ba cột `1fr 1.1fr 1fr` (trước 22/09 là `1.1fr 1.25fr 0.78fr`), widget tự khai mình đáng bao nhiêu chỗ:
 
 | `layout.size` | Chỗ | Ai dùng |
 |---|---|---|
 | `large` | Ô cao **hai hàng** ở một cột rộng. Tối đa **2** ô | `claude-sessions`, `media` |
-| `small` | Một ô đơn, xếp chồng ở cột hẹp bên phải | `claude-usage`, `system` |
+| `small` | Một ô đơn, vào cột nào đang kết thúc cao nhất (xem dưới) | `claude-usage`, `system` |
 | `medium` | **Trọn một hàng** riêng phía dưới | `clipboard` |
 | *không khai* | Coi như `small` | |
 
@@ -191,6 +191,11 @@ hết lại; và một `large` đứng một mình (nhạc tắt chẳng hạn) 
 Khi chỉ còn **một** `large` bên cạnh cột hẹp, lưới đổi thành hai cột `1.2fr 1fr` (CSS, `data-large="1"`): chỗ của
 ô vắng mặt chia phần lớn cho cột `small`, thay vì để ô `large` chiếm ~75% và bóp `system` / `claude-usage` như
 khi có nhạc (chủ dự án, 22/09).
+Ô `small` **không còn dồn hết vào cột thứ ba**: shell đo chiều cao tự nhiên của từng ô (một lượt layout không kéo
+giãn, không vẽ ra), rồi xếp ô cao nhất trước, mỗi ô vào cột đang thấp nhất; hoà thì lấy cột bên phải (`placeSmalls`
+trong `layout.ts`). Ô cuối của mỗi cột kéo tới đáy dải. Khi `claude-usage` hiện hai tài khoản, cột hẹp cũ cao ~510px,
+nhạc và phiên Claude trống quá nửa bên cạnh mà hạn mức vẫn bị cắt; giờ `system` xuống dưới phiên Claude, hạn mức có
+nguyên cột, cả dải ~370px (chủ dự án, 22/09). Ô nào cũng là con trực tiếp của lưới nên đổi cột không mount lại widget.
 Còn **hai** `large` mà không có `small` nào (chỉ bật nhạc và phiên Claude), lưới bỏ cột hẹp, còn hai cột
 `1.1fr 1.25fr` (CSS, `data-large="2"` + `data-small="0"`), thay vì để trống một cột ~180px bên phải (chủ dự án, 22/09).
 

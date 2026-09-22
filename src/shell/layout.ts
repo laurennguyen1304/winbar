@@ -54,3 +54,38 @@ export function bentoLayout(widgets: readonly Sized[]): BentoLayout {
   }
   return { large, small, medium };
 }
+
+/** A small tile and how tall it is on its own, before any stretching. */
+export interface MeasuredTile {
+  id: WidgetId;
+  height: number;
+}
+
+/**
+ * Picks a column for each small tile: the one that ends highest at the time, the tallest tile first.
+ *
+ * The large tiles open the first columns and the rest start empty. Stacking every small tile in the narrow column
+ * made that column the tallest thing in the panel once the Claude limits listed a second account: the row grew to
+ * ~510 px, music and the sessions stood mostly empty beside it, and the limits were still squeezed (the owner, 22/09).
+ * Filling whichever column is shortest puts a short tile under a short large one instead. A tie goes to the
+ * rightmost column, so with nothing measured yet (all zeros) the small tiles stack in the free column as before.
+ */
+export function placeSmalls(
+  largeHeights: readonly number[],
+  smalls: readonly MeasuredTile[],
+  columns: number,
+  gap: number,
+): Record<WidgetId, number> {
+  const heights = Array.from({ length: columns }, (_, i) => largeHeights[i] ?? 0);
+  const filled = heights.map((_, i) => i < largeHeights.length);
+  const tallestFirst = [...smalls].sort((a, b) => b.height - a.height);
+  const placed: Record<WidgetId, number> = {};
+  for (const tile of tallestFirst) {
+    let column = columns - 1;
+    for (let i = columns - 2; i >= 0; i--) if (heights[i] < heights[column]) column = i;
+    heights[column] += (filled[column] ? gap : 0) + tile.height;
+    filled[column] = true;
+    placed[tile.id] = column;
+  }
+  return placed;
+}

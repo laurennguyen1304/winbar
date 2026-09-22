@@ -73,21 +73,20 @@
 }
 
 /*
- * The bento. Two wide columns for the `large` tiles and a narrow one for the stack of `small` ones; each
- * `medium` widget takes a full-width row underneath. The large tiles set the height of the top band, and a
- * card that outgrows it scrolls inside itself rather than pushing the panel past the window.
+ * The bento. Two wide columns for the `large` tiles and a third for the `small` ones; each `medium` widget takes a
+ * full-width row underneath. Every tile is a direct child placed by Panel.tsx, so moving one to another column is a
+ * style change, not a remount. A small tile goes to whichever column ends highest (placeSmalls), and the last tile
+ * of each column runs to the bottom of the band; a card that outgrows it scrolls inside itself.
  */
 .bento {
   display: grid;
-  grid-template-columns: 1.1fr 1.25fr 0.78fr;
+  grid-template-columns: 1fr 1.1fr 1fr;
   gap: 10px;
   align-items: stretch;
   min-height: 0;
 }
 
-.large,
-.smalls,
-.medium {
+.tile {
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -98,48 +97,40 @@
  * A row is as tall as its tallest tile, so the card inside a short one fills the rest rather than leaving a
  * hole of bare panel beside it — one running session next to a full column of meters, say.
  */
-.large > *,
-.medium > * {
+.tile > * {
   flex: 1 1 auto;
   min-height: 0;
 }
 
-.smalls {
-  gap: 10px;
+/* One synchronous layout with nothing stretched, to read how tall each tile is on its own. Never painted. */
+.bento[data-measuring] {
+  align-items: start;
 }
 
-/* Full width, on its own row below whatever came before it. */
-.medium {
-  grid-column: 1 / -1;
+.bento[data-measuring] > .tile > * {
+  flex: none;
 }
 
 /*
- * The top band adapts to how many tall tiles there are. With two (music playing beside the sessions) the three
- * columns are used as they stand. With one — nothing playing, say — the grid becomes two columns and the space
- * the missing tile leaves goes mostly to the small ones: spreading the lone tile over both wide columns gave the
- * sessions ~75% of the width and squeezed the meters beside them into the same narrow strip as before (the owner,
- * 22/09). With none, the small tiles line up across the full width rather than huddling in a column.
+ * The third column used to be a narrow 0.78fr strip for the machine and the limits. Once the limits could list a
+ * second account it was the tallest thing in the panel and still too narrow to read (the owner, 22/09); the columns
+ * are now close to even, and the small tiles spread over whichever column has room.
+ *
+ * With one tall tile — nothing playing, say — the grid becomes two columns, most of the missing tile's space going
+ * to the small ones: spreading the lone tile over both wide columns gave the sessions ~75% of the width (the owner,
+ * 22/09). Two tall tiles and no small ones would leave the third column standing empty, so they take the whole row.
+ * With no tall tile at all, the small ones line up across the full width.
  */
 .bento[data-large="1"] {
   grid-template-columns: 1.2fr 1fr;
 }
 
-/*
- * Two tall tiles and no small ones — only music and the sessions switched on — would leave the narrow column
- * standing empty, a ~180px hole on the right of the panel. The two wide columns take the whole row instead.
- */
 .bento[data-large="2"][data-small="0"] {
   grid-template-columns: 1.1fr 1.25fr;
 }
 
-.bento[data-large="0"] > .smalls {
-  grid-column: 1 / -1;
-  flex-direction: row;
-}
-
-.bento[data-large="0"] > .smalls > * {
-  flex: 1 1 0;
-  min-width: 0;
+.bento[data-large="0"] {
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
 }
 
 .empty {

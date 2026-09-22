@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bentoLayout, MAX_LARGE } from "./layout";
+import { bentoLayout, MAX_LARGE, placeSmalls } from "./layout";
 import type { WidgetDefinition, WidgetSize } from "./widget-contract";
 
 const w = (id: string, size?: WidgetSize): Pick<WidgetDefinition, "id" | "layout"> => ({
@@ -58,5 +58,63 @@ describe("bentoLayout", () => {
 
   it("has nothing to place when nothing is enabled", () => {
     expect(bentoLayout([])).toEqual({ large: [], small: [], medium: [] });
+  });
+});
+
+describe("placeSmalls", () => {
+  const GAP = 10;
+
+  it("puts a short tile under a short large one and gives the tall one a column", () => {
+    // Music 322, sessions 160; the machine 114 and the limits with two accounts 368.
+    const placed = placeSmalls(
+      [322, 160],
+      [
+        { id: "system", height: 114 },
+        { id: "claude-usage", height: 368 },
+      ],
+      3,
+      GAP,
+    );
+    expect(placed).toEqual({ "claude-usage": 2, system: 1 });
+  });
+
+  it("stacks everything in the free column while nothing has been measured", () => {
+    const placed = placeSmalls(
+      [0, 0],
+      [
+        { id: "a", height: 0 },
+        { id: "b", height: 0 },
+      ],
+      3,
+      GAP,
+    );
+    expect(placed).toEqual({ a: 2, b: 2 });
+  });
+
+  it("stacks under a small tile when that column still ends highest", () => {
+    // x (60) takes the empty column 1. y (55) then weighs column 0 at 100 against column 1 at 60, and stacks under x.
+    const placed = placeSmalls(
+      [100],
+      [
+        { id: "x", height: 60 },
+        { id: "y", height: 55 },
+      ],
+      2,
+      GAP,
+    );
+    expect(placed).toEqual({ x: 1, y: 1 });
+  });
+
+  it("uses the free column of a single large tile for the tallest small one", () => {
+    const placed = placeSmalls(
+      [160],
+      [
+        { id: "system", height: 114 },
+        { id: "claude-usage", height: 368 },
+      ],
+      2,
+      GAP,
+    );
+    expect(placed).toEqual({ "claude-usage": 1, system: 0 });
   });
 });
