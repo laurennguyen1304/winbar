@@ -1,9 +1,10 @@
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { quitApp } from "../shell/native";
 import { ALWAYS_SIZES, NOTCH_OPACITY_RANGE, PANEL_WIDTHS, PILL_SIZES, TOP_GAP_RANGE } from "../shell/notch-sizes";
 import { PillPreview } from "../shell/PillPreview";
 import { registry } from "../shell/registry";
-import { mergeWidgets, moveWidget, type Settings } from "../shell/settings";
+import { mergeWidgets, moveWidget, notchPropsFrom, type Settings } from "../shell/settings";
+import { windowSizeFor } from "../shell/notch-shape";
 import { useSettings } from "../shell/use-settings";
 import { ClaudeSection } from "./ClaudeSection";
 import { ClipboardSection } from "./ClipboardSection";
@@ -31,7 +32,8 @@ const TAB_LABEL: Record<TabId, string> = { core: "Tab Core", claude: "Tab Claude
 
 function Row({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-6 border-b py-3.5">
+    // Wraps in a narrow window: the control drops under its title instead of running off the right edge.
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 border-b py-3.5">
       <div className="min-w-0">
         <div className="text-sm">{title}</div>
         <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>
@@ -64,10 +66,44 @@ function Choice<T extends string>({
       {options.map((o) => (
         <ToggleGroupItem key={o.value} value={o.value} aria-label={o.label} className="px-3">
           {o.label}
-          {o.hint && <span className="ml-1.5 font-mono text-[11px] opacity-60">{o.hint}</span>}
+          {/* The sizes are a nicety; below 768px they would push the group past the edge. */}
+          {o.hint && <span className="ml-1.5 font-mono text-[11px] opacity-60 max-md:hidden">{o.hint}</span>}
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
+  );
+}
+
+/** Widest thing in the preview, flares included: the always pill, or the pill carrying two widgets. */
+function previewWidth(settings: Settings, registered: readonly WidgetDefinition[]): number {
+  const { alwaysSize, pillSize, layout } = notchPropsFrom(settings, registered);
+  return Math.max(windowSizeFor(alwaysSize, layout).width, windowSizeFor(pillSize, layout).width);
+}
+
+/**
+ * Scales its content down to the space it has, never up.
+ *
+ * The preview draws the notch at its real size — 700px for the large always pill — which is wider than the whole
+ * page in a small window, and used to push everything to its right out of view.
+ */
+function FitWidth({ width, children }: { width: number; children: ReactNode }) {
+  const [room, setRoom] = useState(width);
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setRoom(el.clientWidth);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const scale = room > 0 ? Math.min(1, room / width) : 1;
+  return (
+    <div ref={ref} className="flex w-full min-w-0 justify-center overflow-hidden">
+      <div style={{ zoom: scale }}>{children}</div>
+    </div>
   );
 }
 
@@ -89,7 +125,7 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-52 shrink-0 flex-col gap-1 border-r px-3.5 py-5">
+      <aside className="flex w-44 shrink-0 flex-col gap-1 overflow-y-auto border-r px-3.5 py-5 md:w-52">
         <h1 className="mx-2 mb-3 text-base font-semibold">Cài đặt</h1>
         {SECTIONS.map((s) => (
           <a
@@ -107,7 +143,7 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
       </aside>
 
       <ScrollArea className="min-w-0 grow">
-        <main className="flex flex-col gap-6 px-7 pt-5 pb-7">
+        <main className="flex flex-col gap-6 px-5 pt-5 pb-7 md:px-7">
           <section
             aria-label="Xem trước"
             className="flex flex-col items-center gap-3.5 rounded-2xl border bg-[radial-gradient(60%_70%_at_18%_25%,#5f86b8_0%,transparent_60%),radial-gradient(50%_60%_at_85%_15%,#b58cab_0%,transparent_60%),linear-gradient(160deg,#2c3a52,#182130)] p-4"
@@ -116,8 +152,12 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
               <span>Xem trước</span>
               <span className="font-normal normal-case">Pill thường · Pill always</span>
             </div>
-            <PillPreview settings={view} registered={registered} variant="pill" />
-            <PillPreview settings={view} registered={registered} variant="always" />
+            <FitWidth width={previewWidth(view, registered)}>
+              <div className="flex flex-col items-center gap-3.5">
+                <PillPreview settings={view} registered={registered} variant="pill" />
+                <PillPreview settings={view} registered={registered} variant="always" />
+              </div>
+            </FitWidth>
           </section>
 
           <section id="set-pill">

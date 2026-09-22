@@ -36,7 +36,7 @@ export function fileStatusText(mode: CommandBarSettings["fileSearch"], status: F
 
 function Row({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-6 border-b py-3.5">
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 border-b py-3.5">
       <div className="min-w-0">
         <div className="text-sm">{title}</div>
         <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>

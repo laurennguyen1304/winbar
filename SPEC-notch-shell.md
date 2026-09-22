@@ -228,6 +228,11 @@ Lưu ở `%APPDATA%\winbar\settings.json` (Rust tự đọc/ghi JSON, ghi nguyê
 | `pill.openMode` | `hover` · `click` · `always` |
 | `fontScale` | 85–130, bước 5 (%), áp dụng cho chữ và biểu tượng trong notch |
 
+Cửa sổ Cài đặt mở 1000×680 nếu màn hình chính đủ chỗ, không thì co theo vùng làm việc (trừ taskbar và thanh tiêu
+đề); cỡ tối thiểu 640×480, nhỏ hơn nữa nếu màn hình nhỏ hơn (`fit_size` trong `settings_window.rs`). Trong trang, hàng
+nào hẹp thì nút chọn xuống dòng dưới tiêu đề, khung xem trước thu nhỏ theo bề ngang; không có gì bị cắt ở cửa sổ ≥ 640px
+(máy khác ở scale 150% bị cắt mất phần dưới và bên phải, chủ dự án, 22/09).
+
 - File hỏng hoặc giá trị ngoài khoảng: dùng mặc định cho trường đó, ghi log cảnh báo, không crash.
 - Widget có trong file nhưng không còn tồn tại: bỏ qua. Widget mới chưa có trong file: thêm vào cuối, bật.
 - Màn Cài đặt là **cửa sổ riêng** (không nằm trong notch), mở từ nút ⚙ trong panel hoặc menu khay. Có nút **Thoát winbar**.
