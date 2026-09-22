@@ -31,6 +31,21 @@ describe("Panel", () => {
     expect(tileOf("Card thường")).toHaveAttribute("data-tile", "small");
   });
 
+  it("tells the bento how many tall and small tiles it holds, so two tall ones alone take the whole row", () => {
+    const tall = (id: string): WidgetDefinition => ({
+      id,
+      tab: "core",
+      title: id,
+      description: id,
+      layout: { size: "large" },
+      Card: () => <span>{id}</span>,
+    });
+    const { container } = render(<Harness widgets={[tall("a"), tall("b")]} />);
+    const bento = container.querySelector("[data-large]");
+    expect(bento).toHaveAttribute("data-large", "2");
+    expect(bento).toHaveAttribute("data-small", "0");
+  });
+
   it("keeps other widgets working when one widget crashes", () => {
     render(<Harness widgets={demoWidgets} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Widget lỗi");
