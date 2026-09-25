@@ -63,11 +63,11 @@ npm run tauri dev
 - **Khi nào hỏi:**
   - Lúc khởi động (chờ 1 phút cho máy mở xong), **chỉ khi** lần hỏi thành công gần nhất đã cách đây ≥ 7 ngày, hoặc
     chưa từng hỏi.
-  - winbar chạy liên tục thì kiểm tra lại mốc này mỗi ngày một lần (chỉ so ngày, không gọi mạng); tới hạn mới hỏi.
+  - winbar chạy liên tục thì so lại mốc này mỗi giờ (chỉ so hai con số, không gọi mạng); tới hạn mới hỏi.
   - Mốc thời gian lưu trên đĩa (`lastCheckedAt` trong `update.json`, §7), nên khởi động lại máy nhiều lần trong tuần cũng không
     hỏi thêm.
 - Lỗi (mất mạng, 4xx/5xx, JSON hỏng, body quá 1 MB): im lặng, ghi một dòng ra stderr, **không** cập nhật mốc,
-  nên lần khởi động sau hoặc ngày hôm sau sẽ thử lại. Không bao giờ hiện lỗi này lên pill.
+  nên lần khởi động sau hoặc giờ sau sẽ thử lại. Không bao giờ hiện lỗi này lên pill.
 - Đồng hồ máy bị chỉnh lùi (mốc lưu nằm ở tương lai): coi như tới hạn, hỏi lại.
 
 ### 5.2 Báo trên pill
@@ -108,6 +108,8 @@ export interface UpdateStatus {
   current: string;
   /** Bản mới hơn trên GitHub; không có khi đang mới nhất hoặc chưa hỏi được. */
   latest?: string;
+  /** Bản pill cần báo: mới hơn và chưa bị bỏ qua. Notch đọc lúc mở để báo lại thông báo chưa ai trả lời. */
+  pending?: string;
   /** Epoch ms lần hỏi thành công gần nhất; 0 khi chưa có. */
   checkedAt: number;
   error?: "network";
@@ -160,7 +162,7 @@ dự án muốn gọi là 1.0.
 ```
 src-tauri/src/http.rs            chuyển từ claude/http.rs, dùng chung
 src-tauri/src/update/
-  mod.rs        lệnh, luồng nền (thức dậy mỗi ngày để so mốc), giữ trạng thái
+  mod.rs        lệnh, luồng nền (thức dậy mỗi giờ để so mốc), giữ trạng thái
   model.rs      đọc version, so phiên bản, tính tới hạn chưa (thuần, có test)
 src/update/
   native.ts     gọi lệnh, nghe sự kiện

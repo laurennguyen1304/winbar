@@ -7,6 +7,7 @@ import { mergeWidgets, moveWidget, notchPropsFrom, type Settings } from "../shel
 import { windowSizeFor } from "../shell/notch-shape";
 import { useSettings } from "../shell/use-settings";
 import { ClaudeSection } from "./ClaudeSection";
+import { UpdateSection } from "./UpdateSection";
 import { ClipboardSection } from "./ClipboardSection";
 import { CommandBarSection } from "./CommandBarSection";
 import { HotkeySection } from "./HotkeySection";
@@ -414,6 +415,7 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
                 onCheckedChange={(launchAtStartup) => save({ ...view, launchAtStartup })}
               />
             </Row>
+            <UpdateSection value={view.update} onChange={(update) => save({ ...view, update })} />
           </section>
         </main>
       </ScrollArea>

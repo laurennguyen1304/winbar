@@ -1,7 +1,7 @@
 # Implementation Plan: update
 
 > Spec: `SPEC-update.md` (đã duyệt, bản 2, 2026-09-25) · Danh sách task: `tasks/todo.md`.
-> Trạng thái plan: **chờ duyệt**.
+> Trạng thái plan: **xong, chờ kiểm tay trong app**.
 > Trước đó: `tasks/{notch-shell,command-bar,notch-shell-v2,media,system,notch-shell-v3,clipboard,claude}/`.
 > Plan Claude cất vào `tasks/claude/` khi còn dở: `claude-approvals` vẫn hoãn, vài mục kiểm tay chưa đánh dấu.
 
@@ -17,7 +17,7 @@ Không có card, không có widget: một module Rust chạy nền, một alert 
 - **Phần thuần tách riêng (`update/model.rs`).** Đọc version, so phiên bản, tính tới hạn, quyết định có báo không.
   Mọi nhánh có test mà không cần mạng hay đĩa.
 - **Trạng thái ở `update.json`, không ở file cài đặt** (spec §7). Ghi kiểu nguyên tử như cache hạn mức Claude.
-- **Luồng nền thức dậy mỗi ngày**, không phải mỗi 7 ngày: máy ngủ hay tắt thì một `sleep(7 ngày)` sẽ trôi sai.
+- **Luồng nền thức dậy mỗi giờ**, không phải mỗi 7 ngày: máy ngủ hay tắt thì một `sleep(7 ngày)` sẽ trôi sai.
   Mỗi lần thức chỉ so mốc trên đĩa với giờ hiện tại; tới hạn mới gọi mạng.
 - **Alert do shell đẩy, không qua widget.** `App.tsx` nghe `update-available` và đẩy alert vào shell hiện có.
   `PillAlert.source` đang là `WidgetId`; dùng `"winbar"` cho alert của chính app (chỉ để hiện tên khi alert lỗi).
@@ -47,7 +47,7 @@ Checkpoint: kiểm tay (spec §11) rồi publish
 | Chuyển `http.rs` làm hỏng hạn mức Claude | Task 1 chỉ đổi đường dẫn module; chạy lại toàn bộ test `claude` và mở card hạn mức |
 | Kiểm tay cần một bản mới hơn trên GitHub, mà lúc làm thì chưa có | Spec §11: hạ tạm `version` trên máy xuống `0.0.1` (không commit). Trên GitHub đang là `0.1.0` |
 | Test gọi mạng thật | Không có test nào gọi mạng; phần mạng chỉ là `http::get`, đã có sẵn và đã chạy thật |
-| Luồng nền tốn CPU | Thức mỗi 24 giờ, mỗi lần đọc một file nhỏ; không đáng đo |
+| Luồng nền tốn CPU | Thức mỗi giờ, mỗi lần chỉ so hai con số trong bộ nhớ; không đáng đo |
 
 ## Điểm kiểm tra
 

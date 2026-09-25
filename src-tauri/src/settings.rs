@@ -79,6 +79,14 @@ pub struct ClaudeSettings {
     pub account_switcher_path: String,
 }
 
+/// Update notice (SPEC-update §7). What the check itself remembers lives in `update.json`, not here.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSettings {
+    /// Ask GitHub for the latest version once a week. Off means no automatic request at all.
+    pub check: bool,
+}
+
 /// A path is at most this long on Windows without the `\\?\` prefix, which is not accepted here anyway.
 const MAX_PATH_SETTING: usize = 260;
 
@@ -119,6 +127,7 @@ pub struct Settings {
     pub command_bar: CommandBarSettings,
     pub clipboard: ClipboardSettings,
     pub claude: ClaudeSettings,
+    pub update: UpdateSettings,
 }
 
 impl Default for Settings {
@@ -162,6 +171,7 @@ impl Default for Settings {
                 multi_account: true,
                 account_switcher_path: String::new(),
             },
+            update: UpdateSettings { check: true },
         }
     }
 }
@@ -279,6 +289,9 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
     let claude = root
         .and_then(|r| r.get("claude"))
         .and_then(Value::as_object);
+    let update = root
+        .and_then(|r| r.get("update"))
+        .and_then(Value::as_object);
     let mut r = Reader {
         warnings: &mut warnings,
     };
@@ -395,6 +408,9 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
                     d.claude.account_switcher_path.clone()
                 }
             },
+        },
+        update: UpdateSettings {
+            check: r.boolean(update, "check", d.update.check),
         },
     };
     (settings, warnings)
@@ -731,6 +747,15 @@ mod tests {
         assert_eq!(s.font_scale, 125);
         assert_eq!(s.pill, Settings::default().pill);
         assert!(w.is_empty());
+    }
+
+    #[test]
+    fn a_file_from_before_the_update_check_has_it_on() {
+        let (s, w) = from_value(&json!({ "claude": { "enabled": true } }));
+        assert!(s.update.check);
+        assert!(w.is_empty());
+        let (s, _) = from_value(&json!({ "update": { "check": false } }));
+        assert!(!s.update.check);
     }
 
     #[test]

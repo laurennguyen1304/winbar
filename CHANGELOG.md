@@ -1,9 +1,17 @@
 # Changelog
 
 Ghi theo ngày, mới nhất ở trên. Mỗi mục là một thay đổi người dùng nhìn thấy được; chi tiết kỹ thuật nằm trong
-các file `SPEC-*.md` ở gốc repo.
+các file `SPEC-*.md` ở gốc repo. Từ 0.2.0, mục nào đổi số phiên bản thì tiêu đề ghi cả số đó: winbar trên máy bạn
+sẽ báo bản mới trên pill.
 
-## 25/09/2026
+## 0.2.0 — 25/09/2026
+
+### Tính năng
+
+- **Báo có bản mới trên pill.** Tối đa một tuần một lần, winbar đọc số phiên bản trên GitHub; có bản mới hơn thì
+  pill hiện "↑ Có bản winbar …" với nút *Xem* (mở trang này) và *Để sau*. Bấm nút nào thì bản đó cũng không báo lại.
+  Cài đặt › Chung có công tắc *Tự kiểm tra bản mới* (bật sẵn) và nút *Kiểm tra ngay*. Đây là bản đầu tiên có tính
+  năng này: bản đang cài trên máy bạn chưa có nên không tự báo được bản này, cần cập nhật tay một lần.
 
 ### Tài liệu
 

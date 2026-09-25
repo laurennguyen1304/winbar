@@ -3,6 +3,7 @@ import { Notch } from "./shell/Notch";
 import { registry } from "./shell/registry";
 import { notchPropsFrom } from "./shell/settings";
 import { useSettings } from "./shell/use-settings";
+import { UpdateNotice } from "./update/UpdateNotice";
 
 export default function App() {
   const widgets = registry.all();
@@ -18,9 +19,12 @@ export default function App() {
   // The window stays hidden until the notch lays it out, so waiting avoids a jump from the default size and spot.
   if (!loaded) return null;
   return (
-    <Notch
-      {...notchPropsFrom(settings, widgets)}
-      onOffsetChange={(offsetX) => void update({ ...settings, pill: { ...settings.pill, offsetX } })}
-    />
+    <>
+      <Notch
+        {...notchPropsFrom(settings, widgets)}
+        onOffsetChange={(offsetX) => void update({ ...settings, pill: { ...settings.pill, offsetX } })}
+      />
+      <UpdateNotice />
+    </>
   );
 }
