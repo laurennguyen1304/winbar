@@ -3,6 +3,15 @@
 Ghi theo ngày, mới nhất ở trên. Mỗi mục là một thay đổi người dùng nhìn thấy được; chi tiết kỹ thuật nằm trong
 các file `SPEC-*.md` ở gốc repo.
 
+## 25/09/2026
+
+### Tài liệu
+
+- **Hướng dẫn tạo hook trạng thái Claude Code** ([docs/claude-status-hook.md](docs/claude-status-hook.md)). Widget
+  phiên Claude chỉ đọc file do hook này ghi ra, nên máy chưa có hook thì pill Claude không bao giờ hiện, dù đã bật
+  widget. Trang mới có cách kiểm tra máy đã có hook chưa, một prompt dán vào Claude Code để nó tự tạo hook, định
+  dạng file winbar đọc, và các lý do khác khiến pill không hiện.
+
 ## 22/09/2026
 
 ### Sửa lỗi

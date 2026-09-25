@@ -38,6 +38,10 @@
 
 Mỗi widget bật/tắt và sắp thứ tự được trong Cài đặt.
 
+> **Widget phiên Claude cần một hook của Claude Code.** winbar chỉ đọc file trạng thái do hook ghi ra, không tự
+> cài hook. Chưa có hook thì pill Claude không bao giờ hiện, dù widget đang bật. Xem
+> [hướng dẫn tạo hook](docs/claude-status-hook.md): có sẵn prompt để Claude Code trên máy bạn tự làm.
+
 ### Command bar (<kbd>Ctrl</kbd>+<kbd>Space</kbd>)
 
 <p align="center">
@@ -83,6 +87,7 @@ Khi ô tìm kiếm còn trống, command bar hiện luôn khối **lịch sử c
 
 Yêu cầu: Windows 11, [Node.js](https://nodejs.org) 20+, [Rust](https://rustup.rs) stable và
 [các điều kiện của Tauri 2](https://v2.tauri.app/start/prerequisites/) (WebView2, MSVC build tools).
+Muốn thấy phiên Claude trên notch thì cần thêm [hook trạng thái Claude Code](docs/claude-status-hook.md).
 
 ```powershell
 npm install
