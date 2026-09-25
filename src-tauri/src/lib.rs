@@ -2,6 +2,7 @@ mod claude;
 mod clipboard;
 mod command_bar;
 mod hotkeys;
+mod http;
 mod media;
 mod settings;
 mod settings_window;
@@ -9,6 +10,7 @@ mod startup;
 mod sticky;
 mod system;
 mod tray;
+mod update;
 mod window;
 
 use tauri::{Manager, RunEvent};
@@ -92,7 +94,11 @@ pub fn run() {
             settings_window::open_settings,
             settings_window::quit_app,
             hotkeys::get_hotkey_status,
-            hotkeys::retry_hotkey
+            hotkeys::retry_hotkey,
+            update::update_status,
+            update::update_check,
+            update::update_dismiss,
+            update::update_open_changelog
         ])
         .setup(|app| {
             // Every piece of state a command needs is managed first. The windows are already alive by now, and a
@@ -103,6 +109,7 @@ pub fn run() {
             app.manage(command_bar::history::HistoryState::load(app.handle())?);
             app.manage(clipboard::ClipboardState::load(app.handle())?);
             app.manage(claude::ClaudeState::load(app.handle())?);
+            app.manage(update::UpdateState::load(app.handle())?);
             hotkeys::apply(app.handle(), &initial.hotkeys.command_bar);
             startup::sync_autostart(app.handle(), initial.launch_at_startup);
             window::sync_windows(app.handle()).map_err(|e| e.to_string())?;
@@ -111,6 +118,7 @@ pub fn run() {
             media::start(app.handle());
             claude::start(app.handle());
             clipboard::start(app.handle());
+            update::start(app.handle());
             tray::create(app.handle())?;
             window::watch_displays(app.handle().clone());
             Ok(())

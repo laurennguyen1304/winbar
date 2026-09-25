@@ -6,7 +6,6 @@
 //! Log lines carry counts and error kinds only — never a path, a session title, or a token (SPEC §9).
 
 mod accounts;
-mod http;
 mod icons;
 mod model;
 mod sessions;

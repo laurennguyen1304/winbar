@@ -67,6 +67,10 @@ export interface Settings {
     /** Nothing is recorded while this is on. */
     paused: boolean;
   };
+  update: {
+    /** Ask GitHub for the latest version once a week (SPEC-update §7). */
+    check: boolean;
+  };
 }
 
 /** Must match `DEFAULT_IGNORED_APPS` in src-tauri/src/settings.rs. */
@@ -105,6 +109,7 @@ export const DEFAULT_SETTINGS: Settings = {
   commandBar: { position: null, fileSearch: "auto", webSearch: "google" },
   clipboard: { retentionDays: 1, ignoredApps: DEFAULT_IGNORED_APPS, paused: false },
   claude: { enabled: true, iconRotateSeconds: 6, usageWarnPercent: 90, multiAccount: true, accountSwitcherPath: "" },
+  update: { check: true },
 };
 
 /** Stored order and flags win; widgets that no longer exist are dropped; new widgets are appended, enabled. */

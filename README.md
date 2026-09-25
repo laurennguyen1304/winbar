@@ -79,6 +79,9 @@ Khi ô tìm kiếm còn trống, command bar hiện luôn khối **lịch sử c
 
 - Mọi thứ chạy **cục bộ**; winbar không gửi dữ liệu của bạn đi đâu.
 - winbar chỉ **đọc** thư mục cấu hình của Claude Code (tôn trọng `CLAUDE_CONFIG_DIR`), không ghi vào đó.
+- **Kiểm tra bản mới:** tối đa một tuần một lần, winbar đọc số phiên bản trong `src-tauri/tauri.conf.json` trên
+  GitHub. Không gửi gì đi ngoài chính request đó, nhưng GitHub thấy địa chỉ IP của máy bạn. Tắt ở Cài đặt › Chung ›
+  *Tự kiểm tra bản mới*.
 - Mở terminal cho một phiên Claude chỉ nhận thư mục cục bộ có thật; đường dẫn mạng (UNC) bị từ chối, và đường dẫn
   có ký tự lạ sẽ mở bằng PowerShell thay vì Windows Terminal để không bị chèn lệnh.
 - Lịch sử clipboard nằm trên máy bạn, bỏ qua nội dung giống bí mật, và có thể tạm dừng bất cứ lúc nào.
@@ -96,6 +99,9 @@ npm run tauri build -- --no-bundle   # build bản release: src-tauri\target\rel
 ```
 
 > Build bằng `npm run tauri build`, đừng dùng `cargo build --release` trực tiếp — cách sau không nhúng giao diện vào exe.
+
+Có bản mới thì pill báo **"↑ Có bản winbar …"** (tối đa một tuần sau khi phát hành; muốn biết ngay thì bấm
+*Kiểm tra ngay* trong Cài đặt › Chung).
 
 **Cập nhật lên bản mới:** thoát winbar trước (icon khay → *Thoát winbar*), rồi `git pull`, `npm install` và build lại
 như trên, xong mở lại `winbar.exe`. Nếu winbar còn chạy, build sẽ dừng ở lỗi `failed to remove file ... winbar.exe`
@@ -126,7 +132,8 @@ cargo test --manifest-path src-tauri/Cargo.toml
 ## Tài liệu
 
 Mỗi phần có một đặc tả riêng ở gốc repo: [notch](SPEC-notch-shell.md), [Claude](SPEC-claude.md),
-[media](SPEC-media.md), [Core](SPEC-system.md), [command bar](SPEC-command-bar.md), [clipboard](SPEC-clipboard.md);
+[media](SPEC-media.md), [Core](SPEC-system.md), [command bar](SPEC-command-bar.md), [clipboard](SPEC-clipboard.md),
+[báo bản mới](SPEC-update.md) (cách phát hành một bản ở §8);
 bức tranh tổng thể ở [`CAPABILITY-MAP.md`](CAPABILITY-MAP.md), mockup giao diện trong [`design/`](design/).
 Có gì mới thì xem [`CHANGELOG.md`](CHANGELOG.md).
 

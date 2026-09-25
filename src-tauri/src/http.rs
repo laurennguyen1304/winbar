@@ -1,4 +1,4 @@
-//! One HTTPS GET, through WinHTTP (SPEC-claude §4).
+//! One HTTPS GET, through WinHTTP (SPEC-claude §4). Claude's usage and the update check (SPEC-update) both use it.
 //!
 //! `reqwest` is already in the dependency tree but carries no TLS backend, and giving it one pulls rustls and ring
 //! into every build. winbar is Windows-only and already speaks plenty of Win32, so a single GET against the
