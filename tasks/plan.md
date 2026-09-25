@@ -1,7 +1,7 @@
 # Implementation Plan: update
 
 > Spec: `SPEC-update.md` (đã duyệt, bản 2, 2026-09-25) · Danh sách task: `tasks/todo.md`.
-> Trạng thái plan: **xong, chờ kiểm tay trong app**.
+> Trạng thái plan: **xong** (kiểm tay trong app 25/09: tự hỏi sau 1 phút, pill, Cài đặt, Để sau, Kiểm tra ngay, Xem mở CHANGELOG — đều đúng; chưa kiểm tay: công tắc tắt thì luồng nền thôi hỏi).
 > Trước đó: `tasks/{notch-shell,command-bar,notch-shell-v2,media,system,notch-shell-v3,clipboard,claude}/`.
 > Plan Claude cất vào `tasks/claude/` khi còn dở: `claude-approvals` vẫn hoãn, vài mục kiểm tay chưa đánh dấu.
 
