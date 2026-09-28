@@ -41,6 +41,10 @@ Mỗi widget bật/tắt và sắp thứ tự được trong Cài đặt.
 > **Widget phiên Claude cần một hook của Claude Code.** winbar chỉ đọc file trạng thái do hook ghi ra, không tự
 > cài hook. Chưa có hook thì pill Claude không bao giờ hiện, dù widget đang bật. Xem
 > [hướng dẫn tạo hook](docs/claude-status-hook.md): có sẵn prompt để Claude Code trên máy bạn tự làm.
+>
+> **Phiên chạy trên cloud không hiện.** winbar chỉ thấy phiên Claude Code chạy trên máy này. Phiên cloud (Claude
+> Desktop với môi trường cloud, claude.ai/code, `claude --cloud`) chạy hook trên máy chủ của Anthropic nên không
+> để lại gì trên máy để winbar đọc.
 
 ### Command bar (<kbd>Ctrl</kbd>+<kbd>Space</kbd>)
 
