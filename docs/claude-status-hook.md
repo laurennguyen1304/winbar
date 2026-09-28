@@ -107,3 +107,9 @@ Pill Claude chỉ hiện khi có ít nhất một phiên **còn sống**. Kiểm
    Windows rồi khởi động lại winbar.
 5. **Thiếu `ts`.** File không có `ts`, hoặc `ts` bằng 0, bị bỏ qua. `ts` phải là epoch **giây**, không phải
    mili giây.
+6. **Phiên chạy trên cloud.** winbar không theo dõi được phiên Claude Code chạy trên cloud: phiên mở trong Claude
+   Desktop với môi trường cloud (biểu tượng đám mây cạnh tiêu đề, môi trường gắn repo GitHub thay vì một thư mục
+   trên máy), phiên trên claude.ai/code, hay phiên tạo bằng `claude --cloud`. Hook của những phiên này chạy trên
+   máy chủ cloud nên không ghi được file nào vào máy bạn, và máy cũng không có nguồn nào khác cho biết trạng thái
+   của chúng. Đây là giới hạn đã biết, không phải lỗi cấu hình. Muốn phiên hiện trên notch thì mở phiên đó với một
+   thư mục trên máy.

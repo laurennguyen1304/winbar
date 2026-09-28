@@ -4,6 +4,15 @@ Ghi theo ngày, mới nhất ở trên. Mỗi mục là một thay đổi ngư�
 các file `SPEC-*.md` ở gốc repo. Từ 0.2.0, mục nào đổi số phiên bản thì tiêu đề ghi cả số đó: winbar trên máy bạn
 sẽ báo bản mới trên pill.
 
+## 28/09/2026
+
+### Tài liệu
+
+- **Ghi rõ giới hạn: phiên Claude Code chạy trên cloud không hiện trên notch.** Phiên mở trong Claude Desktop với
+  môi trường cloud, trên claude.ai/code hay bằng `claude --cloud` chạy hook trên máy chủ cloud, nên máy bạn không
+  có file trạng thái nào của chúng. Khi đó pill vẫn hiện phiên local gần nhất, thường là "idle". Xem mục 6 của
+  [Vẫn không hiện](docs/claude-status-hook.md#vẫn-không-hiện).
+
 ## 0.2.0 — 25/09/2026
 
 ### Tính năng
