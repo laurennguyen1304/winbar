@@ -4,6 +4,15 @@ Ghi theo ngày, mới nhất ở trên. Mỗi mục là một thay đổi ngư�
 các file `SPEC-*.md` ở gốc repo. Từ 0.2.0, mục nào đổi số phiên bản thì tiêu đề ghi cả số đó: winbar trên máy bạn
 sẽ báo bản mới trên pill.
 
+## 29/09/2026
+
+### Sửa lỗi
+
+- **Sticky không còn chừa một khe trống giữa notch và cửa sổ phóng to ở màn hình phụ.** Khi hai màn hình có tỉ lệ
+  khác nhau (ví dụ 125% và 100%), dải giữ chỗ ở màn hình phụ đôi khi bị tính theo tỉ lệ của màn hình chính: notch
+  cao 36px nhưng dải cao 45px, nên để lộ hình nền giữa notch và cửa sổ bên dưới. Trước đây lỗi chỉ hết khi đổi cài
+  đặt hoặc mở lại winbar.
+
 ## 28/09/2026
 
 ### Tài liệu
