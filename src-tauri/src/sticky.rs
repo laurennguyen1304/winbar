@@ -96,6 +96,23 @@ pub fn notch_sticky<R: Runtime>(
     crate::window::reapply(&window)
 }
 
+/// Asks for the strip of one notch window again after its page's scale changed. The strip is measured in the page's
+/// px, and the page asks for it before it reports the new scale, so a notch moved to a screen with another DPI kept a
+/// strip sized by the old one: 45px above a 36px notch on a 100% screen next to a 125% one (the owner, 29/09).
+pub fn rescale<R: Runtime>(window: &WebviewWindow<R>) {
+    let Some(state) = window.app_handle().try_state::<StickyState>() else {
+        return;
+    };
+    let Ok(mut all) = state.inner.lock() else {
+        return;
+    };
+    if let Some(inner) = all.get_mut(window.label()) {
+        if let Err(e) = sync(window, inner, false) {
+            eprintln!("winbar notch: could not resize the sticky strip: {e}");
+        }
+    }
+}
+
 /// Re-applies every strip after a display change (resolution, DPI, monitors coming and going).
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
     for label in crate::window::notch_labels(app) {

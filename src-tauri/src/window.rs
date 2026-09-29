@@ -256,11 +256,15 @@ pub fn notch_layout<R: Runtime>(
         if !valid_page_scale(s) {
             return Err(format!("invalid page scale {s}"));
         }
-        state
+        let previous = state
             .page_scale
             .lock()
             .map_err(|e| e.to_string())?
             .insert(window.label().to_string(), s);
+        if previous != Some(s) {
+            // Before placing the notch, which sits in the strip.
+            crate::sticky::rescale(&window);
+        }
     }
     if !(width.is_finite() && height.is_finite() && top_gap.is_finite() && offset_x.is_finite())
         || width <= 0.0
