@@ -15,6 +15,17 @@ mod window;
 
 use tauri::{Manager, RunEvent};
 
+/// `winbar.exe --winbar-claude-hook`: relays one Claude Code hook event to the running app and returns the exit
+/// code. Called from `main` before anything of Tauri exists (SPEC-claude-approvals §3).
+pub fn claude_hook() -> i32 {
+    claude::approvals::relay::run()
+}
+
+/// Whether the process was started as the hook relay rather than as the app.
+pub fn is_claude_hook(first_argument: Option<&str>) -> bool {
+    first_argument == Some(claude::approvals::relay::FLAG)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -28,6 +39,7 @@ pub fn run() {
         .manage(media::MediaStore::default())
         .manage(system::SystemState::default())
         .manage(hotkeys::HotkeyState::default())
+        .manage(claude::approvals::ApprovalsState::default())
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
         .manage(command_bar::icons::IconsState::default())
@@ -62,6 +74,13 @@ pub fn run() {
             claude::claude_usage,
             claude::claude_accounts,
             claude::claude_icons,
+            claude::approvals::claude_approvals,
+            claude::approvals::claude_approval_shown,
+            claude::approvals::claude_approval_decide,
+            claude::approvals::claude_steps,
+            claude::approvals::claude_hook_status,
+            claude::approvals::claude_hook_preview,
+            claude::approvals::claude_hook_apply,
             clipboard::clipboard_list,
             clipboard::clipboard_text,
             clipboard::clipboard_thumb,
@@ -117,6 +136,7 @@ pub fn run() {
             command_bar::apps::warm_up(app.handle());
             media::start(app.handle());
             claude::start(app.handle());
+            claude::approvals::start(app.handle());
             clipboard::start(app.handle());
             update::start(app.handle());
             tray::create(app.handle())?;

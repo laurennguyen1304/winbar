@@ -10,7 +10,7 @@
 mod image;
 mod model;
 mod native;
-mod secrets;
+pub(crate) mod secrets;
 mod store;
 
 use std::sync::Mutex;
