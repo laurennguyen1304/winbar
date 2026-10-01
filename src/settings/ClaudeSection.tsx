@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Settings } from "../shell/settings";
 import { Switch } from "@/settings/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/settings/components/ui/toggle-group";
+import { ClaudeHookRow } from "./ClaudeHookRow";
 
 type ClaudeSettings = Settings["claude"];
 
@@ -98,6 +99,9 @@ export function ClaudeSection({ value, onChange }: Props) {
           onCheckedChange={(multiAccount) => onChange({ ...value, multiAccount })}
         />
       </Row>
+
+      {/* Not a setting of winbar's own: whether the hooks are installed is read from Claude Code's settings.json. */}
+      <ClaudeHookRow />
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useShell } from "../../shell/shell-context";
+import { ApprovalAlerts } from "./ApprovalAlert";
 import { ClaudeIcon } from "./ClaudeIcon";
 import { phaseLook, pillSession } from "./phase";
 import { useClaude } from "./store";
@@ -58,7 +59,8 @@ export function ClaudeBackground() {
     });
   }, [shell, over, window, limit]);
 
-  return null;
+  // Permission requests take the pill from here too (SPEC-claude-approvals §4.5).
+  return <ApprovalAlerts />;
 }
 
 /** Collapsed pill: the session that matters most, and how much of the five-hour limit is gone. */
