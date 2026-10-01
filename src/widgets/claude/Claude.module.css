@@ -152,6 +152,72 @@
   flex-shrink: 0;
 }
 
+/* --- các bước của phiên đang chạy (SPEC-claude-approvals §4.6) --- */
+
+/* A row with steps is three lines taller: the picture stays beside the title instead of drifting to the middle. */
+.row:has(.steps) {
+  align-items: flex-start;
+}
+
+.row:has(.steps) > .icon,
+.row:has(.steps) > .iconEmpty {
+  margin-top: 7px;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 18px;
+}
+
+.step {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+}
+
+.step::before {
+  content: "✓ ";
+  opacity: 0.6;
+}
+
+.step[data-current]::before {
+  content: "› ";
+  opacity: 1;
+}
+
+/* The step in progress: a slow sheen across the text. Only exists while the panel is open, so it costs nothing shut. */
+.step[data-current] {
+  background: linear-gradient(90deg, var(--text-faint) 0%, var(--text) 40%, var(--text-faint) 70%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: step-sheen 2.2s linear infinite;
+}
+
+@keyframes step-sheen {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -160% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step[data-current] {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: var(--text-sub);
+  }
+}
+
 /* Pinned to the bottom of the card, which fills its tile: the count reads as a footnote, not a stranded line. */
 .groupLabel {
   margin: auto 8px 2px;
@@ -308,6 +374,207 @@
 
 .noteError {
   color: var(--danger);
+}
+
+/* --- yêu cầu cấp quyền (SPEC-claude-approvals §4.5) --- */
+
+.approvalPill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Which session is asking. Short on purpose: the command needs the room. */
+.approvalFrom {
+  flex: 0 1 auto;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--warn);
+}
+
+/* What is being asked. Gives way first: the two buttons must always be whole. */
+.approvalSummary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+/*
+ * Text someone is about to approve is drawn in the order it is stored, left to right, whatever script it is in.
+ * Right-to-left letters would otherwise pull the digits and punctuation next to them into a different order on
+ * screen than the one the shell will read — with no control character involved for Rust to catch.
+ */
+.approvalSummary,
+.approvalDetail,
+.step {
+  direction: ltr;
+  unicode-bidi: bidi-override;
+}
+
+.approvalButton {
+  all: unset;
+  flex: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.approvalButton:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+
+/* The half second after the pill appears, when a click already in flight must not count (ARM_MS). */
+.approvalButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.approvalAllow,
+.approvalAllow:hover:not(:disabled) {
+  background: var(--text);
+  color: var(--on-text);
+}
+
+.approvalButton:focus-visible,
+.approvalIcon:focus-visible,
+.approvalLink:focus-visible,
+.approvalDetail:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.approvalCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 4px 4px 2px;
+  font-size: 13px;
+}
+
+.approvalHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.approvalWho {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.approvalWho b {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.approvalWho span {
+  color: var(--text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.approvalWho .approvalAsks {
+  color: var(--warn);
+  flex: none;
+}
+
+.approvalIcon {
+  all: unset;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.approvalIcon:hover {
+  background: var(--hover-bg);
+}
+
+/* Everything the tool was given. Wraps and scrolls: nothing is cut off at the edge of the card. */
+.approvalDetail {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 240px;
+  overflow: auto;
+  border-radius: 12px;
+  background: var(--input-bg);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.approvalNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--warn);
+}
+
+.approvalFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.approvalFoot .approvalButton {
+  padding: 6px 16px;
+  font-size: 13px;
+}
+
+.approvalRest {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.approvalLink {
+  all: unset;
+  flex: none;
+  font-size: 12px;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.approvalLink:hover {
+  color: var(--text);
+  text-decoration: underline;
 }
 
 /* --- pill --- */

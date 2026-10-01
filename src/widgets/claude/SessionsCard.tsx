@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { openTerminal } from "../../command-bar/native";
 import { Card, CardLabel } from "../../shell/ui";
+import { useSteps } from "./approvals";
 import { ClaudeIcon } from "./ClaudeIcon";
 import { openDesktop, type ClaudeSession } from "./native";
 import { ago, groupSessions, phaseLook, rowTime } from "./phase";
@@ -11,6 +12,8 @@ import styles from "./Claude.module.css";
 const TICK_MS = 30_000;
 /** Half of the 48px source art, so the pixel set lands on whole pixels instead of blurring. */
 const ICON_SIZE = 24;
+/** Steps shown under a working session (SPEC-claude-approvals §4.6). */
+const STEPS_SHOWN = 3;
 
 function useNow(intervalMs = TICK_MS): number {
   const [now, setNow] = useState(() => Date.now());
@@ -27,16 +30,21 @@ function Row({
   rotateMs,
   now,
   dim,
+  steps,
 }: {
   session: ClaudeSession;
   extra: Readonly<Record<string, string[]>>;
   rotateMs: number;
   now: number;
   dim?: boolean;
+  /** What the session did last, oldest first. Only shown while it is working. */
+  steps?: readonly string[];
 }) {
   const look = phaseLook(session);
   const isHistory = session.source === "history";
   const status = isHistory ? `${session.turns ?? 0} lượt · ${ago(session.lastActiveAt, now)}` : look.label;
+  // An idle session's steps are over; the line is for watching work happen.
+  const recent = session.phase === "idle" ? [] : (steps ?? []).slice(-STEPS_SHOWN);
 
   // Where the session actually lives. A Desktop session is in the Desktop app, not in a terminal, so opening a
   // terminal in its folder was never going to get the owner back to it (20/09). The `cl` rows do the same.
@@ -71,6 +79,20 @@ function Row({
           </span>
           <span className={styles.time}>{isHistory ? "" : rowTime(session, now)}</span>
         </span>
+        {recent.length > 0 && (
+          <span className={styles.steps} data-testid={`steps-${session.id}`}>
+            {recent.map((step, i) => (
+              <span
+                // Steps repeat ("Read · cart.ts" twice), so the position is the only stable key.
+                key={i}
+                className={styles.step}
+                data-current={(i === recent.length - 1 && session.phase === "tool") || undefined}
+              >
+                {step}
+              </span>
+            ))}
+          </span>
+        )}
       </span>
     </button>
   );
@@ -81,6 +103,7 @@ export function SessionsCard() {
   const { sessions, icons, options } = useClaude();
   const rotateMs = options.iconRotateSeconds * 1000;
   const now = useNow();
+  const steps = useSteps();
   const { live, quiet } = groupSessions(sessions);
 
   // A file dropped into the icons folder shows up the next time the panel opens, without a restart.
@@ -96,7 +119,7 @@ export function SessionsCard() {
       ) : (
         <div className={styles.list}>
           {live.map((s) => (
-            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} />
+            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} steps={steps[s.id]} />
           ))}
         </div>
       )}
