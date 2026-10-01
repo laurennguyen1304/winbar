@@ -22,6 +22,10 @@
 - **Pill thu gọn ở mép trên màn hình**, luôn nằm trên cùng nhưng không chiếm chỗ trên taskbar.
 - **Pill tự đổi theo việc đang diễn ra**: Claude đang chạy, Claude chờ bạn duyệt quyền, hay nhạc đang phát.
 - **Pill đôi**: vừa có Claude chạy vừa có nhạc thì notch dài ra để hiện cả hai cùng lúc.
+- **Duyệt quyền ngay trên pill** (tuỳ chọn, tắt sẵn): khi Claude Code xin quyền chạy một tool, pill hiện tên
+  project và câu lệnh, kèm nút *Từ chối* và *Cho phép*. Lệnh nào pill không hiện đủ thì nút là *Xem…*, mở thẻ đọc hết
+  tham số rồi mới duyệt. Terminal vẫn hỏi song song, trả lời ở đâu trước thì tính ở đó. Bật ở Cài đặt › Claude ›
+  *Duyệt quyền trên notch*.
 - **Bấm vào notch để mở panel dạng bento** — các widget xếp thành lưới, widget quan trọng chiếm ô lớn.
 - **Hai chất liệu**: `liquid` (gradient mờ) và `dense` (đen đặc `#010101`), kèm thanh chỉnh **độ trong suốt**
   từ 0–100% (100% là đen hoàn toàn).
@@ -31,7 +35,7 @@
 
 | Widget | Hiển thị |
 | --- | --- |
-| **Claude · phiên** | Các phiên Claude Code đang chạy (terminal và Claude Desktop), trạng thái đang làm / chờ duyệt / xong. Bấm một phiên để mở terminal ở đúng thư mục dự án, hoặc đưa Claude Desktop lên trước. |
+| **Claude · phiên** | Các phiên Claude Code đang chạy (terminal và Claude Desktop), trạng thái đang làm / chờ duyệt / xong. Bấm một phiên để mở terminal ở đúng thư mục dự án, hoặc đưa Claude Desktop lên trước. Đã bật duyệt quyền thì phiên đang chạy hiện thêm ba bước gần nhất (đọc file nào, chạy lệnh gì). |
 | **Claude · usage** | Mức dùng hạn mức hiện tại của tài khoản Claude. |
 | **Media** | Ảnh bìa lớn ở hàng trên, tên bài, nút phát/dừng/chuyển bài và thanh tiến trình ở hàng dưới — lấy từ bất kỳ app nào phát nhạc qua Windows media controls. |
 | **Core** | CPU và RAM theo thời gian thực, kèm nút mở Task Manager. |
@@ -82,7 +86,13 @@ Khi ô tìm kiếm còn trống, command bar hiện luôn khối **lịch sử c
 ## Bảo mật & quyền riêng tư
 
 - Mọi thứ chạy **cục bộ**; winbar không gửi dữ liệu của bạn đi đâu.
-- winbar chỉ **đọc** thư mục cấu hình của Claude Code (tôn trọng `CLAUDE_CONFIG_DIR`), không ghi vào đó.
+- winbar chỉ **đọc** thư mục cấu hình của Claude Code (tôn trọng `CLAUDE_CONFIG_DIR`), không ghi vào đó — trừ
+  một trường hợp do bạn chủ động bấm: cài hoặc gỡ hook *Duyệt quyền trên notch*. Khi đó winbar cho xem đúng phần sẽ
+  đổi trong `settings.json`, sao lưu file cũ, và chỉ thêm/bớt các mục của chính nó.
+- **Duyệt quyền trên notch:** câu lệnh và đường dẫn của một yêu cầu chỉ nằm trong bộ nhớ khi yêu cầu còn mở, không
+  ghi ra đĩa hay log. Hook nói chuyện với winbar qua một named pipe chỉ tài khoản Windows của bạn mở được, không qua
+  mạng. Ký tự ẩn và ký tự đổi chiều chữ trong câu lệnh được hiện ra thành mã thay vì vẽ nguyên dạng, và winbar không
+  mời duyệt thứ nó chưa hiện đủ. Đã chặn gì và chưa chặn được gì: [SPEC-claude-approvals.md](SPEC-claude-approvals.md) §10.
 - **Kiểm tra bản mới:** tối đa một tuần một lần, winbar đọc số phiên bản trong `src-tauri/tauri.conf.json` trên
   GitHub. Không gửi gì đi ngoài chính request đó, nhưng GitHub thấy địa chỉ IP của máy bạn. Tắt ở Cài đặt › Chung ›
   *Tự kiểm tra bản mới*.
@@ -136,6 +146,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 ## Tài liệu
 
 Mỗi phần có một đặc tả riêng ở gốc repo: [notch](SPEC-notch-shell.md), [Claude](SPEC-claude.md),
+[duyệt quyền Claude](SPEC-claude-approvals.md),
 [media](SPEC-media.md), [Core](SPEC-system.md), [command bar](SPEC-command-bar.md), [clipboard](SPEC-clipboard.md),
 [báo bản mới](SPEC-update.md) (cách phát hành một bản ở §8);
 bức tranh tổng thể ở [`CAPABILITY-MAP.md`](CAPABILITY-MAP.md), mockup giao diện trong [`design/`](design/).
