@@ -14,11 +14,12 @@ import type { OpenMode } from "./notch-machine";
 import {
   ALWAYS_SIZES,
   DEFAULT_TOP_GAP,
+  DETAIL_WIDTH,
   PANEL_MIN_HEIGHT,
   PANEL_RADIUS,
   PANEL_WIDTHS,
   PILL_SIZES,
-  RESIZE_MS,
+  SHRINK_MS,
   alertSize,
   duoSize,
   panelFitWidth,
@@ -108,8 +109,16 @@ export function Notch({
   // Windows text size makes CSS px bigger than the monitor's logical px; the native window is sized by this instead.
   const pixelRatio = useDevicePixelRatio();
   const { alert, flash } = snapshot;
-  const { visual, dispatch } = useNotchMachine(mode, alert !== undefined);
+  const { state, visual, dispatch } = useNotchMachine(mode, alert !== undefined);
   const expanded = visual === "expanded";
+  // An alert's own card in place of the panel (SPEC-claude-approvals §5). The machine remembers which alert it was
+  // opened for; if that alert has gone — answered, or pushed aside by another — there is nothing left to show.
+  const detailOpen = expanded && state.detail !== undefined;
+  const Detail = detailOpen && alert !== undefined && alert.id === state.detail ? alert.Detail : undefined;
+  const detailGone = detailOpen && Detail === undefined;
+  useEffect(() => {
+    if (detailGone) dispatch({ type: "detailGone" });
+  }, [detailGone, dispatch]);
   // Widgets that hid themselves (ShellApi.setHidden) leave the pill and the panel; their Background keeps running.
   const shown = snapshot.hidden.size === 0 ? widgets : widgets.filter((w) => !snapshot.hidden.has(w.id));
   // Up to two: a Claude session and music playing at the same time widen the pill rather than hiding one.
@@ -123,6 +132,7 @@ export function Notch({
       open: () => {
         dispatch({ type: "clickPill" });
       },
+      openDetail: (alertId) => dispatch({ type: "clickPill", detail: alertId }),
       collapse: () => dispatch({ type: "close", reason: "collapseButton" }),
     });
     return () => shell.bindNotch(undefined);
@@ -166,7 +176,8 @@ export function Notch({
         : pills.length > 1
           ? duoSize(pillSize)
           : pillSize;
-  const panel: Size = { width: panelWidth, height: panelHeight(contentHeight, window.screen.height) };
+  const openWidth = detailOpen ? panelFitWidth(DETAIL_WIDTH, window.screen.width) : panelWidth;
+  const panel: Size = { width: openWidth, height: panelHeight(contentHeight, window.screen.height) };
   const block = expanded ? panel : collapsed;
   const radius = expanded ? PANEL_RADIUS : pillRadius(collapsed);
 
@@ -186,7 +197,7 @@ export function Notch({
       lastTarget.current === undefined ||
       target.width >= lastTarget.current.width ||
       target.height >= lastTarget.current.height;
-    const delay = growing || firstLayout.current || prefersReducedMotion() ? 0 : RESIZE_MS;
+    const delay = growing || firstLayout.current || prefersReducedMotion() ? 0 : SHRINK_MS;
     firstLayout.current = false;
     lastTarget.current = target;
     const timer = setTimeout(() => {
@@ -236,7 +247,8 @@ export function Notch({
 
   const openFromPill = (e: MouseEvent | KeyboardEvent) => {
     if (fromControl(e)) return;
-    dispatch({ type: "clickPill" });
+    // An alert with a card of its own opens that card; any other click opens the panel.
+    dispatch({ type: "clickPill", detail: alert?.Detail ? alert.id : undefined });
   };
 
   let pillContent: ReactNode;
@@ -294,6 +306,7 @@ export function Notch({
         className={styles.notch}
         data-testid="notch"
         data-state={visual}
+        data-detail={detailOpen || undefined}
         data-layout={layout}
         data-dragging={drag.dragging || undefined}
         {...drag.handlers}
@@ -318,16 +331,25 @@ export function Notch({
               ref={contentRef}
               // The zoom divides both: the measurement below is in visual px, but these are the zoomed units.
               style={{
-                width: panelWidth / fontScale,
+                width: openWidth / fontScale,
                 maxHeight: panelMaxHeight(window.screen.height) / fontScale,
                 zoom: fontScale,
               }}
             >
-              <Panel
-                widgets={shown}
-                onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
-                onOpenSettings={() => void openSettings()}
-              />
+              {detailOpen ? (
+                Detail &&
+                alert && (
+                  <WidgetBoundary key={alert.id} title={alert.source} fallback={brokenAlert}>
+                    <Detail />
+                  </WidgetBoundary>
+                )
+              ) : (
+                <Panel
+                  widgets={shown}
+                  onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
+                  onOpenSettings={() => void openSettings()}
+                />
+              )}
             </div>
           ) : (
             <div

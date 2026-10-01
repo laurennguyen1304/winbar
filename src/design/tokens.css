@@ -28,8 +28,43 @@
   --radius-card: 18px;
   --radius-panel: 28px;
 
-  /* Motion v1 (SPEC 5.3) */
-  --motion-resize: 420ms cubic-bezier(0.32, 1.25, 0.5, 1);
+  /*
+   * Motion (SPEC 5.3, M1 changed 01/10). Opening springs: the curve is a spring of response 0.5 s and damping
+   * 0.72 sampled into `linear()`, so it overshoots by about 4% and settles. Closing does not bounce.
+   */
+  --motion-grow: 700ms
+    linear(
+      0,
+      0.042,
+      0.145,
+      0.277,
+      0.418,
+      0.554,
+      0.675,
+      0.778,
+      0.861,
+      0.925,
+      0.971,
+      1.003,
+      1.023,
+      1.034,
+      1.038,
+      1.038,
+      1.035,
+      1.03,
+      1.025,
+      1.019,
+      1.014,
+      1.01,
+      1.007,
+      1.004,
+      1.002,
+      1,
+      0.999,
+      0.999,
+      1
+    );
+  --motion-shrink: 340ms cubic-bezier(0.45, 0, 0.2, 1);
   --motion-panel-fade: 200ms ease-out 100ms;
   --motion-tab-fade: 150ms ease-out;
   --motion-quick-fade: 150ms ease-out;
@@ -71,7 +106,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --motion-resize: 0ms linear;
+    --motion-grow: 0ms linear;
+    --motion-shrink: 0ms linear;
     --motion-panel-fade: 100ms linear;
     --motion-tab-fade: 100ms linear;
     --motion-quick-fade: 100ms linear;

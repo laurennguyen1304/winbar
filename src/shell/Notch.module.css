@@ -13,9 +13,17 @@
   box-sizing: border-box;
   flex-shrink: 0;
   color: var(--text);
+  /* A transition runs on the rule of the state being entered: collapsing, and pill ↔ alert, do not bounce. */
   transition:
-    width var(--motion-resize),
-    height var(--motion-resize);
+    width var(--motion-shrink),
+    height var(--motion-shrink);
+}
+
+/* Opening springs (SPEC §5.3 M1). */
+.notch[data-state="expanded"] {
+  transition:
+    width var(--motion-grow),
+    height var(--motion-grow);
 }
 
 .notch[data-dragging] {
@@ -27,7 +35,11 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  transition: border-radius var(--motion-resize);
+  transition: border-radius var(--motion-shrink);
+}
+
+.notch[data-state="expanded"] .body {
+  transition: border-radius var(--motion-grow);
 }
 
 .pill {

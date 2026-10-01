@@ -53,11 +53,25 @@ export interface PillAlert {
   priority: number;
   /** Draws its own action buttons. */
   Content: ComponentType;
+  /**
+   * The alert's own card, for when the pill is too narrow to show what is being asked (SPEC-claude-approvals §5).
+   *
+   * With it, a click on the alert's text opens this card instead of the panel, 560 px wide and as tall as its
+   * content. The card stays open when the pointer leaves — someone reading a command before approving it must not
+   * lose it to a stray mouse move — and closes by itself when the alert is dismissed.
+   */
+  Detail?: ComponentType;
 }
 
 export interface ShellApi {
   alerts: { push(alert: PillAlert): void; dismiss(id: string): void };
   openPanel(tab?: TabId): void;
+  /**
+   * Opens the `Detail` card of the alert with this id, the way a click on the alert's text does. For a button
+   * inside the alert itself: a click on a control never reaches the pill, so the control has to ask.
+   * Does nothing when that alert is not the one on the pill, or has no card.
+   */
+  openDetail(alertId: string): void;
   collapse(): void;
   /** Temporary pill content, e.g. "Copied" (M7). */
   flashPill(content: ComponentType, ms?: number): void;

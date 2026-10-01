@@ -19,6 +19,57 @@ function run(mode: OpenMode, events: NotchEvent[], from: NotchState = initialNot
   return { state, effects };
 }
 
+describe("notch machine — an alert's own card", () => {
+  const opened = () =>
+    run("hover", [{ type: "pointerEnter" }, { type: "clickPill", detail: "approval" }], initialNotchState, true).state;
+
+  it("remembers which alert the card was opened for", () => {
+    expect(opened()).toEqual({ expanded: true, hovering: true, detail: "approval" });
+    expect(run("click", [{ type: "clickPill", detail: "approval" }]).state.detail).toBe("approval");
+    expect(run("hover", [{ type: "clickPill" }]).state.detail).toBeUndefined();
+  });
+
+  it("is pinned: the pointer leaving does not close it", () => {
+    const left = notchReducer(opened(), { type: "pointerLeave" }, "hover", true);
+    expect(left.state).toEqual({ expanded: true, hovering: false, detail: "approval" });
+    expect(left.effects).toEqual([]);
+    // Coming back does not start a hover timer on something already open.
+    expect(notchReducer(left.state, { type: "pointerEnter" }, "hover", true).effects).toEqual([]);
+  });
+
+  it("closes like the panel does, and forgets the alert", () => {
+    for (const reason of ["escape", "collapseButton", "clickOutside"] as const) {
+      const closed = notchReducer(opened(), { type: "close", reason }, "hover", true).state;
+      expect(closed).toEqual({ expanded: false, hovering: true });
+      expect("detail" in closed).toBe(false);
+    }
+  });
+
+  it("collapses when its alert goes away, keeping the pointer where it is", () => {
+    const gone = notchReducer(opened(), { type: "detailGone" }, "hover");
+    expect(gone.state).toEqual({ expanded: false, hovering: true });
+    expect(gone.effects).toEqual([]);
+    // Nothing to do when no card is open: an open panel is not closed by an alert leaving.
+    const panel = run("hover", [{ type: "clickPill" }]).state;
+    expect(notchReducer(panel, { type: "detailGone" }, "hover").state).toBe(panel);
+    expect(notchReducer(initialNotchState, { type: "detailGone" }, "hover").state).toBe(initialNotchState);
+  });
+
+  it("a panel opened afterwards is not pinned by a card that was closed", () => {
+    const closed = notchReducer(opened(), { type: "close", reason: "escape" }, "hover").state;
+    const { state } = run(
+      "hover",
+      [{ type: "pointerLeave" }, { type: "pointerEnter" }, { type: "hoverElapsed" }, { type: "pointerLeave" }],
+      closed,
+    );
+    expect(state).toEqual({ expanded: false, hovering: false });
+  });
+
+  it("a mode change drops it", () => {
+    expect(notchReducer(opened(), { type: "modeChanged" }, "click").state).toBe(initialNotchState);
+  });
+});
+
 describe("notch machine — hover mode", () => {
   it("starts the hover timer on enter and opens when it elapses", () => {
     const { state, effects } = run("hover", [{ type: "pointerEnter" }, { type: "hoverElapsed" }]);

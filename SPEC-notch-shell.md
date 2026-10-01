@@ -94,6 +94,9 @@ pill/alert/always ──(hover 250ms | click)──▶ expanded
 expanded ──(chuột rời notch, mode hover)──▶ về trạng thái thu gọn tương ứng
 expanded ──(bấm ⌃ | Esc | click ra ngoài, mode click/always)──▶ thu gọn
 alert: hover KHÔNG tự mở (để bấm được nút trên pill); bấm vào vùng chữ của pill thì mở và chuyển sang tab của widget phát alert
+alert có thẻ riêng (`Detail`, từ 01/10): bấm vào vùng chữ thì mở THẺ ĐÓ thay cho panel, rộng 560, cao theo nội dung;
+  thẻ được ghim (chuột rời không đóng); đóng bằng ⌃ | Esc | click ra ngoài, hoặc tự thu khi alert bị gỡ.
+  Khay hệ thống và command bar vẫn mở panel. Xem SPEC-claude-approvals §5.
 ```
 
 ### 5.3 Chuyển động — bản đơn giản (v1)
@@ -103,7 +106,7 @@ v1 chỉ dùng chuyển động đơn giản bằng CSS (đổi kích thước, 
 
 | # | Chuyển động | Khi nào | v1 | Ai làm |
 |---|---|---|---|---|
-| M1 | Đổi kích thước notch | Mọi lần đổi trạng thái (kể cả alert) | 420ms, `cubic-bezier(.32,1.25,.5,1)` | notch-shell |
+| M1 | Đổi kích thước notch | Mọi lần đổi trạng thái (kể cả alert) | **Từ 01/10:** mở ra `expanded` là lò xo 700ms (`linear()`, tương đương response 0,5 / damping 0,72, vọt ~4% rồi lắng); mọi lần khác (thu gọn, pill ↔ alert) 340ms `cubic-bezier(.45,0,.2,1)`, không nảy. Trước đó: 420ms `cubic-bezier(.32,1.25,.5,1)` cho cả hai chiều | notch-shell |
 | M2 | Nội dung panel hiện ra | Mở panel | fade 200ms, trễ 100ms | notch-shell |
 | M4 | Đổi tab | Bấm tab | fade 150ms | notch-shell |
 | M6 | Hover delay | Mode hover | 250ms mở; rời chuột là đóng ngay | notch-shell |
@@ -153,6 +156,7 @@ export interface PillAlert {
   source: WidgetId;
   priority: number;                       // cao hơn hiện trước; bằng nhau thì cái đến trước
   Content: React.ComponentType;           // tự vẽ nút hành động
+  Detail?: React.ComponentType;           // thẻ riêng của alert, mở thay cho panel khi bấm vào vùng chữ (01/10)
 }
 
 export interface ShellApi {

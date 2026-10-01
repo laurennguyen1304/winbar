@@ -9,6 +9,11 @@ export interface NotchState {
   expanded: boolean;
   /** Pointer is over the notch (hover mode waits for the delay before opening). */
   hovering: boolean;
+  /**
+   * Id of the alert whose own card is open in place of the panel. Only ever set while `expanded`, and pins the
+   * notch open: the pointer leaving does not close it (SPEC-claude-approvals §5).
+   */
+  detail?: string;
 }
 
 export type CloseReason = "escape" | "collapseButton" | "clickOutside";
@@ -19,7 +24,10 @@ export type NotchEvent =
   /** A press on the notch: it may become a drag, so hovering must not open the panel under it. */
   | { type: "pointerDown" }
   | { type: "hoverElapsed" }
-  | { type: "clickPill" }
+  /** `detail`: the alert whose own card should open instead of the panel. */
+  | { type: "clickPill"; detail?: string }
+  /** The alert whose card is open was dismissed, or gave way to another one. */
+  | { type: "detailGone" }
   | { type: "close"; reason: CloseReason }
   | { type: "modeChanged" };
 
@@ -50,6 +58,8 @@ export function notchReducer(state: NotchState, event: NotchEvent, mode: OpenMod
 
     case "pointerLeave":
       if (mode !== "hover") return stay(state);
+      // A card someone opened to read stays until they answer or close it.
+      if (state.expanded && state.detail !== undefined) return { state: { ...state, hovering: false }, effects: [] };
       return {
         state: { expanded: false, hovering: false },
         effects: state.expanded ? [] : ["cancelHoverTimer"],
@@ -66,13 +76,19 @@ export function notchReducer(state: NotchState, event: NotchEvent, mode: OpenMod
     case "clickPill":
       if (state.expanded) return stay(state);
       return {
-        state: { ...state, expanded: true },
+        state: { expanded: true, hovering: state.hovering, detail: event.detail },
         effects: mode === "hover" && state.hovering ? ["cancelHoverTimer"] : [],
       };
 
+    case "detailGone":
+      if (!state.expanded || state.detail === undefined) return stay(state);
+      // `hovering` is kept: the pointer is usually still on the notch, having just pressed a button there, and the
+      // panel must not pop open under it.
+      return { state: { expanded: false, hovering: state.hovering }, effects: [] };
+
     case "close":
       if (!state.expanded) return stay(state);
-      return { state: { ...state, expanded: false }, effects: [] };
+      return { state: { expanded: false, hovering: state.hovering }, effects: [] };
 
     case "modeChanged":
       return { state: initialNotchState, effects: state.hovering ? ["cancelHoverTimer"] : [] };

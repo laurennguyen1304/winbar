@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Notch } from "./Notch";
 import { demoWidgets } from "../widgets/demo";
-import { PILL_SIZES, RESIZE_MS } from "./notch-sizes";
+import { PILL_SIZES, SHRINK_MS } from "./notch-sizes";
 import { FLASH_MS, createShell, type Shell } from "./shell";
 import { ShellProvider } from "./shell-context";
 import type { PillAlert, WidgetDefinition } from "./widget-contract";
@@ -299,7 +299,7 @@ describe("Notch", () => {
     requestNotchLayout.mockClear();
     fireEvent.mouseLeave(notch());
     expect(notch()).toHaveAttribute("data-state", "pill");
-    tick(RESIZE_MS - 1);
+    tick(SHRINK_MS - 1);
     expect(requestNotchLayout).not.toHaveBeenCalled();
     tick(1);
     expect(lastLayout()).toEqual([{ width: 368, height: 36 }, 0]);
@@ -433,6 +433,114 @@ describe("Notch", () => {
       expect(notch()).toHaveAttribute("data-state", "expanded");
       // The alert's own widget is on screen without anyone having to pick a tab.
       expect(screen.getByText("Cooking")).toBeInTheDocument();
+    });
+
+    describe("an alert with a card of its own", () => {
+      const Card = () => (
+        <div>
+          <span>git push origin checkout-fix --force-with-lease</span>
+          <button type="button" onClick={() => shell.api.alerts.dismiss("approval")}>
+            Cho phép ở thẻ
+          </button>
+          <button type="button" onClick={() => shell.api.collapse()}>
+            Thu về pill
+          </button>
+        </div>
+      );
+      const withCard: PillAlert = { ...approval, Detail: Card };
+      const open = () => {
+        act(() => shell.api.alerts.push(withCard));
+        fireEvent.mouseEnter(notch());
+        fireEvent.click(screen.getByText("wait for you"));
+      };
+
+      it("opens the card instead of the panel, 560 wide", () => {
+        renderWithShell();
+        open();
+        expect(notch()).toHaveAttribute("data-state", "expanded");
+        expect(notch()).toHaveAttribute("data-detail", "true");
+        expect(notch()).toHaveStyle({ width: "560px" });
+        expect(screen.getByText("git push origin checkout-fix --force-with-lease")).toBeInTheDocument();
+        // The panel's widgets are not there: this is the card, not the panel with a card in it.
+        expect(screen.queryByText("Cooking")).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: "Cài đặt" })).not.toBeInTheDocument();
+        tick(0);
+        expect(lastLayout()[0].width).toBe(588);
+      });
+
+      it("stays open when the pointer leaves, so a command can be read before it is approved", () => {
+        renderWithShell();
+        open();
+        fireEvent.mouseLeave(notch());
+        tick(1000);
+        expect(notch()).toHaveAttribute("data-detail", "true");
+        fireEvent.mouseEnter(notch());
+        tick(1000);
+        expect(screen.getByText("git push origin checkout-fix --force-with-lease")).toBeInTheDocument();
+      });
+
+      it("goes back to the alert pill on Escape, on a click elsewhere and when the card asks to collapse", () => {
+        renderWithShell();
+        for (const close of [
+          () => fireEvent.keyDown(window, { key: "Escape" }),
+          () => act(() => blurHandlers.forEach((cb) => cb())),
+          () => fireEvent.click(screen.getByRole("button", { name: "Thu về pill" })),
+        ]) {
+          open();
+          close();
+          expect(notch()).toHaveAttribute("data-state", "alert");
+          expect(notch()).not.toHaveAttribute("data-detail");
+          expect(notch()).toHaveStyle({ width: "490px" });
+          fireEvent.mouseLeave(notch());
+          act(() => shell.api.alerts.dismiss("approval"));
+        }
+      });
+
+      it("closes by itself once the request is answered, without flashing the panel", () => {
+        renderWithShell();
+        open();
+        fireEvent.click(screen.getByRole("button", { name: "Cho phép ở thẻ" }));
+        expect(notch()).toHaveAttribute("data-state", "pill");
+        expect(notch()).not.toHaveAttribute("data-detail");
+        expect(screen.queryByText("Cooking")).not.toBeInTheDocument();
+        // The pointer is still on the notch, having just pressed the button: the panel must not pop open under it.
+        tick(1000);
+        expect(notch()).toHaveAttribute("data-state", "pill");
+        // …and after that the notch behaves as it always did.
+        fireEvent.mouseLeave(notch());
+        fireEvent.mouseEnter(notch());
+        tick(250);
+        expect(notch()).toHaveAttribute("data-state", "expanded");
+        expect(notch()).not.toHaveAttribute("data-detail");
+        fireEvent.mouseLeave(notch());
+        expect(notch()).toHaveAttribute("data-state", "pill");
+      });
+
+      it("gives way to the next alert in line rather than showing its card unasked", () => {
+        renderWithShell();
+        open();
+        const next: PillAlert = { ...withCard, id: "second", Content: () => <span>yêu cầu thứ hai</span> };
+        act(() => shell.api.alerts.push(next));
+        act(() => shell.api.alerts.dismiss("approval"));
+        expect(notch()).toHaveAttribute("data-state", "alert");
+        expect(screen.getByText("yêu cầu thứ hai")).toBeInTheDocument();
+      });
+
+      it("the tray still opens the panel, not the card", () => {
+        renderWithShell();
+        act(() => shell.api.alerts.push(withCard));
+        act(() => trayOpenHandlers.forEach((cb) => cb()));
+        expect(notch()).toHaveAttribute("data-state", "expanded");
+        expect(notch()).not.toHaveAttribute("data-detail");
+        expect(screen.getByText("Cooking")).toBeInTheDocument();
+      });
+
+      it("click mode opens the card the same way", () => {
+        renderWithShell("click");
+        act(() => shell.api.alerts.push(withCard));
+        fireEvent.click(screen.getByText("wait for you"));
+        expect(notch()).toHaveAttribute("data-detail", "true");
+      });
     });
 
     it("returns to the normal pill when the alert is dismissed", () => {
