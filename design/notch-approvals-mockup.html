@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notch duyệt quyền winbar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Onest:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one fake screen on top (the notch at its real pixel sizes, scaled to fit), the switches under it. */
+:root {
+  --bg: oklch(0.975 0.006 70);
+  --surface: oklch(1 0 0);
+  --fg: oklch(0.24 0.015 60);
+  --fg-sub: oklch(0.47 0.015 60);
+  --line: oklch(0.88 0.008 70);
+  --accent: oklch(0.55 0.14 45);
+  --accent-fg: oklch(0.99 0.005 70);
+
+  /* winbar's own tokens (src/design/tokens.css). The notch is dark in both themes, like the app. */
+  --n-text: #f6f7f9;
+  --n-sub: rgba(236, 240, 247, 0.72);
+  --n-faint: rgba(236, 240, 247, 0.52);
+  --n-bg: #010101;
+  --n-card: rgba(255, 255, 255, 0.06);
+  --n-card-line: rgba(255, 255, 255, 0.09);
+  --n-input: rgba(255, 255, 255, 0.08);
+  --n-hover: rgba(255, 255, 255, 0.1);
+  --n-track: rgba(255, 255, 255, 0.14);
+  --n-claude: oklch(0.76 0.12 45);
+  --n-media: oklch(0.76 0.12 240);
+  --n-warn: oklch(0.84 0.12 90);
+  --n-ok: oklch(0.8 0.12 150);
+  --n-danger: oklch(0.72 0.14 25);
+  --n-on: #0d0f14;
+  --wall-a: #1a2130;
+  --wall-b: #2a2440;
+  --term-bg: #0f1218;
+
+  --font: "Onest", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: oklch(0.17 0.008 60);
+    --surface: oklch(0.215 0.009 60);
+    --fg: oklch(0.94 0.006 70);
+    --fg-sub: oklch(0.72 0.01 70);
+    --line: oklch(0.31 0.01 60);
+    --accent: oklch(0.76 0.12 45);
+    --accent-fg: oklch(0.2 0.02 45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: oklch(0.17 0.008 60);
+  --surface: oklch(0.215 0.009 60);
+  --fg: oklch(0.94 0.006 70);
+  --fg-sub: oklch(0.72 0.01 70);
+  --line: oklch(0.31 0.01 60);
+  --accent: oklch(0.76 0.12 45);
+  --accent-fg: oklch(0.2 0.02 45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 28px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fg-sub); }
+p { margin: 0; }
+.lede { color: var(--fg-sub); max-width: 65ch; }
+.head { display: flex; flex-direction: column; gap: 6px; }
+
+/* --- the fake screen --- */
+.stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--wall-a);
+}
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 880px;
+  height: 470px;
+  transform-origin: 0 0;
+  background:
+    radial-gradient(520px 300px at 14% 108%, rgba(214, 137, 80, 0.3), transparent 70%),
+    radial-gradient(560px 340px at 92% 8%, rgba(96, 124, 214, 0.3), transparent 70%),
+    linear-gradient(160deg, var(--wall-a), var(--wall-b));
+  color: var(--n-text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+.term {
+  position: absolute;
+  top: 172px;
+  left: 70px;
+  width: 740px;
+  height: 320px;
+  border-radius: 10px 10px 0 0;
+  background: var(--term-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.termBar {
+  height: 30px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--n-faint);
+  background: rgba(255, 255, 255, 0.04);
+}
+.termBody {
+  margin: 0;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--n-sub);
+  white-space: pre;
+}
+.termBody .ask { color: var(--n-warn); }
+.termBody .me { color: var(--n-text); }
+.termBody .ok { color: var(--n-ok); }
+
+.notch {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  height: 36px;
+  border-radius: 18px;
+  background: var(--n-bg);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 10px 30px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.layer {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease-out, visibility 0s linear 120ms;
+}
+.notch[data-view="pill"] .layerPill,
+.notch[data-view="alert"] .layerAlert,
+.notch[data-view="card"] .layerCard,
+.notch[data-view="panel"] .layerPanel {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 180ms ease-out 100ms, visibility 0s;
+}
+.px { image-rendering: pixelated; flex-shrink: 0; }
+.notch button { font-family: inherit; }
+.notch button:focus-visible { outline: 2px solid var(--n-media); outline-offset: 2px; }
+
+/* pill, 340 x 36 */
+.layerPill { width: 340px; height: 36px; }
+.pill {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pillPhase { flex-shrink: 0; }
+.pillProject { font-size: 12px; color: var(--n-faint); overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; min-width: 0; }
+.pillLimit { font-family: var(--mono); font-size: 11px; color: var(--n-faint); flex-shrink: 0; }
+
+/* alert pill, 490 x 40 */
+.layerAlert {
+  width: 490px;
+  height: 40px;
+  padding: 0 7px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.notch .alertCmd {
+  all: unset;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--n-sub);
+  cursor: pointer;
+}
+.mini {
+  all: unset;
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--n-input);
+  color: var(--n-text);
+  cursor: pointer;
+}
+.mini:hover { background: var(--n-hover); }
+.mini.go { background: var(--n-text); color: var(--n-on); }
+
+/* approval card, 560 x 150 */
+.layerCard {
+  width: 560px;
+  height: 150px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 14px;
+  background: radial-gradient(360px 180px at 100% 100%, color-mix(in oklch, var(--n-warn) 20%, transparent), transparent 70%);
+}
+.cardMain { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+.who { display: flex; align-items: baseline; gap: 6px; font-size: 13px; min-width: 0; }
+.who b { font-weight: 600; }
+.who span { color: var(--n-faint); }
+.who { align-items: center; }
+.who .wait { color: var(--n-warn); margin-left: auto; font-size: 12px; }
+.who .iconBtn { margin-left: 2px; width: 24px; height: 24px; }
+.cmd {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--n-input);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--n-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmd i { font-style: normal; color: var(--n-faint); }
+.acts { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.act {
+  all: unset;
+  height: 30px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--n-input);
+  color: var(--n-text);
+  cursor: pointer;
+}
+.act:hover { background: var(--n-hover); }
+.act.go { background: var(--n-text); color: var(--n-on); }
+.fallback { margin-left: auto; font-size: 11px; color: var(--n-faint); }
+
+/* open panel, 780 x 290 */
+.layerPanel { width: 780px; height: 290px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+.panelHead { display: flex; align-items: center; padding: 0 2px 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--n-faint); }
+.iconBtn {
+  all: unset;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--n-sub);
+  cursor: pointer;
+}
+.iconBtn:hover { background: var(--n-hover); }
+.bento { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; }
+.tile {
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--n-card);
+  border: 1px solid var(--n-card-line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.tileLabel { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--n-faint); }
+.tileLabel > span:first-child { font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
+.row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.row.dim { opacity: 0.55; }
+.rowText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rowTitle { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+.rowTitle b { font-size: 14px; font-weight: 600; }
+.rowTitle span { font-size: 13px; color: var(--n-sub); overflow: hidden; text-overflow: ellipsis; }
+.badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--n-input); color: var(--n-sub); }
+.statusLine { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--n-faint); white-space: nowrap; }
+.statusLine time { font-family: var(--mono); }
+.ticker { margin: 0 0 2px 34px; padding: 0; list-style: none; height: 57px; overflow: hidden; font-family: var(--mono); font-size: 11.5px; line-height: 19px; }
+.ticker li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--n-faint); }
+.ticker li::before { content: "✓ "; opacity: 0.6; }
+.ticker li.now::before { content: "› "; opacity: 1; }
+.ticker li.warn { color: var(--n-warn); }
+.ticker li.warn::before { content: "● "; }
+.ticker li.now {
+  background: linear-gradient(90deg, #7c818a 0%, #f2f3f5 40%, #7c818a 70%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2.2s linear infinite;
+}
+.ticker.bump li { animation-name: bump, shimmer; animation-duration: 300ms, 2.2s; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1), linear; animation-iteration-count: 1, infinite; }
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -160% 0; } }
+@keyframes bump { from { transform: translateY(19px); } to { transform: translateY(0); } }
+.meter { display: flex; flex-direction: column; gap: 4px; }
+.meterHead { display: flex; justify-content: space-between; align-items: baseline; color: var(--n-sub); }
+.meterHead b { font-family: var(--mono); font-size: 19px; font-weight: 600; color: var(--n-text); letter-spacing: -0.02em; }
+.meterHead b small { font-size: 14px; }
+.track { height: 6px; border-radius: 6px; background: var(--n-track); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 6px; background: var(--n-claude); }
+.reset { font-size: 11px; color: var(--n-faint); }
+
+/* --- controls under the screen --- */
+.readout { font-family: var(--mono); font-size: 12px; color: var(--fg-sub); font-variant-numeric: tabular-nums; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px 24px; }
+.group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.group p { font-size: 13px; color: var(--fg-sub); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.notes div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.notes b { font-size: 14px; font-weight: 600; }
+.notes span { font-size: 13px; color: var(--fg-sub); }
+.fine { font-size: 12px; color: var(--fg-sub); max-width: 70ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker li.now, .ticker.bump li { animation: none; -webkit-text-fill-color: currentColor; background: none; color: var(--n-text); }
+  .layer { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="head">
+    <h1>Notch duyệt quyền winbar</h1>
+    <p class="lede">Ba ý mượn từ coucou, vẽ bằng màu, cỡ chữ và kích thước thật của winbar. Dữ liệu là ví dụ. Bấm vào câu lệnh trên pill để đọc đủ trước khi duyệt.</p>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="screen" id="screen">
+      <div class="term" aria-hidden="true">
+        <div class="termBar">claude · checkout-fix</div>
+        <pre class="termBody" id="term"></pre>
+      </div>
+
+      <div class="notch" id="notch" data-view="alert">
+        <div class="layer layerPill">
+          <button class="pill" id="pill" type="button" aria-label="Mở panel">
+            <img class="px" id="pillIcon" width="24" height="24" alt="">
+            <span class="pillPhase" id="pillPhase"></span>
+            <span class="pillProject">shop-app</span>
+            <span class="pillLimit">5h 38%</span>
+          </button>
+        </div>
+
+        <div class="layer layerAlert">
+          <img class="px" data-icon="ask" width="24" height="24" alt="">
+          <span style="color:var(--n-warn)">wait for you</span>
+          <button class="alertCmd" id="alertCmd" type="button" title="Xem đủ câu lệnh"></button>
+          <button class="mini" type="button" data-decide="deny">Từ chối</button>
+          <button class="mini go" type="button" data-decide="allow">Cho phép</button>
+        </div>
+
+        <div class="layer layerCard">
+          <img class="px" data-icon="ask" width="40" height="40" alt="">
+          <div class="cardMain">
+            <div class="who"><b>shop-app</b><span>· checkout-fix xin chạy Bash</span><span class="wait">wait for you</span>
+              <button class="iconBtn" id="cardCollapse" type="button" aria-label="Thu về pill">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l4-4 4 4"/></svg>
+              </button></div>
+            <div class="cmd"><i>$ </i><span id="cardCmd"></span></div>
+            <div class="acts">
+              <button class="act" type="button" data-decide="deny">Từ chối</button>
+              <button class="act go" type="button" data-decide="allow">Cho phép</button>
+              <span class="fallback">Không bấm thì terminal hỏi lại sau 108 giây</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="layer layerPanel">
+          <div class="panelHead">Notch
+            <button class="iconBtn" id="collapse" type="button" aria-label="Thu gọn">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l4-4 4 4"/></svg>
+            </button>
+          </div>
+          <div class="bento">
+            <div class="tile">
+              <div class="tileLabel"><span>Phiên Claude</span><span>2 đang mở</span></div>
+              <div class="row">
+                <img class="px" id="rowIcon" width="24" height="24" alt="">
+                <div class="rowText">
+                  <div class="rowTitle"><b>shop-app</b><span>· checkout-fix</span><span class="badge">cli</span></div>
+                  <div class="statusLine"><span id="rowStatus"></span><time>đã chạy 4m</time></div>
+                </div>
+              </div>
+              <ul class="ticker" id="ticker"></ul>
+              <div class="row dim">
+                <img class="px" data-icon="idle" width="24" height="24" alt="">
+                <div class="rowText">
+                  <div class="rowTitle"><b>blog-tools</b><span>· main</span><span class="badge">cli</span></div>
+                  <div class="statusLine"><span>idle</span><time>12 phút</time></div>
+                </div>
+              </div>
+            </div>
+            <div class="tile">
+              <div class="tileLabel"><span>Hạn mức</span><span>vừa cập nhật</span></div>
+              <div class="meter">
+                <div class="meterHead"><span>5 giờ</span><b>38<small>%</small></b></div>
+                <div class="track"><i style="width:38%"></i></div>
+                <span class="reset">Đặt lại sau 2 giờ 14 phút</span>
+              </div>
+              <div class="meter">
+                <div class="meterHead"><span>7 ngày</span><b>61<small>%</small></b></div>
+                <div class="track"><i style="width:61%"></i></div>
+                <span class="reset">Đặt lại thứ Hai</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="readout" id="readout" aria-live="polite"></div>
+
+  <div class="controls">
+    <div class="group">
+      <h2>Kịch bản</h2>
+      <div class="seg">
+        <button class="btn" id="replay" type="button">Phát lại từ đầu</button>
+        <button class="btn" id="ctlAllow" type="button">Cho phép</button>
+        <button class="btn" id="ctlDeny" type="button">Từ chối</button>
+        <button class="btn" id="ctlPanel" type="button">Mở panel</button>
+      </div>
+      <p>Claude đọc, tìm, sửa, chạy test, rồi xin quyền <code>git push</code>.</p>
+    </div>
+    <div class="group">
+      <h2>Chuyển động</h2>
+      <div class="seg" data-opt="motion">
+        <button class="btn" type="button" data-val="spring" aria-pressed="true">Lò xo mở, 340 ms đóng</button>
+        <button class="btn" type="button" data-val="now" aria-pressed="false">Như hiện tại, 420 ms</button>
+      </div>
+      <p>Bấm Mở panel vài lần ở mỗi chế độ để so.</p>
+    </div>
+    <div class="group">
+      <h2>Đã chốt 01/10</h2>
+      <p>Yêu cầu duyệt hiện ngay trên pill. Bấm vào câu lệnh thì bung thẻ đầy đủ, và thẻ đó ở yên cho tới khi bạn trả lời hoặc tự thu lại.</p>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div><b>Duyệt quyền trên notch</b><span>Hôm nay winbar chỉ báo "wait for you" và bạn phải quay lại terminal. Ở đây pill có hai nút, lệnh dài bị cắt thì bấm vào nó để đọc đủ, và terminal bên dưới chạy tiếp ngay khi bạn bấm.</span></div>
+    <div><b>Dòng chạy các bước</b><span>Mở panel khi Claude đang làm để thấy ba bước gần nhất dưới tên phiên. Hôm nay dòng trạng thái chỉ có tên tool hiện tại.</span></div>
+    <div><b>Mở nảy, đóng dứt khoát</b><span>Hôm nay một đường cong 420 ms dùng cho cả hai chiều, nên lúc đóng cũng hơi nảy.</span></div>
+  </div>
+
+  <p class="fine">Bản vẽ này không nối với Claude Code thật. Notch dùng kiểu nổi, nền đặc, cỡ pill M (340 × 36). Thẻ duyệt 560 × 150 là kích thước tôi đề xuất, chưa có trong SPEC; pill cảnh báo 490 × 40 và panel rộng 780 lấy theo SPEC notch-shell.</p>
+</div>
+
+<script>
+(() => {
+  const ICON = {
+    work: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAr0lEQVR4nO3V0Q2DMAxF0bclo3gOT+dx3K8ihJq2UQi2w7uSfxMfhACYkbrvUzIlIMHi53kkQO94AN+WHsVoVYDe+SqWB8y4WKsD3oV9xa66WKsDwvoXoE+Bpk2rA9jKmWyeaUCAEOAE9LQsAMA+Fy7nv84kwAjYCOhqWYAFDQiQpABLsJyNwKIXMAIkfgkjQOoOqnydsOx/oFV5wLHWQSMXzDizGQEfIqAnAjDvzBcOIHAjaRJ5nwAAAABJRU5ErkJggg==",
+    ask: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAlUlEQVR4nO3UwQ2AMAhAUbZ0FEZlHLz2oFFRC+j/SS8ekJdoRWrnJ07pHEDRHEBy3hHgHZceA0BU4Hu9+jztHwCwEbcQTc908QpHAOjHADJcaQ8s50ezABiABUCozwJs8hEACsABRGoDsAJL2h1Y9iIGQPOXMQDa70iX20miZS9uvweM7Q2MvOjJWacDMAQgEgB5Z9YKW3L9A8u2GGcAAAAASUVORK5CYII=",
+    idle: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAoUlEQVR4nO2WsQ3EMAwDteWPolE5DtO6iICXA0MSzAPYMrwiSsz6wWTaQQk0hRNHr0igAk4cvSKBilPIDmdUAtb0Q6aXspqRApw4ekUCW8B/3E32FOK/TgnwGgEciEnAJUAJZKgeDAl4/WhIwPvEJOBNBZAv2v4hO9IDCdgsATSLVQ/A9QIRY4ZGVA/G9QIrUdGXB5zoDJHACxLIIAE71/kABtx/X3x5QIsAAAAASUVORK5CYII=",
+  };
+  const SIZES = {
+    pill: { w: 340, h: 36, r: 18, name: "Pill" },
+    alert: { w: 490, h: 40, r: 20, name: "Pill cảnh báo" },
+    card: { w: 560, h: 150, r: 26, name: "Thẻ duyệt" },
+    panel: { w: 780, h: 290, r: 28, name: "Panel" },
+  };
+  const SCRIPT = [
+    { tool: "Read", arg: "cart.ts", term: "● Read(src/cart.ts)" },
+    { tool: "Grep", arg: "applyDiscount", term: '● Search(pattern: "applyDiscount")' },
+    { tool: "Edit", arg: "cart.ts", term: "● Update(src/cart.ts)" },
+    { tool: "Bash", arg: "npm test -- cart", term: "● Bash(npm test -- cart)" },
+    { ask: true, cmd: "git push origin checkout-fix --force-with-lease" },
+  ];
+  const STEP_MS = 1300;
+  const HOVER_MS = 250;
+
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), screen = $("screen"), notch = $("notch");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  const S = {
+    phase: "permission", // thinking | tool | permission | done | idle
+    steps: [],
+    pending: null,
+    panelOpen: false,
+    expanded: false,
+    opts: { motion: "spring" },
+  };
+
+  // --- size morph: winbar's current curve, or coucou's spring-open / curve-close ---
+  function bezier(x1, y1, x2, y2) {
+    const X = (t) => 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+    const Y = (t) => 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+    return (p) => {
+      let lo = 0, hi = 1, t = p;
+      for (let i = 0; i < 20; i++) {
+        if (X(t) < p) lo = t; else hi = t;
+        t = (lo + hi) / 2;
+      }
+      return Y(t);
+    };
+  }
+  const CURVE_NOW = bezier(0.32, 1.25, 0.5, 1);
+  const CURVE_CLOSE = bezier(0.45, 0, 0.2, 1);
+  const KEYS = ["w", "h", "r"];
+  const cur = { w: 490, h: 40, r: 20 };
+  let anim = null, raf = 0;
+
+  function apply() {
+    notch.style.width = Math.max(0, cur.w) + "px";
+    notch.style.height = Math.max(0, cur.h) + "px";
+    notch.style.borderRadius = Math.max(0, Math.min(cur.r, cur.h / 2)) + "px";
+  }
+  function morph(to) {
+    if (reduced.matches) {
+      Object.assign(cur, { w: to.w, h: to.h, r: to.r });
+      anim = null;
+      apply();
+      return;
+    }
+    const growing = to.w * to.h > cur.w * cur.h;
+    if (S.opts.motion === "spring" && growing) {
+      anim = { kind: "spring", to, v: { w: 0, h: 0, r: 0 }, last: performance.now() };
+    } else {
+      const spring = S.opts.motion === "spring";
+      anim = { kind: "curve", from: { ...cur }, to, start: performance.now(), dur: spring ? 340 : 420, ease: spring ? CURVE_CLOSE : CURVE_NOW };
+    }
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+  function tick(now) {
+    raf = 0;
+    if (!anim) return;
+    let done = false;
+    if (anim.kind === "curve") {
+      const p = Math.min(1, Math.max(0, (now - anim.start) / anim.dur));
+      const e = anim.ease(p);
+      for (const k of KEYS) cur[k] = anim.from[k] + (anim.to[k] - anim.from[k]) * e;
+      done = p >= 1;
+    } else {
+      const dt = Math.min(0.05, Math.max(0, (now - anim.last) / 1000));
+      anim.last = now;
+      const omega = (2 * Math.PI) / 0.5, zeta = 0.72;
+      const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
+      for (let i = 0; i < n; i++) {
+        for (const k of KEYS) {
+          const acc = omega * omega * (anim.to[k] - cur[k]) - 2 * zeta * omega * anim.v[k];
+          anim.v[k] += acc * h;
+          cur[k] += anim.v[k] * h;
+        }
+      }
+      done = KEYS.every((k) => Math.abs(anim.to[k] - cur[k]) < 0.3 && Math.abs(anim.v[k]) < 2);
+    }
+    if (done) {
+      for (const k of KEYS) cur[k] = anim.to[k];
+      anim = null;
+    }
+    apply();
+    if (anim) raf = requestAnimationFrame(tick);
+  }
+
+  // --- what the notch shows ---
+  function resolveView() {
+    if (S.pending) return S.expanded ? "card" : "alert";
+    return S.panelOpen ? "panel" : "pill";
+  }
+  function stepLabel(s) {
+    return s.warn ? s.label : `${s.tool} · ${s.arg}`;
+  }
+  function phaseLook() {
+    const last = S.steps[S.steps.length - 1];
+    switch (S.phase) {
+      case "tool": return { label: `Cooking · ${last && last.tool ? last.tool : "Bash"}`, color: "var(--n-claude)", icon: ICON.work };
+      case "thinking": return { label: "Thinking", color: "var(--n-claude)", icon: ICON.work };
+      case "permission": return { label: "wait for you", color: "var(--n-warn)", icon: ICON.ask };
+      case "done": return { label: "Xong", color: "var(--n-ok)", icon: ICON.work };
+      default: return { label: "idle", color: "var(--n-faint)", icon: ICON.idle };
+    }
+  }
+  function termLines() {
+    const out = [`<span class="me">&gt; sửa lỗi cộng dồn mã giảm giá rồi push</span>`, ""];
+    for (const s of S.steps) out.push(s.warn ? "  ⎿ Từ chối từ winbar" : esc(s.term));
+    if (S.pending) {
+      out.push("", `<span class="ask">Bash command</span>`, `  ${esc(S.pending.cmd)}`, `<span class="ask">Do you want to proceed?</span>`, "❯ 1. Yes    2. No");
+    }
+    if (S.phase === "done" || S.phase === "idle") out.push("", `<span class="ok">●</span> Xong. Đã sửa cart.ts, test qua.`);
+    return out.slice(-12).join("\n");
+  }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  let lastView = "alert", lastStepCount = -1;
+  function render() {
+    const look = phaseLook();
+    $("pillIcon").src = look.icon;
+    $("pillPhase").textContent = look.label;
+    $("pillPhase").style.color = look.color;
+    $("rowIcon").src = look.icon;
+    $("rowStatus").textContent = look.label;
+    $("rowStatus").style.color = look.color;
+
+    const cmd = S.pending ? S.pending.cmd : "";
+    $("alertCmd").textContent = cmd;
+    $("cardCmd").textContent = cmd;
+
+    const ticker = $("ticker");
+    const lines = S.steps.slice(-3).map((s, i, arr) => {
+      const isLast = i === arr.length - 1;
+      const cls = s.warn ? "warn" : isLast && S.phase === "tool" ? "now" : "";
+      return `<li class="${cls}">${esc(stepLabel(s))}</li>`;
+    });
+    ticker.innerHTML = lines.join("");
+    if (S.steps.length !== lastStepCount && lastStepCount >= 0 && S.steps.length > 0) {
+      ticker.classList.remove("bump");
+      void ticker.offsetWidth;
+      ticker.classList.add("bump");
+    }
+    lastStepCount = S.steps.length;
+
+    $("term").innerHTML = termLines();
+
+    const view = resolveView();
+    notch.dataset.view = view;
+    if (view !== lastView) {
+      morph(SIZES[view]);
+      lastView = view;
+    }
+    const size = SIZES[view];
+    $("readout").textContent = `${size.name} · ${size.w} × ${size.h} px · bo góc ${size.r}`;
+
+    $("ctlAllow").disabled = !S.pending;
+    $("ctlDeny").disabled = !S.pending;
+    $("ctlPanel").disabled = !!S.pending;
+    $("ctlPanel").textContent = S.panelOpen && !S.pending ? "Thu gọn" : "Mở panel";
+  }
+
+  // --- the scripted session ---
+  let timer = 0;
+  function stop() { clearTimeout(timer); timer = 0; }
+  function play() {
+    stop();
+    Object.assign(S, { phase: "thinking", steps: [], pending: null, expanded: false });
+    render();
+    next(0);
+  }
+  function next(i) {
+    timer = setTimeout(() => {
+      const st = SCRIPT[i];
+      if (!st) return finish();
+      if (st.ask) {
+        Object.assign(S, { pending: st, phase: "permission", expanded: false });
+        render();
+        return;
+      }
+      S.steps.push(st);
+      S.phase = "tool";
+      render();
+      next(i + 1);
+    }, STEP_MS);
+  }
+  function decide(allow) {
+    if (!S.pending) return;
+    stop();
+    const p = S.pending;
+    S.pending = null;
+    S.expanded = false;
+    if (allow) {
+      S.steps.push({ tool: "Bash", arg: p.cmd, term: `● Bash(${p.cmd})` });
+      S.phase = "tool";
+    } else {
+      S.steps.push({ warn: true, label: "Đã từ chối · git push" });
+      S.phase = "thinking";
+    }
+    render();
+    timer = setTimeout(finish, 1800);
+  }
+  function finish() {
+    S.phase = "done";
+    render();
+    timer = setTimeout(() => { S.phase = "idle"; render(); }, 4000);
+  }
+
+  // --- wiring ---
+  let hoverTimer = 0;
+  notch.addEventListener("mouseenter", () => {
+    if (S.pending || S.panelOpen) return;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => { if (!S.pending) { S.panelOpen = true; render(); } }, HOVER_MS);
+  });
+  notch.addEventListener("mouseleave", () => {
+    clearTimeout(hoverTimer);
+    // A pending request stays put: the alert pill, or the card the user opened to read the whole command.
+    if (S.pending) return;
+    if (S.panelOpen) { S.panelOpen = false; render(); }
+  });
+  $("pill").addEventListener("click", () => { clearTimeout(hoverTimer); S.panelOpen = true; render(); });
+  $("collapse").addEventListener("click", () => { S.panelOpen = false; render(); });
+  $("alertCmd").addEventListener("click", () => { S.expanded = true; render(); });
+  $("cardCollapse").addEventListener("click", () => { S.expanded = false; render(); });
+  notch.querySelectorAll("[data-decide]").forEach((b) => b.addEventListener("click", () => decide(b.dataset.decide === "allow")));
+  notch.querySelectorAll("[data-icon]").forEach((img) => { img.src = ICON[img.dataset.icon]; });
+
+  $("replay").addEventListener("click", () => { S.panelOpen = false; play(); });
+  $("ctlAllow").addEventListener("click", () => decide(true));
+  $("ctlDeny").addEventListener("click", () => decide(false));
+  $("ctlPanel").addEventListener("click", () => { if (!S.pending) { S.panelOpen = !S.panelOpen; render(); } });
+
+  document.querySelectorAll("[data-opt]").forEach((seg) => {
+    seg.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-val]");
+      if (!btn) return;
+      S.opts[seg.dataset.opt] = btn.dataset.val;
+      seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+      render();
+    });
+  });
+
+  // The screen is drawn at 880 x 470 and scaled to whatever width the page gives it.
+  function fit() {
+    const k = stage.clientWidth / 880;
+    screen.style.transform = `scale(${k})`;
+    stage.style.height = Math.round(470 * k) + "px";
+  }
+  if ("ResizeObserver" in window) new ResizeObserver(fit).observe(stage);
+  window.addEventListener("resize", fit);
+  fit();
+
+  // First frame: the session has already reached the permission request.
+  S.steps = SCRIPT.filter((s) => !s.ask);
+  S.pending = SCRIPT.find((s) => s.ask);
+  apply();
+  render();
+})();
+</script>
+</body>
+</html>
