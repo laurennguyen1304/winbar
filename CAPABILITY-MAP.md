@@ -43,7 +43,7 @@ trên 8px, co giãn mượt thành lưới card widget. Mỗi tính năng là m�
 |---|---|
 | `notch-shell` · `command-bar` · `media` · `system` · `clipboard` | ✅ xong, dùng hằng ngày |
 | `claude-sessions` · `claude-usage` | ✅ xong |
-| `claude-approvals` | ⬜ **chưa làm** — chủ dự án hoãn ngày 21/09. Khả thi (đã khảo sát: hook `PermissionRequest` quyết định được), nhưng nó **ghi hook vào `~/.claude`** nên cần duyệt riêng trước khi bắt đầu |
+| `claude-approvals` | ✅ **xong, phát hành trong 0.3.0 (01/10)** — chủ dự án hoãn ngày 21/09, duyệt bắt đầu và dùng thử ngày 01/10. Spec: `SPEC-claude-approvals.md`. Hook **không tự cài**: phải bấm trong Cài đặt, sau màn xem trước. Các mục chưa kiểm được: `tests/manual-claude-approvals.md` |
 
 Ngoài phạm vi so với bản đầu: **menu nguồn** của `system` (Ngủ / Khởi động lại / Tắt máy / Đổi người dùng) —
 Chủ dự án bỏ ngày 18/09, xem `SPEC-system.md` §1.
@@ -67,7 +67,7 @@ một widget thì kết quả của nó tự biến mất khỏi command-bar.
 |---|---|---|
 | `claude-sessions` | `~/.claude/statusbar/state.d/*.json` — hook `lifecycle.js` của yasb **đã chạy sẵn** trên máy | Không. Chỉ đọc file |
 | `claude-usage` | `~/.claude/.credentials.json` + endpoint OAuth usage (giống yasb); cache trên đĩa của app | Không ghi vào `~/.claude`. Tôn trọng rate limit (cache ≥ 120s) |
-| `claude-approvals` | Hook `PermissionRequest` gọi vào server local của app | **Có** — phải thêm hook vào settings. Tắt mặc định; nếu app không chạy thì hook trả về ngay để Claude hỏi trong terminal như bình thường |
+| `claude-approvals` | Hook của Claude Code chạy `winbar.exe --winbar-claude-hook`, nói với app qua named pipe (không qua mạng) | **Có** — thêm 5 mục hook vào `settings.json`, chỉ khi bạn bấm cài, sau màn xem trước và có sao lưu. Tắt mặc định; app không chạy thì hook thoát ngay và Claude hỏi trong terminal như bình thường |
 
 Mọi widget Claude có **chế độ dữ liệu giả (fixture)** để dựng và chỉnh UI mà không cần phiên Claude thật.
 

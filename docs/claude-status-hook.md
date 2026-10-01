@@ -6,6 +6,11 @@ có hook, widget vẫn bật được nhưng pill Claude sẽ không bao giờ h
 
 Trang này mô tả hook cần làm gì, và cho sẵn một prompt để Claude Code trên máy bạn tự tạo nó.
 
+> **Đây không phải hook duyệt quyền.** Hook ở trang này chỉ ghi trạng thái ra file để winbar đọc. Việc trả lời yêu
+> cầu cấp quyền ngay trên pill dùng một bộ hook khác, do chính winbar cài khi bạn bấm ở Cài đặt › Claude › *Duyệt
+> quyền trên notch* (xem [SPEC-claude-approvals.md](../SPEC-claude-approvals.md)). Hai bộ hook độc lập: có cái này mà
+> không có cái kia vẫn chạy được, nhưng pill duyệt quyền dễ dùng nhất khi cả hai cùng có.
+
 ## Kiểm tra máy đã có hook chưa
 
 ```powershell
