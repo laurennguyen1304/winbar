@@ -4,6 +4,40 @@ import { FLASH_MS, createShell } from "./shell";
 const Content = () => null;
 const Other = () => null;
 
+describe("opening an alert's own card", () => {
+  const card = () => null;
+  const withCard = { id: "ask", source: "w", priority: 5, Content: () => null, Detail: card };
+  const plain = { id: "note", source: "w", priority: 9, Content: () => null };
+
+  it("asks the notch to open the card of the alert on the pill", () => {
+    const shell = createShell();
+    const opened: string[] = [];
+    shell.bindNotch({ open: () => {}, collapse: () => {}, openDetail: (id) => opened.push(id) });
+    shell.api.alerts.push(withCard);
+    shell.api.openDetail("ask");
+    expect(opened).toEqual(["ask"]);
+  });
+
+  it("does nothing for an alert that is not on the pill, has no card, or does not exist", () => {
+    const shell = createShell();
+    const opened: string[] = [];
+    shell.bindNotch({ open: () => {}, collapse: () => {}, openDetail: (id) => opened.push(id) });
+    shell.api.openDetail("ask");
+    shell.api.alerts.push(withCard);
+    // A higher-priority alert takes the pill: the card of the one behind it must not open unseen.
+    shell.api.alerts.push(plain);
+    shell.api.openDetail("ask");
+    shell.api.openDetail("note");
+    expect(opened).toEqual([]);
+  });
+
+  it("is safe to call before any notch is mounted", () => {
+    const shell = createShell();
+    shell.api.alerts.push(withCard);
+    expect(() => shell.api.openDetail("ask")).not.toThrow();
+  });
+});
+
 describe("shell runtime", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
@@ -81,7 +115,7 @@ describe("shell runtime", () => {
     const open = vi.fn();
     const collapse = vi.fn();
     shell.api.openPanel("claude"); // nothing bound yet: no-op
-    shell.bindNotch({ open, collapse });
+    shell.bindNotch({ open, collapse, openDetail: () => {} });
     shell.api.openPanel("claude");
     shell.api.collapse();
     expect(open).toHaveBeenCalledWith("claude");

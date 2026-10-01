@@ -39,8 +39,14 @@ export const DEFAULT_TOP_GAP = 8;
 /** Up to 48 so the pill can sit below a top taskbar such as yasb (~32px). */
 export const TOP_GAP_RANGE = { min: 0, max: 48 } as const;
 
-/** Duration of the size morph (M1). Keep in sync with --motion-resize in design/tokens.css. */
-export const RESIZE_MS = 420;
+/**
+ * How long the notch takes to shrink (M1). The native window is only made smaller once this has passed. Keep in
+ * sync with --motion-shrink in design/tokens.css. Growing needs no number here: the window grows first.
+ */
+export const SHRINK_MS = 340;
+
+/** Width of an alert's own card (SPEC-claude-approvals §5). */
+export const DETAIL_WIDTH = 560;
 
 /**
  * Pill carrying two widgets at once — a Claude session while music is playing (the owner, 20/09).

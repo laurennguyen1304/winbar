@@ -21,6 +21,7 @@ export interface ShellSnapshot {
 
 export interface NotchControls {
   open(tab?: TabId): void;
+  openDetail(alertId: string): void;
   collapse(): void;
 }
 
@@ -60,6 +61,11 @@ export function createShell(): Shell {
       dismiss: (id: string) => setQueue(dismissAlert(queue, id)),
     },
     openPanel: (tab) => notch?.open(tab),
+    openDetail: (alertId) => {
+      // Only the alert that is on the pill right now, and only if it has a card to open.
+      const current = currentAlert(queue);
+      if (current?.id === alertId && current.Detail) notch?.openDetail(alertId);
+    },
     collapse: () => notch?.collapse(),
     flashPill: (Content, ms = FLASH_MS) => {
       // An alert on the pill is never covered by a flash (SPEC M7).
