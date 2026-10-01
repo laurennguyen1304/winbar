@@ -25,7 +25,8 @@
 - **Duyệt quyền ngay trên pill** (tuỳ chọn, tắt sẵn): khi Claude Code xin quyền chạy một tool, pill hiện tên
   project và câu lệnh, kèm nút *Từ chối* và *Cho phép*. Lệnh nào pill không hiện đủ thì nút là *Xem…*, mở thẻ đọc hết
   tham số rồi mới duyệt. Terminal vẫn hỏi song song, trả lời ở đâu trước thì tính ở đó. Bật ở Cài đặt › Claude ›
-  *Duyệt quyền trên notch*.
+  *Duyệt quyền trên notch*. Pill chỉ hiện khi Claude Code thật sự hỏi quyền: ở chế độ quyền `auto` hay
+  `bypassPermissions` nó tự duyệt phần lớn lệnh nên hầu như không có gì để hiện.
 - **Bấm vào notch để mở panel dạng bento** — các widget xếp thành lưới, widget quan trọng chiếm ô lớn.
 - **Hai chất liệu**: `liquid` (gradient mờ) và `dense` (đen đặc `#010101`), kèm thanh chỉnh **độ trong suốt**
   từ 0–100% (100% là đen hoàn toàn).
@@ -42,9 +43,16 @@
 
 Mỗi widget bật/tắt và sắp thứ tự được trong Cài đặt.
 
-> **Widget phiên Claude cần một hook của Claude Code.** winbar chỉ đọc file trạng thái do hook ghi ra, không tự
-> cài hook. Chưa có hook thì pill Claude không bao giờ hiện, dù widget đang bật. Xem
-> [hướng dẫn tạo hook](docs/claude-status-hook.md): có sẵn prompt để Claude Code trên máy bạn tự làm.
+> **Có hai bộ hook của Claude Code, độc lập với nhau.**
+>
+> | Hook | Để làm gì | Ai cài |
+> | --- | --- | --- |
+> | **Trạng thái** | Widget phiên Claude và pill Claude biết phiên nào đang chạy, đang làm gì | Bạn tự cài: winbar chỉ đọc file hook này ghi ra. Xem [hướng dẫn tạo hook](docs/claude-status-hook.md), có sẵn prompt để Claude Code trên máy bạn tự làm |
+> | **Duyệt quyền** | Nút *Từ chối* / *Cho phép* trên pill, và ba bước gần nhất của phiên | winbar cài khi bạn bấm ở Cài đặt › Claude › *Duyệt quyền trên notch*, sau màn xem trước; gỡ cũng ở đó |
+>
+> Chưa có hook trạng thái thì pill Claude không bao giờ hiện, dù widget đang bật. Chưa cài hook duyệt quyền thì mọi
+> thứ khác vẫn chạy, chỉ là bạn trả lời yêu cầu cấp quyền trong terminal như cũ. Hook duyệt quyền cần Git Bash (Claude
+> Code trên Windows dùng nó để chạy hook), và phiên Claude Code đang mở phải mở lại mới dùng hook vừa cài.
 >
 > **Phiên chạy trên cloud không hiện.** winbar chỉ thấy phiên Claude Code chạy trên máy này. Phiên cloud (Claude
 > Desktop với môi trường cloud, claude.ai/code, `claude --cloud`) chạy hook trên máy chủ của Anthropic nên không
@@ -104,7 +112,9 @@ Khi ô tìm kiếm còn trống, command bar hiện luôn khối **lịch sử c
 
 Yêu cầu: Windows 11, [Node.js](https://nodejs.org) 20+, [Rust](https://rustup.rs) stable và
 [các điều kiện của Tauri 2](https://v2.tauri.app/start/prerequisites/) (WebView2, MSVC build tools).
-Muốn thấy phiên Claude trên notch thì cần thêm [hook trạng thái Claude Code](docs/claude-status-hook.md).
+Muốn thấy phiên Claude trên notch thì cần thêm [hook trạng thái Claude Code](docs/claude-status-hook.md). Muốn duyệt
+quyền trên pill thì sau khi chạy winbar, vào Cài đặt › Claude › *Duyệt quyền trên notch* và bấm *Cài hook…*; build lại
+ở thư mục khác thì bấm *Cài lại…* ở đó, vì hook trỏ thẳng vào file `winbar.exe`.
 
 ```powershell
 npm install
