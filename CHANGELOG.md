@@ -4,6 +4,28 @@ Ghi theo ngày, mới nhất ở trên. Mỗi mục là một thay đổi ngư�
 các file `SPEC-*.md` ở gốc repo. Từ 0.2.0, mục nào đổi số phiên bản thì tiêu đề ghi cả số đó: winbar trên máy bạn
 sẽ báo bản mới trên pill.
 
+## 0.3.0 — 01/10/2026
+
+### Tính năng
+
+- **Duyệt quyền Claude Code ngay trên pill.** Khi Claude Code xin quyền chạy một tool, pill hiện tên project và câu
+  lệnh, kèm nút *Từ chối* và *Cho phép*; bấm xong là phiên chạy tiếp, không phải quay lại terminal. *Cho phép* chỉ có
+  trên pill khi pill hiện đủ cả yêu cầu (một lệnh ngắn, một dòng). Yêu cầu dài hơn thế — lệnh dài, lệnh nhiều dòng,
+  sửa hay ghi file — thì nút là *Xem…*: mở thẻ đọc đủ tham số, cuộn hết rồi duyệt ở đó. Thẻ ở yên cho tới khi bạn trả
+  lời hoặc tự thu lại. Terminal vẫn hỏi song song, trả lời ở đâu trước thì tính ở đó, và winbar tắt thì Claude Code
+  hỏi như chưa từng có winbar. Phiên không có người ngồi trước (`claude -p`, agent chạy nền) cũng lên pill, và chờ
+  tối đa 5 phút trước khi bị từ chối như cũ.
+  **Tắt sẵn.** Bật ở Cài đặt › Claude › *Duyệt quyền trên notch*: winbar cho xem đúng phần sẽ thêm vào
+  `settings.json` của Claude Code, sao lưu file cũ rồi mới ghi; gỡ cũng ở đó. Phiên Claude Code đang mở có thể phải
+  mở lại mới dùng hook mới. Cần Git Bash (Claude Code trên Windows vốn dùng nó để chạy hook).
+- **Các bước của phiên đang chạy.** Đã bật duyệt quyền thì card Phiên Claude hiện ba bước gần nhất dưới phiên đang
+  làm việc: đọc file nào, chạy lệnh gì. Chỉ tên file, không kèm thư mục.
+
+### Thay đổi
+
+- **Notch mở có độ nảy, đóng dứt khoát.** Mở panel dùng chuyển động lò xo; thu gọn 340 ms không nảy. Trước đây cả
+  hai chiều dùng chung một đường cong 420 ms nên lúc đóng cũng hơi nảy.
+
 ## 0.2.1 — 29/09/2026
 
 ### Sửa lỗi
