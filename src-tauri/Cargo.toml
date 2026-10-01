@@ -20,7 +20,9 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# preserve_order: installing the Claude Code hook rewrites the user's settings.json, and its keys must stay in
+# the order they were in (SPEC-claude-approvals §4.7).
+serde_json = { version = "1", features = ["preserve_order"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-autostart = "2"
@@ -39,13 +41,20 @@ windows = { version = "0.61", features = [
   "Win32_Graphics_Imaging",
   # Claude usage: one HTTPS GET without adding a TLS stack (SPEC-claude §4).
   "Win32_Networking_WinHttp",
+  # Claude approvals: the named pipe between the hook relay and the running app, and who is on the other end of
+  # it (SPEC-claude-approvals §3).
+  "Win32_Security",
+  "Win32_Security_Authorization",
   "Win32_Storage_EnhancedStorage",
+  "Win32_Storage_FileSystem",
   "Win32_System_Com",
   # Clipboard widget: format listener and clipboard formats (SPEC-clipboard §3).
   "Win32_System_DataExchange",
+  "Win32_System_IO",
   "Win32_System_LibraryLoader",
   "Win32_System_Memory",
   "Win32_System_Ole",
+  "Win32_System_Pipes",
   "Win32_System_Search",
   # System widget: CPU times and memory (SPEC-system §3).
   "Win32_System_SystemInformation",

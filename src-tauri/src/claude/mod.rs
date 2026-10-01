@@ -1,11 +1,13 @@
 //! Claude layout (SPEC-claude): which sessions are alive and how much of the limit is left.
 //!
 //! **Read-only.** Nothing here writes to `~/.claude`, installs a hook, or holds up a session. The data is files the
-//! machine already has plus one read-only endpoint.
+//! machine already has plus one read-only endpoint. The one exception lives in [`approvals`], which is the only
+//! module allowed to touch Claude Code's settings, and only when asked to (SPEC-claude-approvals).
 //!
 //! Log lines carry counts and error kinds only — never a path, a session title, or a token (SPEC §9).
 
 mod accounts;
+pub mod approvals;
 mod icons;
 mod model;
 mod sessions;
