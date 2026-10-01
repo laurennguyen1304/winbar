@@ -2,6 +2,8 @@
 
 > Capability map: `CAPABILITY-MAP.md` — layout **Claude**, module id `claude-sessions` và `claude-usage`.
 > `claude-approvals` **không** nằm trong spec này (phải duyệt riêng vì nó ghi hook vào `~/.claude`).
+> Từ 01/10/2026 nó có spec riêng: `SPEC-claude-approvals.md`. Các giới hạn "chỉ đọc" và "không cài hook" ở dưới vẫn
+> đúng cho hai module của spec này.
 > Nguồn UI: `design/winbar-mockup.html` (tab Claude: card "Phiên Claude", card "Hạn mức").
 > Trạng thái: **chờ bạn duyệt**.
 
