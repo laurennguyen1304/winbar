@@ -9,6 +9,19 @@
   bài nhạc nào đang phát, máy đang bận ra sao, và mở ra một command bar bằng <kbd>Ctrl</kbd>+<kbd>Space</kbd>.
 </p>
 
+> **Cập nhật mới nhất — bản 0.4.0, ngày 02/10/2026**
+>
+> - **Thả file vào notch để hỏi Claude.** Kéo một file PDF, ảnh, CSV/Excel hay Word từ Explorer thả lên pill: một
+>   cửa sổ terminal mở ra với Claude Code đã biết file đó và chờ bạn gõ câu hỏi. Phiên này luôn hỏi quyền trước khi
+>   làm gì, và không nạp cấu hình Claude Code nằm trong thư mục chứa file.
+> - **Báo khi phiên Claude dừng.** Lượt chạy từ 30 giây trở lên kết thúc thì pill báo `✓ <dự án> · xong` kèm một dòng
+>   từ câu trả lời cuối; dừng vì lỗi hay chạm giới hạn dùng thì luôn báo.
+> - **Số agent con.** Phiên đang chạy agent con hiện `+N agent` trên card Phiên Claude và `+N` trên pill.
+> - **Đang dùng 0.3.0 và đã bật duyệt quyền?** Sau khi cập nhật, vào Cài đặt › Claude và bấm *Cài lại…*, rồi mở lại
+>   phiên Claude Code: hai mục sau cần ba sự kiện hook mới.
+>
+> Đầy đủ và các bản trước: [`CHANGELOG.md`](CHANGELOG.md).
+
 <p align="center">
   <img src="design/demo-panel.png" width="820" alt="Panel của winbar khi mở: nhạc đang phát, các phiên Claude, CPU/RAM và hạn mức usage">
 </p>
