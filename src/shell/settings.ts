@@ -54,6 +54,8 @@ export interface Settings {
     iconRotateSeconds: number;
     /** Warn on the pill when the 5-hour limit passes this; 0 turns it off. */
     usageWarnPercent: number;
+    /** Say on the pill when a turn ends: a long one finishing, or any one failing (SPEC-claude-notices §3). */
+    stopNotice: boolean;
     /** Show every account an account-switcher CLI manages (SPEC-claude §3.3b). */
     multiAccount: boolean;
     /** Path to that CLI; empty uses the default. Hand-edited only, carried through so a save keeps it. */
@@ -108,7 +110,7 @@ export const DEFAULT_SETTINGS: Settings = {
   launchAtStartup: true,
   commandBar: { position: null, fileSearch: "auto", webSearch: "google" },
   clipboard: { retentionDays: 1, ignoredApps: DEFAULT_IGNORED_APPS, paused: false },
-  claude: { enabled: true, iconRotateSeconds: 6, usageWarnPercent: 90, multiAccount: true, accountSwitcherPath: "" },
+  claude: { enabled: true, iconRotateSeconds: 6, usageWarnPercent: 90, stopNotice: true, multiAccount: true, accountSwitcherPath: "" },
   update: { check: true },
 };
 

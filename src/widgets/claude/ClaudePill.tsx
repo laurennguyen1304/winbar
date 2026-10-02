@@ -1,8 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useShell } from "../../shell/shell-context";
 import { ApprovalAlerts } from "./ApprovalAlert";
+import { useAgents } from "./approvals";
 import { ClaudeIcon } from "./ClaudeIcon";
+import { DropZone } from "./DropZone";
 import { phaseLook, pillSession } from "./phase";
+import { StopNotices } from "./StopNotices";
 import { useClaude } from "./store";
 import { pillUsage } from "./usage";
 import styles from "./Claude.module.css";
@@ -59,15 +62,24 @@ export function ClaudeBackground() {
     });
   }, [shell, over, window, limit]);
 
-  // Permission requests take the pill from here too (SPEC-claude-approvals §4.5).
-  return <ApprovalAlerts />;
+  // Permission requests take the pill from here too (SPEC-claude-approvals §4.5), and so does a file held over
+  // the notch (SPEC-claude-drop §3).
+  return (
+    <>
+      <ApprovalAlerts />
+      <StopNotices />
+      <DropZone />
+    </>
+  );
 }
 
 /** Collapsed pill: the session that matters most, and how much of the five-hour limit is gone. */
 export function ClaudePill() {
   const { sessions, icons, usage } = useClaude();
+  const agents = useAgents();
   const session = pillSession(sessions);
   if (!session) return null;
+  const running = session.phase === "idle" ? 0 : (agents[session.id] ?? 0);
 
   const look = phaseLook(session);
   const limit = pillUsage(usage);
@@ -80,6 +92,11 @@ export function ClaudePill() {
       </span>
       {/* The pill is narrow: the project identifies the session, so the worktree gives way first. */}
       <span className={styles.pillProject}>{session.project ?? session.title}</span>
+      {running > 0 && (
+        <span className={styles.badge} title="Agent con đang chạy">
+          +{running}
+        </span>
+      )}
       {limit && <span className={styles.pillLimit}>{limit}</span>}
     </span>
   );

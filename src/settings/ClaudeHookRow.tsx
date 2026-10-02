@@ -12,7 +12,7 @@ const STATE_TEXT: Record<ClaudeHookStatus["state"], string> = {
   absent:
     "Chưa cài. Cần thêm hook vào settings.json của Claude Code; winbar cho bạn xem phần thay đổi trước khi ghi.",
   installed: "Đã cài. Yêu cầu cấp quyền của Claude Code hiện trên pill, kèm nút Từ chối và Cho phép.",
-  stale: "Hook đang trỏ tới một bản winbar khác (file exe đã đổi chỗ). Cài lại để sửa.",
+  stale: "Hook chưa đủ cho bản winbar này, hoặc đang trỏ tới một bản khác (file exe đã đổi chỗ). Cài lại để sửa.",
 };
 
 /** Whatever Rust said went wrong, as something to show. Rust's messages are already written for the user. */

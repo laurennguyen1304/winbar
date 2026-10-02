@@ -13,6 +13,9 @@ pub const MAX_PENDING: usize = 16;
 /// Steps kept for each session, and how many sessions are remembered.
 pub const MAX_STEPS: usize = 6;
 pub const MAX_SESSIONS: usize = 24;
+/// Subagents counted for one session, and notices kept for the page to pick up (SPEC-claude-notices §3, §4).
+pub const MAX_AGENTS: usize = 32;
+pub const MAX_NOTICES: usize = 8;
 
 /// What the person at the notch said.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +55,36 @@ pub struct Approval {
     pub received_at: u64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NoticeKind {
+    Finished,
+    Failed,
+}
+
+/// A turn that just ended, as the page sees it (SPEC-claude-notices §5).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Notice {
+    /// Counts up within one run of winbar; the page uses it to tell what it has already drawn.
+    pub id: String,
+    pub kind: NoticeKind,
+    pub session_id: String,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project: Option<String>,
+    /// `Finished`: one line of the reply, already made safe to draw.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary: Option<String>,
+    /// `Failed`: the error type as a plain code.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    /// `Finished`: how long the turn ran. Absent when winbar did not see it start.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub turn_ms: Option<u64>,
+    pub at: u64,
+}
+
 /// An id nobody can guess from having seen another one.
 ///
 /// A request is answered by naming its id. Counting up from 1 would let anything able to call the command answer
@@ -80,6 +113,12 @@ pub struct Book {
     waiting: Vec<Waiting>,
     /// Newest session last, so the one forgotten first is the one that has been quiet longest.
     steps: VecDeque<(String, VecDeque<String>)>,
+    /// When each session's current turn began, epoch ms.
+    turns: VecDeque<(String, u64)>,
+    /// The subagents each session has running.
+    agents: VecDeque<(String, Vec<String>)>,
+    notices: VecDeque<Notice>,
+    noticed: u64,
 }
 
 impl Book {
@@ -200,11 +239,164 @@ impl Book {
             .map(|(id, line)| (id.clone(), line.iter().cloned().collect()))
             .collect()
     }
+
+    /// A turn began: remember when, so its end can say how long it ran.
+    pub fn turn_started(&mut self, session: &str, now: u64) {
+        self.turns.retain(|(id, _)| id != session);
+        self.turns.push_back((session.to_string(), now));
+        while self.turns.len() > MAX_SESSIONS {
+            self.turns.pop_front();
+        }
+    }
+
+    /// The turn ended. How long it ran, or `None` when its start was never seen.
+    pub fn turn_ended(&mut self, session: &str, now: u64) -> Option<u64> {
+        let at = self.turns.iter().position(|(id, _)| id == session)?;
+        let (_, started) = self.turns.remove(at)?;
+        Some(now.saturating_sub(started))
+    }
+
+    /// A subagent started. False when it changed nothing: already counted, or the session has too many.
+    pub fn agent_started(&mut self, session: &str, agent: &str) -> bool {
+        let mut running = match self.agents.iter().position(|(id, _)| id == session) {
+            Some(at) => self.agents.remove(at).map(|(_, list)| list).unwrap_or_default(),
+            None => Vec::new(),
+        };
+        let added = running.len() < MAX_AGENTS && !running.iter().any(|id| id == agent);
+        if added {
+            running.push(agent.to_string());
+        }
+        if !running.is_empty() {
+            self.agents.push_back((session.to_string(), running));
+        }
+        while self.agents.len() > MAX_SESSIONS {
+            self.agents.pop_front();
+        }
+        added
+    }
+
+    /// A subagent stopped. False when it was not being counted.
+    pub fn agent_stopped(&mut self, session: &str, agent: &str) -> bool {
+        let Some(at) = self.agents.iter().position(|(id, _)| id == session) else {
+            return false;
+        };
+        let running = &mut self.agents[at].1;
+        let before = running.len();
+        running.retain(|id| id != agent);
+        let removed = running.len() != before;
+        if running.is_empty() {
+            self.agents.remove(at);
+        }
+        removed
+    }
+
+    /// The turn is over, however it ended: no subagent of it is still running. A stop that never arrived must not
+    /// leave a count standing for ever.
+    pub fn clear_agents(&mut self, session: &str) -> bool {
+        let before = self.agents.len();
+        self.agents.retain(|(id, _)| id != session);
+        self.agents.len() != before
+    }
+
+    /// How many subagents each session has running. Sessions with none are left out.
+    pub fn agents(&self) -> BTreeMap<String, usize> {
+        self.agents.iter().map(|(id, list)| (id.clone(), list.len())).collect()
+    }
+
+    /// Keeps a notice for the page to pick up, and gives it its id.
+    pub fn notice(&mut self, mut notice: Notice) {
+        self.noticed += 1;
+        notice.id = self.noticed.to_string();
+        self.notices.push_back(notice);
+        while self.notices.len() > MAX_NOTICES {
+            self.notices.pop_front();
+        }
+    }
+
+    /// The most recent notices, oldest first.
+    pub fn notices(&self) -> Vec<Notice> {
+        self.notices.iter().cloned().collect()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn finished(session: &str) -> Notice {
+        Notice {
+            id: String::new(),
+            kind: NoticeKind::Finished,
+            session_id: session.into(),
+            title: "shop".into(),
+            project: None,
+            summary: None,
+            reason: None,
+            turn_ms: None,
+            at: 0,
+        }
+    }
+
+    #[test]
+    fn a_turn_knows_how_long_it_ran_only_when_its_start_was_seen() {
+        let mut book = Book::default();
+        assert_eq!(book.turn_ended("s1", 5_000), None, "started before winbar was looking");
+        book.turn_started("s1", 1_000);
+        book.turn_started("s2", 2_000);
+        assert_eq!(book.turn_ended("s1", 41_000), Some(40_000));
+        assert_eq!(book.turn_ended("s1", 50_000), None, "one end per start");
+        // A second prompt in the same session restarts the clock.
+        book.turn_started("s2", 30_000);
+        assert_eq!(book.turn_ended("s2", 31_000), Some(1_000));
+        // A clock that went backwards is not a negative duration.
+        book.turn_started("s3", 9_000);
+        assert_eq!(book.turn_ended("s3", 8_000), Some(0));
+    }
+
+    #[test]
+    fn subagents_are_counted_per_session_and_cleared_with_the_turn() {
+        let mut book = Book::default();
+        assert!(book.agent_started("s1", "a"));
+        assert!(!book.agent_started("s1", "a"), "the same agent twice is one agent");
+        assert!(book.agent_started("s1", "b"));
+        assert!(book.agent_started("s2", "a"));
+        assert_eq!(book.agents(), BTreeMap::from([("s1".to_string(), 2), ("s2".to_string(), 1)]));
+
+        assert!(book.agent_stopped("s1", "a"));
+        assert!(!book.agent_stopped("s1", "a"));
+        assert!(!book.agent_stopped("nobody", "a"));
+        assert_eq!(book.agents()["s1"], 1);
+        assert!(book.agent_stopped("s2", "a"));
+        assert!(!book.agents().contains_key("s2"), "a session with none is not listed");
+
+        // The stop for "b" never comes; the end of the turn clears it.
+        assert!(book.clear_agents("s1"));
+        assert!(!book.clear_agents("s1"));
+        assert!(book.agents().is_empty());
+    }
+
+    #[test]
+    fn subagents_and_notices_have_a_ceiling() {
+        let mut book = Book::default();
+        for i in 0..MAX_AGENTS + 5 {
+            book.agent_started("s1", &format!("a{i}"));
+        }
+        assert_eq!(book.agents()["s1"], MAX_AGENTS);
+        for i in 0..MAX_SESSIONS + 3 {
+            book.agent_started(&format!("s{i}"), "a");
+        }
+        assert_eq!(book.agents().len(), MAX_SESSIONS);
+
+        for i in 0..MAX_NOTICES + 3 {
+            book.notice(finished(&format!("s{i}")));
+        }
+        let notices = book.notices();
+        assert_eq!(notices.len(), MAX_NOTICES);
+        // Oldest first, ids counting up and never reused.
+        assert_eq!(notices[0].id, "4");
+        assert_eq!(notices.last().unwrap().id, (MAX_NOTICES + 3).to_string());
+        assert_eq!(notices[0].session_id, "s3");
+    }
 
     fn view(session: &str) -> Approval {
         Approval {

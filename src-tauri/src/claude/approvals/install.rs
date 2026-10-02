@@ -24,12 +24,16 @@ const QUICK_TIMEOUT: u64 = 5;
 
 /// The events winbar listens to. Only the first one holds Claude Code's attention; the rest run in the
 /// background (`async`), so a tool call never waits for winbar.
-const EVENTS: [(&str, bool); 5] = [
+const EVENTS: [(&str, bool); 8] = [
     ("PermissionRequest", false),
     ("PreToolUse", true),
     ("PostToolUse", true),
     ("UserPromptSubmit", true),
     ("Stop", true),
+    // SPEC-claude-notices: a turn that ended in an error, and the subagents a session has running.
+    ("StopFailure", true),
+    ("SubagentStart", true),
+    ("SubagentStop", true),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -755,10 +759,30 @@ mod tests {
                 "SessionStart",
                 "PostToolUse",
                 "UserPromptSubmit",
-                "Stop"
+                "Stop",
+                // Events the user had no hook for are added after theirs.
+                "StopFailure",
+                "SubagentStart",
+                "SubagentStop"
             ]
         );
         assert_eq!(keys(&without_ours(&after)), keys(&before));
+    }
+
+    /// What a winbar from before SPEC-claude-notices installed: the first five events and no more.
+    #[test]
+    fn an_install_from_before_the_newer_events_counts_as_incomplete() {
+        let command = hook_command(exe());
+        let mut older = installed(&json!({}), &command);
+        let hooks = older["hooks"].as_object_mut().unwrap();
+        for event in ["StopFailure", "SubagentStart", "SubagentStop"] {
+            assert!(hooks.shift_remove(event).is_some(), "{event} is installed today");
+        }
+        assert_eq!(state_of(&older, &command), HookState::Stale, "Settings offers to install again");
+        // Installing again adds what is missing and leaves one hook per event, not two.
+        let again = installed(&older, &command);
+        assert_eq!(again, installed(&json!({}), &command));
+        assert_eq!(state_of(&again, &command), HookState::Installed);
     }
 
     #[test]
@@ -775,7 +799,7 @@ mod tests {
         // From nothing and back to nothing.
         let empty = json!({});
         let fresh = installed(&empty, &hook_command(exe()));
-        assert_eq!(fresh["hooks"].as_object().unwrap().len(), 5);
+        assert_eq!(fresh["hooks"].as_object().unwrap().len(), EVENTS.len());
         assert_eq!(without_ours(&fresh), empty);
 
         // Things that were already empty, or not winbar's to judge, are left as they are.

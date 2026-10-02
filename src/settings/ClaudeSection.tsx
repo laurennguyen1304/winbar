@@ -89,6 +89,18 @@ export function ClaudeSection({ value, onChange }: Props) {
       </Row>
 
       <Row
+        title="Báo khi phiên dừng"
+        description="Lượt chạy từ 30 giây xong thì báo trên pill kèm một dòng trả lời; dừng vì lỗi thì luôn báo. Cần hook của winbar"
+      >
+        <Switch
+          aria-label="Báo khi phiên dừng"
+          checked={value.stopNotice}
+          className="data-[state=checked]:bg-[var(--switch-on)]"
+          onCheckedChange={(stopNotice) => onChange({ ...value, stopNotice })}
+        />
+      </Row>
+
+      <Row
         title="Hạn mức của mọi tài khoản"
         description="Hỏi công cụ đổi tài khoản nếu máy có; không có thì chỉ hiện tài khoản đang đăng nhập"
       >
