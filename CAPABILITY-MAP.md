@@ -22,7 +22,7 @@ trên 8px, co giãn mượt thành lưới card widget. Mỗi tính năng là m�
 | Layout | Gồm | Nguyên tắc |
 |---|---|---|
 | **Core** | shell, command-bar, media, clipboard, system | Không đụng gì tới Claude. App vẫn chạy đầy đủ khi tắt layout Claude. |
-| **Claude** | claude-sessions, claude-usage, claude-approvals | Một layout/trang riêng trong notch, **bật/tắt được**. Mặc định **chỉ đọc**: không ghi vào `~/.claude`, không cài hook, không chặn Claude. |
+| **Claude** | claude-sessions, claude-usage, claude-approvals, claude-drop, claude-notices | Một layout/trang riêng trong notch, **bật/tắt được**. Mặc định **chỉ đọc**: không ghi vào `~/.claude`, không cài hook, không chặn Claude. |
 
 ## Modules
 
@@ -36,6 +36,8 @@ trên 8px, co giãn mượt thành lưới card widget. Mỗi tính năng là m�
 | `claude-sessions` | Claude | Danh sách phiên live, phase `idle/thinking/tool/permission`, tool đang chạy, thời gian; mở project | notch-shell |
 | `claude-usage` | Claude | % hạn mức 5 giờ và 7 ngày, giờ reset, cảnh báo ngưỡng | notch-shell |
 | `claude-approvals` | Claude | Approve/Deny yêu cầu cấp quyền ngay trên notch | notch-shell, claude-sessions |
+| `claude-drop` | Claude | Thả file tài liệu vào notch để mở một phiên Claude Code hỏi về file đó | notch-shell, claude-sessions |
+| `claude-notices` | Claude | Báo trên pill khi một lượt dài chạy xong hoặc dừng vì lỗi; đếm agent con đang chạy | notch-shell, claude-approvals |
 
 ## Tình trạng (21/09/2026)
 
@@ -44,6 +46,8 @@ trên 8px, co giãn mượt thành lưới card widget. Mỗi tính năng là m�
 | `notch-shell` · `command-bar` · `media` · `system` · `clipboard` | ✅ xong, dùng hằng ngày |
 | `claude-sessions` · `claude-usage` | ✅ xong |
 | `claude-approvals` | ✅ **xong, phát hành trong 0.3.0 (01/10)** — chủ dự án hoãn ngày 21/09, duyệt bắt đầu và dùng thử ngày 01/10. Spec: `SPEC-claude-approvals.md`. Hook **không tự cài**: phải bấm trong Cài đặt, sau màn xem trước. Các mục chưa kiểm được: `tests/manual-claude-approvals.md` |
+| `claude-drop` | ✅ **xong, phát hành trong 0.4.0 (02/10)** — chủ dự án thấy ở coucou và chọn hướng mở phiên Claude Code (không chat qua API). Spec: `SPEC-claude-drop.md`. Chủ dự án đã thả file thật ở bản dev trên cả hai màn hình |
+| `claude-notices` | ✅ **xong, phát hành trong 0.4.0 (02/10)** — Spec: `SPEC-claude-notices.md`. Thông báo đã thấy trên pill ở bản dev; huy hiệu agent con và một lỗi thật thì chưa thử với phiên thật |
 
 Ngoài phạm vi so với bản đầu: **menu nguồn** của `system` (Ngủ / Khởi động lại / Tắt máy / Đổi người dùng) —
 Chủ dự án bỏ ngày 18/09, xem `SPEC-system.md` §1.
@@ -67,7 +71,9 @@ một widget thì kết quả của nó tự biến mất khỏi command-bar.
 |---|---|---|
 | `claude-sessions` | `~/.claude/statusbar/state.d/*.json` — hook `lifecycle.js` của yasb **đã chạy sẵn** trên máy | Không. Chỉ đọc file |
 | `claude-usage` | `~/.claude/.credentials.json` + endpoint OAuth usage (giống yasb); cache trên đĩa của app | Không ghi vào `~/.claude`. Tôn trọng rate limit (cache ≥ 120s) |
-| `claude-approvals` | Hook của Claude Code chạy `winbar.exe --winbar-claude-hook`, nói với app qua named pipe (không qua mạng) | **Có** — thêm 5 mục hook vào `settings.json`, chỉ khi bạn bấm cài, sau màn xem trước và có sao lưu. Tắt mặc định; app không chạy thì hook thoát ngay và Claude hỏi trong terminal như bình thường |
+| `claude-drop` | Đường dẫn file do Windows đưa khi thả vào notch | Không ghi vào `~/.claude`. Mở `claude` trong một console mới, ở thư mục riêng của winbar; trước mỗi lần mở, xoá `CLAUDE.md`, `.mcp.json`, `.claude` **trong thư mục riêng đó** |
+| `claude-notices` | Cùng hook và pipe với `claude-approvals` | Không thêm gì ngoài các mục hook bên dưới |
+| `claude-approvals` | Hook của Claude Code chạy `winbar.exe --winbar-claude-hook`, nói với app qua named pipe (không qua mạng) | **Có** — thêm 8 mục hook vào `settings.json` (5 từ 0.3.0, thêm 3 cho `claude-notices`), chỉ khi bạn bấm cài, sau màn xem trước và có sao lưu. Tắt mặc định; app không chạy thì hook thoát ngay và Claude hỏi trong terminal như bình thường |
 
 Mọi widget Claude có **chế độ dữ liệu giả (fixture)** để dựng và chỉnh UI mà không cần phiên Claude thật.
 
