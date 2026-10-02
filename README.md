@@ -27,6 +27,13 @@
   tham số rồi mới duyệt. Terminal vẫn hỏi song song, trả lời ở đâu trước thì tính ở đó. Bật ở Cài đặt › Claude ›
   *Duyệt quyền trên notch*. Pill chỉ hiện khi Claude Code thật sự hỏi quyền: ở chế độ quyền `auto` hay
   `bypassPermissions` nó tự duyệt phần lớn lệnh nên hầu như không có gì để hiện.
+- **Thả file vào notch để hỏi Claude**: kéo một file PDF, ảnh, CSV/Excel hay Word từ Explorer thả lên pill, một
+  cửa sổ terminal mở ra với Claude Code đã biết file đó và chờ bạn gõ câu hỏi. Phiên này luôn chạy ở chế độ hỏi
+  quyền và đứng trong một thư mục riêng của winbar, không phải thư mục chứa file. Loại file khác, thư mục và
+  đường dẫn mạng bị từ chối ngay lúc kéo vào. Cần widget Phiên Claude đang bật.
+- **Báo khi phiên Claude dừng** (cần hook duyệt quyền): lượt chạy từ 30 giây trở lên kết thúc thì pill báo
+  `✓ <dự án> · xong` kèm một dòng từ câu trả lời cuối; phiên dừng vì lỗi hay chạm giới hạn dùng thì luôn báo. Tắt
+  được ở Cài đặt › Claude › *Báo khi phiên dừng*.
 - **Bấm vào notch để mở panel dạng bento** — các widget xếp thành lưới, widget quan trọng chiếm ô lớn.
 - **Hai chất liệu**: `liquid` (gradient mờ) và `dense` (đen đặc `#010101`), kèm thanh chỉnh **độ trong suốt**
   từ 0–100% (100% là đen hoàn toàn).
@@ -48,11 +55,13 @@ Mỗi widget bật/tắt và sắp thứ tự được trong Cài đặt.
 > | Hook | Để làm gì | Ai cài |
 > | --- | --- | --- |
 > | **Trạng thái** | Widget phiên Claude và pill Claude biết phiên nào đang chạy, đang làm gì | Bạn tự cài: winbar chỉ đọc file hook này ghi ra. Xem [hướng dẫn tạo hook](docs/claude-status-hook.md), có sẵn prompt để Claude Code trên máy bạn tự làm |
-> | **Duyệt quyền** | Nút *Từ chối* / *Cho phép* trên pill, và ba bước gần nhất của phiên | winbar cài khi bạn bấm ở Cài đặt › Claude › *Duyệt quyền trên notch*, sau màn xem trước; gỡ cũng ở đó |
+> | **Duyệt quyền** | Nút *Từ chối* / *Cho phép* trên pill, ba bước gần nhất của phiên, báo khi phiên dừng, và số agent con đang chạy | winbar cài khi bạn bấm ở Cài đặt › Claude › *Duyệt quyền trên notch*, sau màn xem trước; gỡ cũng ở đó |
 >
 > Chưa có hook trạng thái thì pill Claude không bao giờ hiện, dù widget đang bật. Chưa cài hook duyệt quyền thì mọi
 > thứ khác vẫn chạy, chỉ là bạn trả lời yêu cầu cấp quyền trong terminal như cũ. Hook duyệt quyền cần Git Bash (Claude
-> Code trên Windows dùng nó để chạy hook), và phiên Claude Code đang mở phải mở lại mới dùng hook vừa cài.
+> Code trên Windows dùng nó để chạy hook), và phiên Claude Code đang mở phải mở lại mới dùng hook vừa cài. Đã cài
+> hook từ bản 0.3.0 thì sau khi lên 0.4.0, Cài đặt › Claude sẽ báo hook chưa đủ: bấm *Cài lại…* để có thông báo phiên
+> dừng và số agent con.
 >
 > **Phiên chạy trên cloud không hiện.** winbar chỉ thấy phiên Claude Code chạy trên máy này. Phiên cloud (Claude
 > Desktop với môi trường cloud, claude.ai/code, `claude --cloud`) chạy hook trên máy chủ của Anthropic nên không
@@ -101,6 +110,12 @@ Khi ô tìm kiếm còn trống, command bar hiện luôn khối **lịch sử c
   ghi ra đĩa hay log. Hook nói chuyện với winbar qua một named pipe chỉ tài khoản Windows của bạn mở được, không qua
   mạng. Ký tự ẩn và ký tự đổi chiều chữ trong câu lệnh được hiện ra thành mã thay vì vẽ nguyên dạng, và winbar không
   mời duyệt thứ nó chưa hiện đủ. Đã chặn gì và chưa chặn được gì: [SPEC-claude-approvals.md](SPEC-claude-approvals.md) §10.
+- **Thả file vào notch:** winbar không đọc nội dung file, chỉ đưa đường dẫn cho Claude Code. Tên file không bao giờ
+  nằm trên dòng lệnh của shell, phiên luôn mở ở chế độ hỏi quyền, và cấu hình Claude Code nằm trong thư mục chứa file
+  (hook, MCP, `CLAUDE.md`) không được nạp. Không chặn được: chữ viết sẵn trong file để dụ Claude — lớp chắn là bạn
+  bấm Cho phép hay không. Chi tiết: [SPEC-claude-drop.md](SPEC-claude-drop.md) §8.
+- **Báo khi phiên dừng:** dòng trích từ câu trả lời của Claude chỉ nằm trong bộ nhớ và hiện trên pill vài giây;
+  không ghi ra đĩa. Chi tiết: [SPEC-claude-notices.md](SPEC-claude-notices.md) §6.
 - **Kiểm tra bản mới:** tối đa một tuần một lần, winbar đọc số phiên bản trong `src-tauri/tauri.conf.json` trên
   GitHub. Không gửi gì đi ngoài chính request đó, nhưng GitHub thấy địa chỉ IP của máy bạn. Tắt ở Cài đặt › Chung ›
   *Tự kiểm tra bản mới*.
@@ -156,7 +171,8 @@ cargo test --manifest-path src-tauri/Cargo.toml
 ## Tài liệu
 
 Mỗi phần có một đặc tả riêng ở gốc repo: [notch](SPEC-notch-shell.md), [Claude](SPEC-claude.md),
-[duyệt quyền Claude](SPEC-claude-approvals.md),
+[duyệt quyền Claude](SPEC-claude-approvals.md), [thả file hỏi Claude](SPEC-claude-drop.md),
+[báo phiên Claude dừng](SPEC-claude-notices.md),
 [media](SPEC-media.md), [Core](SPEC-system.md), [command bar](SPEC-command-bar.md), [clipboard](SPEC-clipboard.md),
 [báo bản mới](SPEC-update.md) (cách phát hành một bản ở §8);
 bức tranh tổng thể ở [`CAPABILITY-MAP.md`](CAPABILITY-MAP.md), mockup giao diện trong [`design/`](design/).
