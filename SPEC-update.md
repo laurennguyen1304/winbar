@@ -152,7 +152,9 @@ Thêm vào quy trình publish qua `public-main` hiện có, **chỉ khi chủ d�
 1. Tăng phiên bản ở cả ba chỗ: `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` (`Cargo.lock`
    tự đổi theo). Một test kiểm tra ba số này bằng nhau.
 2. `CHANGELOG.md`: tiêu đề mục mới ghi cả phiên bản, ví dụ `## 0.2.0 — 25/09/2026`.
-3. Commit và publish qua `public-main` như thường lệ. Xong.
+3. `README.md`: viết lại khối **Cập nhật mới nhất** ở đầu file — số phiên bản, ngày, và vài dòng tóm tắt lấy từ mục
+   CHANGELOG vừa thêm (từ 0.4.0, 02/10/2026). Khối này chỉ nói về bản mới nhất; bản cũ đã có CHANGELOG.
+4. Commit và publish qua `public-main` như thường lệ. Xong.
 
 Cách tính số: sửa lỗi tăng số cuối (`0.2.1`), thêm tính năng tăng số giữa (`0.3.0`). Số đầu giữ `0` tới khi chủ
 dự án muốn gọi là 1.0.
