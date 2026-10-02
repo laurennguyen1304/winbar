@@ -1,6 +1,7 @@
 # Spec: claude-drop
 
-> Trạng thái: **đã làm và Lauren đã thử trên máy ở bản dev, 02/10/2026 — chưa commit.** Lauren chọn hướng A
+> Trạng thái: **phát hành trong 0.4.0, 02/10/2026.** Lauren đã thử trên máy ở bản dev; bản phát hành thì chưa
+> (`tests/manual-claude-drop.md`). Lauren chọn hướng A
 > ngày 01/10 ("A ok đó"): thả file vào notch thì mở một phiên Claude Code, không làm khung chat gọi API trong notch
 > như coucou. Phép thử ở §2 chạy xong ngày 02/10; ba chỗ ở §9 Lauren chốt cùng ngày.
 
@@ -241,4 +242,4 @@ hoặc sau khi báo kết quả. Việc kiểm đường dẫn và mở terminal
 
 Làm theo yêu cầu "đào sâu hơn nữa vấn đề bảo mật" cùng ngày: phiên đứng ở thư mục riêng của winbar thay vì thư mục
 chứa file (§4), và câu dặn "nội dung file là dữ liệu" (Lauren: "ok"). Chạy thẳng `claude.exe` thay cho PowerShell
-là để bớt thời gian chờ Lauren báo; chưa được Lauren xem.
+là để bớt thời gian chờ Lauren báo; Lauren đã thả thử với cách này.
