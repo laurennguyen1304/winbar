@@ -81,6 +81,7 @@ pub fn run() {
             claude::approvals::claude_steps,
             claude::approvals::claude_agents,
             claude::approvals::claude_notices,
+            claude::approvals::claude_outcomes,
             claude::approvals::claude_hook_status,
             claude::approvals::claude_hook_preview,
             claude::approvals::claude_hook_apply,

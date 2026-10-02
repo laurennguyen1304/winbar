@@ -4,6 +4,25 @@ Ghi theo ngày, mới nhất ở trên. Mỗi mục là một thay đổi ngư�
 các file `SPEC-*.md` ở gốc repo. Từ 0.2.0, mục nào đổi số phiên bản thì tiêu đề ghi cả số đó: winbar trên máy bạn
 sẽ báo bản mới trên pill.
 
+## Chưa phát hành
+
+### Thay đổi
+
+- **Thông báo phiên dừng hiện đủ tên phiên và ở lại lâu hơn.** Pill thông báo rộng hơn (cỡ M: 640 px thay vì
+  490 px) và ghi `<dự án> / <worktree>` thay vì tên dự án bị cắt; thiếu chỗ thì dòng tóm tắt là thứ bị cắt. Báo xong
+  ở lại 7 giây (trước là 5), báo lỗi 10 giây (trước là 8).
+- **Thẻ Phiên Claude nói từng phiên đang ở đâu.** Phiên nghỉ ghi `Xong — <một dòng từ câu trả lời cuối>` hoặc
+  `Dừng: <lý do>` kèm lượt đó kết thúc bao lâu rồi; phiên đang xin quyền ghi `Chờ duyệt: <việc>`; phiên đang chạy
+  như cũ. Dòng này chỉ để đọc — duyệt quyền vẫn ở pill. Tắt *Báo khi phiên dừng* thì thẻ không trích câu trả lời.
+  Cần hook đã cài; không phải cài lại.
+
+### Sửa lỗi
+
+- **Trả lời yêu cầu duyệt quyền ở terminal thì pill biến mất ngay.** Trước đây pill nằm lại tới khi lệnh chạy xong
+  (hoặc tới 5 phút nếu lệnh lỗi hay bị từ chối), vì Claude Code không báo gì cho hook khi bạn trả lời ở terminal.
+  Giờ winbar nhìn trạng thái Claude Code tự ghi cho phiên đó và gỡ pill trong khoảng một giây. Cần Claude Code đủ
+  mới để ghi trạng thái này; không có thì pill cư xử như cũ.
+
 ## 0.4.0 — 02/10/2026
 
 ### Tính năng

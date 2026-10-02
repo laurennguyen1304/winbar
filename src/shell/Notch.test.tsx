@@ -410,6 +410,15 @@ describe("Notch", () => {
       expect(lastLayout()).toEqual([{ width: 518, height: 40 }, 0]);
     });
 
+    it("widens further for an alert that asks for it, and comes back for one that does not", () => {
+      renderWithShell();
+      act(() => shell.api.alerts.push({ id: "notice", source: "demo-claude", priority: 2, Content: Copied, wide: true }));
+      expect(notch()).toHaveStyle({ width: "640px", height: "40px" });
+      // A request outranks it and is drawn at the regular alert width: its buttons do not move further out.
+      act(() => shell.api.alerts.push(approval));
+      expect(notch()).toHaveStyle({ width: "490px", height: "40px" });
+    });
+
     it("does not open on hover while an alert is shown", () => {
       renderWithShell();
       act(() => shell.api.alerts.push(approval));

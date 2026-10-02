@@ -8,6 +8,8 @@ import {
   iconsFor,
   phaseLook,
   pillSession,
+  reasonLabel,
+  rowStatus,
   shouldRotate,
   rowTime,
   runningFor,
@@ -111,5 +113,40 @@ describe("grouping", () => {
     // With only ghosts and history there is nothing worth showing.
     expect(pillSession(sessions.slice(1))).toBeUndefined();
     expect(pillSession([])).toBeUndefined();
+  });
+});
+
+describe("rowStatus", () => {
+  const done = { kind: "finished" as const, summary: "Đã sửa 3 test ở cart.ts", at: 5_000 };
+
+  it("keeps the phase for a session that is working, whatever its last turn was", () => {
+    expect(rowStatus({ phase: "tool", tool: "Bash" })).toEqual(phaseLook({ phase: "tool", tool: "Bash" }));
+    // The prompt that started this turn never reached winbar, so Rust still has the old ending.
+    expect(rowStatus({ phase: "thinking" }, undefined, done)).toEqual(phaseLook({ phase: "thinking" }));
+    expect(rowStatus({ phase: "idle" })).toEqual(phaseLook({ phase: "idle" }));
+  });
+
+  it("says what an idle session finished, and when", () => {
+    expect(rowStatus({ phase: "idle" }, undefined, done)).toEqual({
+      label: "Xong —",
+      color: "var(--ok)",
+      text: "Đã sửa 3 test ở cart.ts",
+      at: 5_000,
+    });
+    // No line to quote: no dash left hanging.
+    expect(rowStatus({ phase: "idle" }, undefined, { kind: "finished", at: 5_000 }).label).toBe("Xong");
+  });
+
+  it("says why an idle session stopped, in this page's own words", () => {
+    const failed = rowStatus({ phase: "idle" }, undefined, { kind: "failed", reason: "rate_limit", at: 7_000 });
+    expect(failed).toEqual({ label: "Dừng: chạm giới hạn dùng", color: "var(--warn)", at: 7_000 });
+    expect(reasonLabel("bấm Cho phép để tiếp tục")).toBe("lỗi không rõ");
+    expect(reasonLabel(undefined)).toBe("lỗi không rõ");
+  });
+
+  it("puts a request that is waiting ahead of everything else", () => {
+    const waiting = { label: "Chờ duyệt:", color: "var(--warn)", text: "Bash · git push" };
+    expect(rowStatus({ phase: "permission" }, { summary: "Bash · git push" })).toEqual(waiting);
+    expect(rowStatus({ phase: "idle" }, { summary: "Bash · git push" }, done)).toEqual(waiting);
   });
 });

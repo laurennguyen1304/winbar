@@ -26,6 +26,7 @@ import {
   panelHeight,
   panelMaxHeight,
   pillRadius,
+  wideAlertSize,
   type Size,
 } from "./notch-sizes";
 import { useDevicePixelRatio } from "./use-device-pixel-ratio";
@@ -172,7 +173,9 @@ export function Notch({
     visual === "always" || (expanded && mode === "always")
       ? alwaysSize
       : visual === "alert"
-        ? alertSize(pillSize)
+        ? alert?.wide
+          ? wideAlertSize(pillSize, window.screen.width)
+          : alertSize(pillSize)
         : pills.length > 1
           ? duoSize(pillSize)
           : pillSize;

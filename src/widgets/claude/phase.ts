@@ -5,6 +5,7 @@ import sleeping from "../../assets/claude/clawd-sleeping.png";
 import sparkles from "../../assets/claude/clawd-sparkles.png";
 import thinkingIcon from "../../assets/claude/clawd-thinking.png";
 import working from "../../assets/claude/working.gif";
+import type { ClaudeApproval, ClaudeNotice } from "./approvals";
 import type { ClaudePhase, ClaudeSession } from "./native";
 
 export interface PhaseLook {
@@ -28,6 +29,58 @@ export function phaseLook(session: Pick<ClaudeSession, "phase" | "tool">): Phase
     return { ...look, label: `${look.label} · ${session.tool}` };
   }
   return look;
+}
+
+/** Claude Code's error types, in words. The code itself is never drawn. */
+const REASONS: Record<string, string> = {
+  rate_limit: "chạm giới hạn dùng",
+  overloaded: "máy chủ Claude đang lỗi",
+  server_error: "máy chủ Claude đang lỗi",
+  authentication_failed: "cần đăng nhập lại",
+  oauth_org_not_allowed: "cần đăng nhập lại",
+  cloud_credential_error: "cần đăng nhập lại",
+  account_on_hold: "tài khoản có vấn đề thanh toán",
+  billing_error: "tài khoản có vấn đề thanh toán",
+  max_output_tokens: "câu trả lời quá dài",
+};
+
+/** Why a turn stopped, in words; a code this page does not know is never drawn. */
+export function reasonLabel(reason: string | undefined): string {
+  return REASONS[reason ?? ""] ?? "lỗi không rõ";
+}
+
+export interface RowStatus extends PhaseLook {
+  /**
+   * What the label is about, in words that came from outside: a line of Claude's reply, or the tool call a
+   * request is for. Already made safe to draw; only ever read, never something to press.
+   */
+  text?: string;
+  /** Epoch ms the status dates from, when that says more than how long the session has been open. */
+  at?: number;
+}
+
+/**
+ * What a session's row says under its name (SPEC-claude-notices §4b): what it is waiting for, how its last turn
+ * ended, or — while it works — the phase, as before.
+ *
+ * @param approval the session's request waiting on the notch, if any
+ * @param outcome how the session's last turn ended; Rust forgets it when the next turn starts
+ */
+export function rowStatus(
+  session: Pick<ClaudeSession, "phase" | "tool">,
+  approval?: Pick<ClaudeApproval, "summary">,
+  outcome?: Pick<ClaudeNotice, "kind" | "summary" | "reason" | "at">,
+): RowStatus {
+  if (approval) return { label: "Chờ duyệt:", color: "var(--warn)", text: approval.summary };
+  // Only an idle session is described by how its last turn ended: one that is working again has moved on, even
+  // if the prompt that started it never reached winbar.
+  if (session.phase !== "idle" || !outcome) return phaseLook(session);
+  if (outcome.kind === "failed") {
+    return { label: `Dừng: ${reasonLabel(outcome.reason)}`, color: "var(--warn)", at: outcome.at };
+  }
+  return outcome.summary
+    ? { label: "Xong —", color: "var(--ok)", text: outcome.summary, at: outcome.at }
+    : { label: "Xong", color: "var(--ok)", at: outcome.at };
 }
 
 /**

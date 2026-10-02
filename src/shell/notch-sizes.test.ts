@@ -5,6 +5,7 @@ import {
   PILL_SIZES,
   alertSize,
   duoSize,
+  wideAlertSize,
   panelHeight,
   panelFitWidth,
   panelMaxHeight,
@@ -24,6 +25,13 @@ describe("notch sizes", () => {
 
   it("derives the alert pill from the regular pill", () => {
     expect(alertSize(PILL_SIZES.m)).toEqual({ width: 490, height: 40 });
+  });
+
+  it("gives an alert that is a sentence to read more width, as far as the screen allows", () => {
+    expect(wideAlertSize(PILL_SIZES.m, 1920)).toEqual({ width: 640, height: 40 });
+    expect(wideAlertSize(PILL_SIZES.l, 1920)).toEqual({ width: 700, height: 44 });
+    // A 1280 px laptop at 200%: the pill stops short of the screen's edges.
+    expect(wideAlertSize(PILL_SIZES.l, 640)).toEqual({ width: 600, height: 44 });
   });
 
   it("widens the pill when it carries two widgets, and keeps its height", () => {

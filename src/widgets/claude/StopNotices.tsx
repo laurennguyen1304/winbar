@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import { useShell } from "../../shell/shell-context";
 import { useNotices, type ClaudeNotice } from "./approvals";
+import { reasonLabel } from "./phase";
 import { useClaude } from "./store";
 import styles from "./Claude.module.css";
 
@@ -11,25 +12,18 @@ const ALERT_ID = "claude-notice";
 export const LONG_TURN_MS = 30_000;
 /** A notice older than this when its moment comes is dropped: it describes something that is no longer "just now". */
 export const FRESH_MS = 30_000;
-export const FINISHED_MS = 5_000;
-export const FAILED_MS = 8_000;
+/** Two seconds more than at first: five was gone before the line had been read (Lauren, 02/10). */
+export const FINISHED_MS = 7_000;
+export const FAILED_MS = 10_000;
 /** Under a permission request (5), so a finished turn never covers something waiting for an answer. */
 const PRIORITY = { failed: 4, finished: 2 } as const;
 /** More than this waiting their turn is a burst nobody will read one by one. */
 const MAX_QUEUED = 8;
 
-/** Claude Code's error types, in words. The code itself is never drawn. */
-const REASONS: Record<string, string> = {
-  rate_limit: "chạm giới hạn dùng",
-  overloaded: "máy chủ Claude đang lỗi",
-  server_error: "máy chủ Claude đang lỗi",
-  authentication_failed: "cần đăng nhập lại",
-  oauth_org_not_allowed: "cần đăng nhập lại",
-  cloud_credential_error: "cần đăng nhập lại",
-  account_on_hold: "tài khoản có vấn đề thanh toán",
-  billing_error: "tài khoản có vấn đề thanh toán",
-  max_output_tokens: "câu trả lời quá dài",
-};
+/** Which session: the project and its worktree, as on the sessions card, or the folder alone outside Orca. */
+function sessionName(notice: ClaudeNotice): string {
+  return notice.project && notice.project !== notice.title ? `${notice.project} / ${notice.title}` : notice.title;
+}
 
 function NoticePill({ notice }: { notice: ClaudeNotice }) {
   const failed = notice.kind === "failed";
@@ -38,9 +32,9 @@ function NoticePill({ notice }: { notice: ClaudeNotice }) {
       <span className={styles.noticeMark} data-kind={notice.kind}>
         {failed ? "▲" : "✓"}
       </span>
-      <span className={styles.noticeFrom}>{notice.project ?? notice.title}</span>
+      <span className={styles.noticeFrom}>{sessionName(notice)}</span>
       <span className={styles.noticeWhat} data-kind={notice.kind}>
-        {failed ? `· dừng: ${REASONS[notice.reason ?? ""] ?? "lỗi không rõ"}` : "· xong"}
+        {failed ? `· dừng: ${reasonLabel(notice.reason)}` : "· xong"}
       </span>
       {!failed && notice.summary && <span className={styles.noticeSummary}>— {notice.summary}</span>}
     </span>
@@ -83,6 +77,8 @@ export function StopNotices() {
         id: ALERT_ID,
         source: WIDGET_ID,
         priority: PRIORITY[notice.kind],
+        // No buttons, only a name and a sentence: the wider pill is what lets both be read whole.
+        wide: true,
         Content: () => <NoticePill notice={notice} />,
       });
       timer.current = setTimeout(next, notice.kind === "failed" ? FAILED_MS : FINISHED_MS);

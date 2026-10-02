@@ -54,6 +54,11 @@ export interface PillAlert {
   /** Draws its own action buttons. */
   Content: ComponentType;
   /**
+   * The alert is a sentence to read, and the regular alert pill cuts it: the pill grows wider for it
+   * (SPEC-claude-notices §3). Not for alerts with buttons — a wider pill covers more of what is under it.
+   */
+  wide?: boolean;
+  /**
    * The alert's own card, for when the pill is too narrow to show what is being asked (SPEC-claude-approvals §5).
    *
    * With it, a click on the alert's text opens this card instead of the panel, 560 px wide and as tall as its

@@ -25,12 +25,16 @@ Trước hết: Cài đặt › Claude › *Cài lại…*, rồi mở một phi
 
 | # | Làm | Phải thấy | Kết quả |
 |---|---|---|---|
-| 1 | Giao một việc chạy trên 30 giây, chuyển sang cửa sổ khác | `✓ <dự án> · xong — <một dòng>` trong 5 giây | ✅ 02/10, bản dev: sự kiện giả qua relay thật thì thấy; một lượt thật 74 giây có sinh thông báo |
+| 1 | Giao một việc chạy trên 30 giây, chuyển sang cửa sổ khác | `✓ <dự án> / <worktree> · xong — <một dòng>` trong 7 giây, tên phiên không bị cắt | ✅ 02/10, bản dev, với dạng cũ (5 giây, chỉ tên dự án): sự kiện giả qua relay thật thì thấy; một lượt thật 74 giây có sinh thông báo. Dạng mới: chưa |
 | 2 | Hỏi một câu trả lời trong vài giây | Không báo gì | chưa |
-| 3 | Lỗi thật (ngắt mạng giữa lượt, hoặc chạm giới hạn dùng) | `▲ <dự án> · dừng: <lý do>` trong 8 giây, đúng lý do | sự kiện giả `rate_limit` ✅ 02/10; lỗi thật: chưa |
+| 3 | Lỗi thật (ngắt mạng giữa lượt, hoặc chạm giới hạn dùng) | `▲ <dự án> / <worktree> · dừng: <lý do>` trong 10 giây, đúng lý do | sự kiện giả `rate_limit` ✅ 02/10; lỗi thật: chưa |
 | 4 | Nhờ Claude dùng một agent con | `+1 agent` trên card, `+1` trên pill; hết khi agent xong | chưa |
 | 5 | Có yêu cầu duyệt quyền đang chờ, một phiên khác xong lượt dài | Yêu cầu duyệt vẫn ở trên pill; thông báo xong không che nó | chưa (có test tự động) |
-| 6 | Tắt *Báo khi phiên dừng* | Không báo cả xong lẫn lỗi | chưa (có test tự động) |
+| 6 | Tắt *Báo khi phiên dừng* | Không báo cả xong lẫn lỗi; thẻ Phiên Claude chỉ ghi `Xong`, không trích câu trả lời | chưa (có test tự động) |
+| 7 | Một phiên vừa xong lượt (dài hay ngắn), mở notch | Dòng của phiên đó: `Xong — <một dòng>`, cột giờ là lượt xong bao lâu rồi | chưa (có test tự động) |
+| 8 | Gõ câu mới vào phiên đó, mở notch | Dòng `Xong — …` biến mất, thay bằng `Thinking` / `Cooking · …` | chưa (có test tự động) |
+| 9 | Phiên chạy `claude --permission-mode default` xin quyền, mở notch bằng tray › Mở notch | Dòng của phiên đó: `Chờ duyệt: <công cụ · việc>`; không có nút duyệt nào trên thẻ | chưa (có test tự động) |
+| 10 | Tên dự án và worktree dài (trên 40 ký tự), lượt dài xong | Tên hiện đủ, dòng tóm tắt bị cắt bằng `…`; pill không tràn | ✅ 02/10, bản dev, sự kiện giả qua relay thật: `qikify-checkout-extensions / spec-driven-development` hiện đủ, tóm tắt bị cắt, giữ 7 giây |
 
 Gửi một sự kiện giả để xem thông báo mà không cần chờ phiên thật: chạy `winbar.exe --winbar-claude-hook` với JSON
 của hook trên stdin, từ PowerShell (`ProcessStartInfo`, chuyển hướng stdin) — xem `tests/tools/claude-relay-check.ps1`

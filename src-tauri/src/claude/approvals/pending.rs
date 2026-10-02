@@ -119,6 +119,8 @@ pub struct Book {
     agents: VecDeque<(String, Vec<String>)>,
     notices: VecDeque<Notice>,
     noticed: u64,
+    /// How each session's last turn ended, newest last. Gone once the session starts another turn.
+    outcomes: VecDeque<(String, Notice)>,
 }
 
 impl Book {
@@ -307,6 +309,11 @@ impl Book {
     pub fn notice(&mut self, mut notice: Notice) {
         self.noticed += 1;
         notice.id = self.noticed.to_string();
+        self.outcomes.retain(|(id, _)| *id != notice.session_id);
+        self.outcomes.push_back((notice.session_id.clone(), notice.clone()));
+        while self.outcomes.len() > MAX_SESSIONS {
+            self.outcomes.pop_front();
+        }
         self.notices.push_back(notice);
         while self.notices.len() > MAX_NOTICES {
             self.notices.pop_front();
@@ -316,6 +323,19 @@ impl Book {
     /// The most recent notices, oldest first.
     pub fn notices(&self) -> Vec<Notice> {
         self.notices.iter().cloned().collect()
+    }
+
+    /// A new turn began: how the last one ended is no longer what the session is doing. True when there was
+    /// something to forget.
+    pub fn clear_outcome(&mut self, session: &str) -> bool {
+        let before = self.outcomes.len();
+        self.outcomes.retain(|(id, _)| id != session);
+        self.outcomes.len() != before
+    }
+
+    /// How the last turn of each session ended. Sessions that are in a turn, or never ended one, are left out.
+    pub fn outcomes(&self) -> BTreeMap<String, Notice> {
+        self.outcomes.iter().cloned().collect()
     }
 }
 
@@ -396,6 +416,32 @@ mod tests {
         assert_eq!(notices[0].id, "4");
         assert_eq!(notices.last().unwrap().id, (MAX_NOTICES + 3).to_string());
         assert_eq!(notices[0].session_id, "s3");
+    }
+
+    #[test]
+    fn a_session_keeps_how_its_last_turn_ended_until_it_starts_another() {
+        let mut book = Book::default();
+        book.notice(finished("s1"));
+        book.notice(Notice { kind: NoticeKind::Failed, ..finished("s1") });
+        book.notice(finished("s2"));
+        let outcomes = book.outcomes();
+        assert_eq!(outcomes.len(), 2);
+        // The later ending replaces the earlier one, and carries the id the notice was given.
+        assert_eq!((outcomes["s1"].kind, outcomes["s1"].id.as_str()), (NoticeKind::Failed, "2"));
+
+        assert!(book.clear_outcome("s1"));
+        assert!(!book.clear_outcome("s1"));
+        assert_eq!(book.outcomes().keys().collect::<Vec<_>>(), ["s2"]);
+        // Forgetting an outcome is not taking back the notice: the pill may still be showing it.
+        assert_eq!(book.notices().len(), 3);
+
+        // More notices than the pill queue holds must not push out a session that is still open.
+        for i in 0..MAX_SESSIONS + 3 {
+            book.notice(finished(&format!("n{i}")));
+        }
+        assert_eq!(book.outcomes().len(), MAX_SESSIONS);
+        assert!(book.outcomes().contains_key(&format!("n{}", MAX_SESSIONS + 2)));
+        assert!(!book.outcomes().contains_key("s2"), "the one quiet longest goes first");
     }
 
     fn view(session: &str) -> Approval {

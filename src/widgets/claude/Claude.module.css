@@ -145,6 +145,16 @@
   white-space: nowrap;
 }
 
+/*
+ * What the status is about: a line of Claude's reply, or the tool call a request is for. Someone else's words,
+ * so drawn in stored order like every other such line here, and quieter than the label in front of it.
+ */
+.statusText {
+  color: var(--text-sub);
+  direction: ltr;
+  unicode-bidi: bidi-override;
+}
+
 .time {
   font-size: 12px;
   font-family: var(--mono);
@@ -660,11 +670,19 @@
   color: var(--warn);
 }
 
-/* A turn that just ended (SPEC-claude-notices §3). */
+/*
+ * A turn that just ended (SPEC-claude-notices §3).
+ *
+ * A grid, not a flex row: the mark, the name and what happened take the width they need first, and the reply's
+ * line gets what is left. As a flex row the name gave up a fraction of a pixel whenever the line was too long —
+ * however lopsided the shrink factors — and a fraction of a pixel is enough for the ellipsis to eat two letters
+ * of a name that had room (seen on the notch, 02/10).
+ */
 .noticePill {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  column-gap: 8px;
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
@@ -673,7 +691,6 @@
 }
 
 .noticeMark {
-  flex: none;
   color: var(--ok);
 }
 
@@ -681,22 +698,20 @@
   color: var(--warn);
 }
 
-/* Which session. Short on purpose: what happened needs the room. */
+/* Which session. Whole whenever it fits at all: the line after it is what gives way (Lauren, 02/10). */
 .noticeFrom {
-  flex: 0 1 auto;
-  max-width: 130px;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text);
 }
 
 .noticeWhat {
-  flex: none;
   color: var(--text-sub);
 }
 
+/* A failure has no line after it, and its reason can be long: it shares what room there is with the name. */
 .noticeWhat[data-kind="failed"] {
-  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -708,7 +723,6 @@
  * someone else wrote: it is the model's text, and it only ever sits here to be read.
  */
 .noticeSummary {
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
