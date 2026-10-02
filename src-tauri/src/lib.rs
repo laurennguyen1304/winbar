@@ -40,6 +40,7 @@ pub fn run() {
         .manage(system::SystemState::default())
         .manage(hotkeys::HotkeyState::default())
         .manage(claude::approvals::ApprovalsState::default())
+        .manage(claude::drop::DropState::default())
         .manage(command_bar::files::FileSearchState::default())
         .manage(command_bar::apps::AppsState::default())
         .manage(command_bar::icons::IconsState::default())
@@ -78,9 +79,12 @@ pub fn run() {
             claude::approvals::claude_approval_shown,
             claude::approvals::claude_approval_decide,
             claude::approvals::claude_steps,
+            claude::approvals::claude_agents,
+            claude::approvals::claude_notices,
             claude::approvals::claude_hook_status,
             claude::approvals::claude_hook_preview,
             claude::approvals::claude_hook_apply,
+            claude::drop::claude_drop_arm,
             clipboard::clipboard_list,
             clipboard::clipboard_text,
             clipboard::clipboard_thumb,

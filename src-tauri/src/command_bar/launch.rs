@@ -124,9 +124,15 @@ fn terminal_candidates() -> Vec<PathBuf> {
     if let Ok(local) = std::env::var("LOCALAPPDATA") {
         out.push(PathBuf::from(local).join(r"Microsoft\WindowsApps\wt.exe"));
     }
-    let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".to_string());
-    out.push(PathBuf::from(root).join(r"System32\WindowsPowerShell\v1.0\powershell.exe"));
+    out.push(powershell_exe());
     out
+}
+
+/// Windows PowerShell, by its full path for the reason above.
+#[cfg(windows)]
+pub fn powershell_exe() -> PathBuf {
+    let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".to_string());
+    PathBuf::from(root).join(r"System32\WindowsPowerShell\v1.0\powershell.exe")
 }
 
 /// Opens a terminal standing in a folder: Windows Terminal when it is installed, otherwise PowerShell in a new

@@ -73,6 +73,9 @@ pub struct ClaudeSettings {
     pub icon_rotate_seconds: u32,
     /// Warn on the pill when the 5-hour limit passes this; 0 turns the warning off.
     pub usage_warn_percent: u32,
+    /// Say on the pill when a session's turn ends: a long one finishing, or any one failing
+    /// (SPEC-claude-notices §3).
+    pub stop_notice: bool,
     /// Ask an account-switcher CLI for every account's usage (SPEC-claude §3.3b).
     pub multi_account: bool,
     /// Absolute path to that CLI; empty uses the default one. Hand-edited only.
@@ -168,6 +171,7 @@ impl Default for Settings {
                 enabled: true,
                 icon_rotate_seconds: 6,
                 usage_warn_percent: 90,
+                stop_notice: true,
                 multi_account: true,
                 account_switcher_path: String::new(),
             },
@@ -393,6 +397,7 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
                 1,
                 d.claude.usage_warn_percent,
             ),
+            stop_notice: r.boolean(claude, "stopNotice", d.claude.stop_notice),
             multi_account: r.boolean(claude, "multiAccount", d.claude.multi_account),
             account_switcher_path: match claude.and_then(|c| c.get("accountSwitcherPath")) {
                 None => d.claude.account_switcher_path.clone(),

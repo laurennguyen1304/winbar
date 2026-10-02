@@ -119,7 +119,7 @@ describe("ClaudeHookRow", () => {
   it("says when the hooks point at another copy of winbar, and offers both ways out", async () => {
     rust.status = { state: "stale", settingsPath: SETTINGS, listening: true };
     render(<ClaudeHookRow />);
-    expect(await screen.findByText(/trỏ tới một bản winbar khác/)).toBeInTheDocument();
+    expect(await screen.findByText(/Hook chưa đủ cho bản winbar này/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cài lại…" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Gỡ hook…" })).toBeInTheDocument();
   });

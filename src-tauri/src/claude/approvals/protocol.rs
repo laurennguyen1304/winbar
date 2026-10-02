@@ -16,6 +16,8 @@ pub const MAX_LABEL: usize = 80;
 pub const MAX_SUMMARY: usize = 200;
 /// Longest text handed to the full card.
 pub const MAX_DETAIL: usize = 16_000;
+/// Longest line taken from a reply for the "finished" notice (SPEC-claude-notices §3).
+pub const MAX_NOTICE: usize = 140;
 /// A session id is a UUID; anything much longer is not one.
 pub const MAX_ID: usize = 128;
 /// Longest working directory kept. A path is a few hundred characters; the cap only stops a silly value.
@@ -50,8 +52,30 @@ pub enum Message {
     UserPromptSubmit {
         session: String,
     },
+    /// The turn ended. The last two fields are absent on a line from a relay older than SPEC-claude-notices.
     Stop {
         session: String,
+        #[serde(default)]
+        cwd: String,
+        /// One line from the reply that ended the turn; empty when there was none.
+        #[serde(default)]
+        summary: String,
+    },
+    /// The turn ended in an error. `reason` is Claude Code's error type, e.g. `rate_limit`.
+    StopFailure {
+        session: String,
+        #[serde(default)]
+        cwd: String,
+        #[serde(default)]
+        reason: String,
+    },
+    SubagentStart {
+        session: String,
+        agent: String,
+    },
+    SubagentStop {
+        session: String,
+        agent: String,
     },
 }
 
@@ -105,9 +129,52 @@ pub fn from_hook(raw: &[u8]) -> Option<Message> {
             tool_use_id,
         }),
         "UserPromptSubmit" => Some(Message::UserPromptSubmit { session }),
-        "Stop" => Some(Message::Stop { session }),
+        "Stop" => Some(Message::Stop {
+            session,
+            cwd: text(map, "cwd", MAX_CWD),
+            summary: summary_line(
+                map.get("last_assistant_message")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default(),
+            ),
+        }),
+        "StopFailure" => Some(Message::StopFailure {
+            session,
+            cwd: text(map, "cwd", MAX_CWD),
+            reason: text(map, "error", MAX_ID),
+        }),
+        event @ ("SubagentStart" | "SubagentStop") => {
+            let agent = text(map, "agent_id", MAX_ID);
+            if agent.is_empty() {
+                return None;
+            }
+            Some(if event == "SubagentStart" {
+                Message::SubagentStart { session, agent }
+            } else {
+                Message::SubagentStop { session, agent }
+            })
+        }
         _ => None,
     }
+}
+
+/// The one line of a reply the notch shows when a turn finishes: the first line with words in it, without the
+/// markdown that opens it, cut to `MAX_NOTICE`. A reply is the model's own text and can be pages long; the rest
+/// of it never leaves the relay.
+pub fn summary_line(reply: &str) -> String {
+    reply
+        .lines()
+        .map(|line| line.trim().trim_start_matches(['#', '-', '*', '>', ' ']).trim())
+        .find(|line| !line.starts_with("```") && line.chars().any(char::is_alphanumeric))
+        .map(|line| cut(line, MAX_NOTICE))
+        .unwrap_or_default()
+}
+
+/// Claude Code's error type as a plain code: lower-case letters and underscores, or `unknown`. The page turns
+/// the code into words of its own, so nothing a sender wrote here is ever drawn.
+pub fn reason_code(raw: &str) -> String {
+    let plain = !raw.is_empty() && raw.len() <= 40 && raw.chars().all(|c| c.is_ascii_lowercase() || c == '_');
+    if plain { raw.to_string() } else { "unknown".to_string() }
 }
 
 /// The line to write to the pipe, newline included.
@@ -504,8 +571,82 @@ mod tests {
         assert_eq!(
             from_hook(&raw),
             Some(Message::Stop {
-                session: "a".into()
+                session: "a".into(),
+                cwd: String::new(),
+                summary: String::new(),
             })
+        );
+    }
+
+    #[test]
+    fn a_finished_turn_carries_one_line_of_the_reply_and_no_more() {
+        let reply = "\n## Xong rồi\n\nĐã sửa 3 test ở `cart.ts`.\n- chi tiết một\n- chi tiết hai";
+        assert_eq!(
+            hook(json!({
+                "session_id": "a", "cwd": "C:\\work\\shop", "hook_event_name": "Stop",
+                "last_assistant_message": reply, "stop_hook_active": false
+            })),
+            Some(Message::Stop { session: "a".into(), cwd: "C:\\work\\shop".into(), summary: "Xong rồi".into() })
+        );
+        assert_eq!(summary_line("- **Đã xong** phần đầu"), "Đã xong** phần đầu");
+        assert_eq!(summary_line("```ts\nconst a = 1;\n```\nMã ở trên."), "const a = 1;");
+        assert_eq!(summary_line("---\n\n> trích"), "trích");
+        assert_eq!(summary_line(""), "");
+        assert_eq!(summary_line("\n \n***\n"), "");
+        let long = "a".repeat(500);
+        let line = summary_line(&long);
+        assert_eq!(line.chars().count(), MAX_NOTICE);
+        assert!(line.ends_with('…'));
+        // A reply that is not text at all is no summary, not an error.
+        assert_eq!(
+            hook(json!({ "session_id": "a", "hook_event_name": "Stop", "last_assistant_message": { "x": 1 } })),
+            Some(Message::Stop { session: "a".into(), cwd: String::new(), summary: String::new() })
+        );
+    }
+
+    #[test]
+    fn a_failed_turn_carries_the_error_type() {
+        assert_eq!(
+            hook(json!({ "session_id": "a", "cwd": "C:\\w", "hook_event_name": "StopFailure", "error": "rate_limit",
+                         "error_details": "429 Too Many Requests" })),
+            Some(Message::StopFailure { session: "a".into(), cwd: "C:\\w".into(), reason: "rate_limit".into() })
+        );
+        assert_eq!(
+            hook(json!({ "session_id": "a", "hook_event_name": "StopFailure" })),
+            Some(Message::StopFailure { session: "a".into(), cwd: String::new(), reason: String::new() })
+        );
+        for (raw, code) in [
+            ("rate_limit", "rate_limit"),
+            ("", "unknown"),
+            ("Rate Limit", "unknown"),
+            ("<b>x</b>", "unknown"),
+            ("bấm cho phép", "unknown"),
+        ] {
+            assert_eq!(reason_code(raw), code, "{raw:?}");
+        }
+        assert_eq!(reason_code(&"a".repeat(41)), "unknown");
+    }
+
+    #[test]
+    fn subagents_are_followed_by_their_id() {
+        let event = |name: &str| json!({ "session_id": "a", "hook_event_name": name, "agent_id": "agent-1", "agent_type": "Explore" });
+        assert_eq!(
+            hook(event("SubagentStart")),
+            Some(Message::SubagentStart { session: "a".into(), agent: "agent-1".into() })
+        );
+        assert_eq!(
+            hook(event("SubagentStop")),
+            Some(Message::SubagentStop { session: "a".into(), agent: "agent-1".into() })
+        );
+        assert!(hook(json!({ "session_id": "a", "hook_event_name": "SubagentStart" })).is_none(), "no id");
+    }
+
+    #[test]
+    fn a_line_from_an_older_relay_still_reads() {
+        let line = br#"{"event":"Stop","session":"a"}"#;
+        assert_eq!(
+            serde_json::from_slice::<Message>(line).ok(),
+            Some(Message::Stop { session: "a".into(), cwd: String::new(), summary: String::new() })
         );
     }
 

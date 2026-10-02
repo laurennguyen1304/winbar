@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ClaudeIcon, ROTATE_MS } from "./ClaudeIcon";
 import type { ClaudeSession } from "./native";
 import { SessionsCard } from "./SessionsCard";
+import { resetForTests as resetApprovals, setForTests as setApprovals } from "./approvals";
 import { resetForTests } from "./store";
 
 const { native } = vi.hoisted(() => ({
@@ -43,6 +44,7 @@ function session(over: Partial<ClaudeSession> & Pick<ClaudeSession, "id">): Clau
 describe("SessionsCard", () => {
   beforeEach(() => {
     resetForTests();
+    resetApprovals();
     native.sessions = [
       session({
         id: "a",
@@ -77,6 +79,17 @@ describe("SessionsCard", () => {
     render(<SessionsCard />);
     expect(await screen.findByText("Cooking · Bash")).toBeInTheDocument();
     expect(screen.getByText("wait for you")).toBeInTheDocument();
+  });
+
+  it("counts the subagents a working session has running, and none for an idle one", async () => {
+    native.sessions = [
+      session({ id: "a", title: "firefish", phase: "tool", tool: "Agent" }),
+      session({ id: "c", title: "brain", phase: "idle" }),
+    ];
+    setApprovals({ agents: { a: 2, c: 1 } });
+    render(<SessionsCard />);
+    expect(await screen.findByText("+2 agent")).toBeInTheDocument();
+    expect(screen.queryByText("+1 agent")).toBeNull();
   });
 
   it("opens a terminal in the folder of the row that was clicked", async () => {

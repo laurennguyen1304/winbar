@@ -25,12 +25,16 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 
 use crate::settings::{Settings, SettingsState};
 pub use install::{HookPreview, HookStatus};
-use pending::{Answer, Approval, Book};
+// File names dropped on the notch are drawn too (SPEC-claude-drop §3).
+pub(crate) use protocol::clean;
+use pending::{Answer, Approval, Book, Notice, NoticeKind};
 
 /// A request arrived, was answered, or went away.
 pub const APPROVALS_CHANGED: &str = "claude-approvals-changed";
-/// A session took a step, or started a new turn.
+/// A session took a step, started a new turn, or its count of running subagents changed.
 pub const STEPS_CHANGED: &str = "claude-steps-changed";
+/// A turn ended and there is something to say about it (SPEC-claude-notices).
+pub const NOTICES_CHANGED: &str = "claude-notices-changed";
 
 /// The widget that draws the requests. With it turned off nobody can answer one.
 const WIDGET: &str = "claude-sessions";
@@ -94,6 +98,59 @@ fn folder_name(cwd: &str) -> &str {
 /// Longest session or project name drawn. A folder name longer than this is cut; it only labels the request.
 const MAX_NAME: usize = 80;
 
+/// What a session is called on the notch, cleaned and capped: its title, and its project when it has one.
+fn who(cwd: &str, orca_root: &str) -> (String, Option<String>) {
+    let name = |text: &str| protocol::capped(&protocol::clean(text, false), MAX_NAME);
+    let cwd = protocol::capped(cwd, protocol::MAX_CWD);
+    let (title, project) = super::model::title_for(&cwd, folder_name(&cwd), orca_root);
+    (name(&title), project.map(|p| name(&p)))
+}
+
+/// The end of a turn: its subagents and open requests are over, and the page gets a notice about it.
+///
+/// What goes into the notice is cleaned and capped here whoever sent it, like a request (see `view`).
+fn turn_ended(book: &Mutex<Book>, session: &str, cwd: &str, orca_root: &str, now: u64, outcome: Result<&str, &str>, notify: &dyn Fn(&'static str)) {
+    if with_book(book, |b| b.turn_over(session)).unwrap_or(0) > 0 {
+        notify(APPROVALS_CHANGED);
+    }
+    if with_book(book, |b| b.clear_agents(session)) == Some(true) {
+        notify(STEPS_CHANGED);
+    }
+    let (title, project) = who(cwd, orca_root);
+    let turn_ms = with_book(book, |b| b.turn_ended(session, now)).flatten();
+    let notice = match outcome {
+        Ok(summary) => {
+            // Cleaned first, so a line break someone smuggled in is already a visible mark when the line is cut.
+            let line = protocol::summary_line(&protocol::clean(summary, false));
+            Notice {
+                id: String::new(),
+                kind: NoticeKind::Finished,
+                session_id: session.to_string(),
+                title,
+                project,
+                summary: (!line.is_empty()).then_some(line),
+                reason: None,
+                turn_ms,
+                at: now,
+            }
+        }
+        Err(reason) => Notice {
+            id: String::new(),
+            kind: NoticeKind::Failed,
+            session_id: session.to_string(),
+            title,
+            project,
+            summary: None,
+            reason: Some(protocol::reason_code(reason)),
+            turn_ms: None,
+            at: now,
+        },
+    };
+    if with_book(book, |b| b.notice(notice)).is_some() {
+        notify(NOTICES_CHANGED);
+    }
+}
+
 /// A request as the page will draw it.
 ///
 /// Every string that came over the pipe is cleaned and capped here, whatever the relay already did: the relay is
@@ -108,20 +165,18 @@ fn view(
     orca_root: &str,
     now: u64,
 ) -> Approval {
-    let name = |text: &str| protocol::capped(&protocol::clean(text, false), MAX_NAME);
-    let cwd = protocol::capped(cwd, protocol::MAX_CWD);
     let tool = protocol::capped(tool, protocol::MAX_ID);
     // A little over the relay's own limit, so a string the relay already cut and marked is not cut again.
     let cut_here = protocol::truncate_strings(&mut input, protocol::MAX_STRING + 100);
-    let (title, project) = super::model::title_for(&cwd, folder_name(&cwd), orca_root);
+    let (title, project) = who(cwd, orca_root);
     let (detail, cut_detail) = protocol::detail(&input);
     let (summary, whole) = protocol::summary(&tool, &input);
     let truncated = truncated || cut_here || cut_detail;
     Approval {
         id: String::new(),
         session_id: protocol::capped(session, protocol::MAX_ID),
-        title: name(&title),
-        project: project.map(|p| name(&p)),
+        title,
+        project,
         tool: protocol::clean(&tool, false),
         summary,
         // What was cut cannot have been shown, whatever the line looks like.
@@ -175,17 +230,32 @@ fn serve(
         }
         Message::UserPromptSubmit { session } => {
             let session = id_of(&session);
-            if with_book(book, |b| b.clear_steps(&session)) == Some(true) {
+            let cleared = with_book(book, |b| {
+                b.turn_started(&session, now);
+                // Both run: `|`, not `||`.
+                b.clear_steps(&session) | b.clear_agents(&session)
+            });
+            if cleared == Some(true) {
                 notify(STEPS_CHANGED);
             }
             if with_book(book, |b| b.turn_over(&session)).unwrap_or(0) > 0 {
                 notify(APPROVALS_CHANGED);
             }
         }
-        Message::Stop { session } => {
-            let session = id_of(&session);
-            if with_book(book, |b| b.turn_over(&session)).unwrap_or(0) > 0 {
-                notify(APPROVALS_CHANGED);
+        Message::Stop { session, cwd, summary } => {
+            turn_ended(book, &id_of(&session), &cwd, orca_root, now, Ok(&summary), notify);
+        }
+        Message::StopFailure { session, cwd, reason } => {
+            turn_ended(book, &id_of(&session), &cwd, orca_root, now, Err(&reason), notify);
+        }
+        Message::SubagentStart { session, agent } => {
+            if with_book(book, |b| b.agent_started(&id_of(&session), &id_of(&agent))) == Some(true) {
+                notify(STEPS_CHANGED);
+            }
+        }
+        Message::SubagentStop { session, agent } => {
+            if with_book(book, |b| b.agent_stopped(&id_of(&session), &id_of(&agent))) == Some(true) {
+                notify(STEPS_CHANGED);
             }
         }
         Message::PermissionRequest {
@@ -389,6 +459,31 @@ pub fn claude_steps<R: Runtime>(
         return BTreeMap::new();
     }
     with_book(&state.book, |b| b.steps()).unwrap_or_default()
+}
+
+/// How many subagents each session has running (SPEC-claude-notices §4).
+#[tauri::command]
+pub fn claude_agents<R: Runtime>(
+    window: WebviewWindow<R>,
+    state: tauri::State<'_, ApprovalsState>,
+) -> BTreeMap<String, usize> {
+    if !from_notch(&window) {
+        return BTreeMap::new();
+    }
+    with_book(&state.book, |b| b.agents()).unwrap_or_default()
+}
+
+/// The turns that ended lately, oldest first (SPEC-claude-notices §3). A notice can carry a line of what Claude
+/// wrote, so like a request it goes to the notch and nowhere else.
+#[tauri::command]
+pub fn claude_notices<R: Runtime>(
+    window: WebviewWindow<R>,
+    state: tauri::State<'_, ApprovalsState>,
+) -> Vec<Notice> {
+    if !from_notch(&window) {
+        return Vec::new();
+    }
+    with_book(&state.book, |b| b.notices()).unwrap_or_default()
 }
 
 fn this_exe() -> Result<PathBuf, String> {
@@ -611,6 +706,29 @@ mod tests {
         );
     }
 
+    #[test]
+    fn a_notice_is_cleaned_capped_and_timed_whoever_sent_it() {
+        let book = Mutex::new(Book::default());
+        let quiet = |_: &'static str| {};
+        with_book(&book, |b| b.turn_started("s1", 1_000));
+        let reply = format!("{}\nsecond line", "x".repeat(400));
+        turn_ended(&book, "s1", "C:\\work\\shop", "", 46_000, Ok(&reply), &quiet);
+        turn_ended(&book, "s2", "C:\\work\\other", "", 50_000, Ok(""), &quiet);
+        turn_ended(&book, "s3", "", "", 51_000, Err("<script>"), &quiet);
+
+        let notices = with_book(&book, |b| b.notices()).unwrap();
+        let line = notices[0].summary.as_deref().unwrap();
+        assert_eq!(line.chars().count(), protocol::MAX_NOTICE);
+        assert!(!line.contains("second"));
+        assert_eq!(notices[0].turn_ms, Some(45_000));
+        assert_eq!(notices[0].at, 46_000);
+        // No reply, and a turn whose start winbar never saw.
+        assert_eq!((notices[1].summary.as_deref(), notices[1].turn_ms), (None, None));
+        // Whatever the sender called the error, the page gets a code it knows or `unknown`.
+        assert_eq!(notices[2].reason.as_deref(), Some("unknown"));
+        assert_eq!(notices[2].title, "(không rõ)");
+    }
+
     #[cfg(windows)]
     mod over_a_real_pipe {
         use super::super::*;
@@ -812,6 +930,57 @@ mod tests {
             );
             f.server.join().expect("server");
             assert!(f.book.lock().unwrap().list().is_empty());
+        }
+
+        /// Sends one event and waits until the server has dealt with it, so the next one cannot overtake it.
+        fn relay_and_wait(f: &Fixture, hook: serde_json::Value, done: impl Fn(&Book) -> bool) {
+            relay(&f.name, hook);
+            let until = Instant::now() + Duration::from_secs(3);
+            while !done(&f.book.lock().unwrap()) {
+                assert!(Instant::now() < until, "the event never arrived");
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        }
+
+        #[test]
+        fn the_end_of_a_turn_leaves_a_notice_and_no_subagents() {
+            let f = serving("notices", 5);
+            let event = |name: &str, more: serde_json::Value| {
+                let mut hook = serde_json::json!({ "session_id": "s1", "cwd": "C:\\work\\shop", "hook_event_name": name });
+                hook.as_object_mut().unwrap().extend(more.as_object().unwrap().clone());
+                hook
+            };
+            relay_and_wait(&f, event("UserPromptSubmit", serde_json::json!({ "prompt": "secret" })), |_| true);
+            relay_and_wait(&f, event("SubagentStart", serde_json::json!({ "agent_id": "a1" })), |b| {
+                b.agents().get("s1") == Some(&1)
+            });
+            relay_and_wait(&f, event("SubagentStart", serde_json::json!({ "agent_id": "a2" })), |b| {
+                b.agents().get("s1") == Some(&2)
+            });
+            relay_and_wait(
+                &f,
+                event("Stop", serde_json::json!({ "last_assistant_message": "## Xong\u{202e} rồi\nphần còn lại" })),
+                |b| b.notices().len() == 1,
+            );
+            relay_and_wait(&f, event("StopFailure", serde_json::json!({ "error": "rate_limit" })), |b| {
+                b.notices().len() == 2
+            });
+            f.server.join().expect("server");
+
+            let book = f.book.lock().unwrap();
+            assert!(book.agents().is_empty(), "the turn ended with a subagent still counted");
+            let notices = book.notices();
+            assert_eq!(notices[0].kind, NoticeKind::Finished);
+            assert_eq!(notices[0].title, "shop");
+            // One line, and the character that would have reversed it is spelled out.
+            assert_eq!(notices[0].summary.as_deref(), Some("Xong\\u{202e} rồi"));
+            assert_eq!(notices[1].kind, NoticeKind::Failed);
+            assert_eq!(notices[1].reason.as_deref(), Some("rate_limit"));
+            assert_eq!(notices[1].summary, None);
+            let events = f.events.lock().unwrap();
+            assert_eq!(events.iter().filter(|e| **e == NOTICES_CHANGED).count(), 2);
+            // Two subagents starting, and the stop that cleared them.
+            assert_eq!(events.iter().filter(|e| **e == STEPS_CHANGED).count(), 3);
         }
 
         #[test]

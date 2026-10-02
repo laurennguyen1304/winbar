@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { openTerminal } from "../../command-bar/native";
 import { Card, CardLabel } from "../../shell/ui";
-import { useSteps } from "./approvals";
+import { useAgents, useSteps } from "./approvals";
 import { ClaudeIcon } from "./ClaudeIcon";
 import { openDesktop, type ClaudeSession } from "./native";
 import { ago, groupSessions, phaseLook, rowTime } from "./phase";
@@ -31,6 +31,7 @@ function Row({
   now,
   dim,
   steps,
+  agents = 0,
 }: {
   session: ClaudeSession;
   extra: Readonly<Record<string, string[]>>;
@@ -39,6 +40,8 @@ function Row({
   dim?: boolean;
   /** What the session did last, oldest first. Only shown while it is working. */
   steps?: readonly string[];
+  /** Subagents it has running right now (SPEC-claude-notices §4). */
+  agents?: number;
 }) {
   const look = phaseLook(session);
   const isHistory = session.source === "history";
@@ -71,6 +74,10 @@ function Row({
           {session.project && <span className={styles.project}>{session.project}</span>}
           <span className={styles.worktree}>{session.title}</span>
           <span className={styles.badge}>{session.source === "history" ? "đã xong" : session.source}</span>
+          {/* An idle session has no turn running, so whatever count is left over is not worth showing. */}
+          {agents > 0 && session.phase !== "idle" && (
+            <span className={styles.badge} title="Agent con đang chạy">{`+${agents} agent`}</span>
+          )}
         </span>
         {/* Status and time share the second line, so neither line is left with an empty half. */}
         <span className={styles.statusLine}>
@@ -104,6 +111,7 @@ export function SessionsCard() {
   const rotateMs = options.iconRotateSeconds * 1000;
   const now = useNow();
   const steps = useSteps();
+  const agents = useAgents();
   const { live, quiet } = groupSessions(sessions);
 
   // A file dropped into the icons folder shows up the next time the panel opens, without a restart.
@@ -119,7 +127,7 @@ export function SessionsCard() {
       ) : (
         <div className={styles.list}>
           {live.map((s) => (
-            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} steps={steps[s.id]} />
+            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} steps={steps[s.id]} agents={agents[s.id]} />
           ))}
         </div>
       )}

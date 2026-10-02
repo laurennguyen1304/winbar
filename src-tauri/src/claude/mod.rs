@@ -8,6 +8,7 @@
 
 mod accounts;
 pub mod approvals;
+pub mod drop;
 mod icons;
 mod model;
 mod sessions;
@@ -41,6 +42,35 @@ const WATCH_BUSY: Duration = Duration::from_secs(3);
 const WATCH_IDLE: Duration = Duration::from_secs(5);
 /// Keep checking at the busy rate for this long after the last change, so a burst is not read at the idle rate.
 const BUSY_FOR: Duration = Duration::from_secs(20);
+/// …and while a session winbar itself just started is on its way (a file dropped on the notch): the user is
+/// looking at the notch for it, and the idle rate would show it up to five seconds late.
+const WATCH_EXPECTING: Duration = Duration::from_millis(400);
+const EXPECT_FOR: Duration = Duration::from_secs(20);
+
+/// Until when a new session is expected, and what wakes the watcher from its wait when that is set.
+static EXPECTING: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+static WAKE: std::sync::Condvar = std::sync::Condvar::new();
+
+/// Says a session is about to appear, so the watcher looks often for a short while instead of at its usual rate.
+pub fn expect_session() {
+    if let Ok(mut until) = EXPECTING.lock() {
+        *until = Some(std::time::Instant::now() + EXPECT_FOR);
+    }
+    WAKE.notify_all();
+}
+
+/// Waits for the watcher's next look: `usual` long, or the short interval while a session is expected. Returns
+/// early when `expect_session` is called meanwhile.
+fn wait_for_next_look(usual: Duration) {
+    let Ok(until) = EXPECTING.lock() else {
+        std::thread::sleep(usual);
+        return;
+    };
+    let expecting = |until: &Option<std::time::Instant>| until.is_some_and(|t| t > std::time::Instant::now());
+    let wait = if expecting(&until) { WATCH_EXPECTING } else { usual };
+    // A wake-up with nothing expected is a spurious one: the look that follows costs one directory listing.
+    let _ = WAKE.wait_timeout(until, wait);
+}
 
 /// Name, size and modified time of every state file — enough to notice a change without opening any of them.
 ///
@@ -261,7 +291,7 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) {
             loop {
                 // Fast while anything is moving, slow once everything has been quiet for a while.
                 let busy = last_change.elapsed() < BUSY_FOR;
-                std::thread::sleep(if busy { WATCH_BUSY } else { WATCH_IDLE });
+                wait_for_next_look(if busy { WATCH_BUSY } else { WATCH_IDLE });
                 let Some(state) = app.try_state::<ClaudeState>() else {
                     continue;
                 };
