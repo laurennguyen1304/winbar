@@ -4,6 +4,31 @@ Ghi theo ngày, mới nhất ở trên. Mỗi mục là một thay đổi ngư�
 các file `SPEC-*.md` ở gốc repo. Từ 0.2.0, mục nào đổi số phiên bản thì tiêu đề ghi cả số đó: winbar trên máy bạn
 sẽ báo bản mới trên pill.
 
+## 0.4.0 — 02/10/2026
+
+### Tính năng
+
+- **Thả file vào notch để hỏi Claude.** Kéo một file từ Explorer thả lên pill: pill báo *Thả để hỏi Claude*, và
+  thả xong thì một cửa sổ terminal mở ra với Claude Code đã biết file đó là file nào. Claude chưa đọc gì cho tới khi
+  bạn gõ câu hỏi. Nhận PDF, ảnh (`.png` `.jpg` `.jpeg` `.gif` `.webp`), `.csv` `.xlsx` `.xls`, `.docx` `.doc`,
+  tối đa 10 file một lần; loại khác, thư mục, shortcut và đường dẫn mạng bị từ chối ngay lúc kéo vào, pill nói lý do.
+  Phiên mở kiểu này **luôn hỏi quyền** dù cài đặt thường ngày của bạn là gì, và đứng trong một thư mục riêng của
+  winbar chứ không phải thư mục chứa file — nên lần đầu Claude Code hỏi có tin thư mục `claude-drop` không (trả lời
+  một lần), và khi trả lời câu hỏi đầu tiên Claude xin phép đọc file. Cần widget Phiên Claude đang bật và `claude`
+  có trên `PATH`.
+- **Báo khi phiên Claude dừng.** Một lượt chạy từ 30 giây trở lên kết thúc thì pill hiện `✓ <dự án> · xong` kèm
+  một dòng từ câu trả lời cuối, trong 5 giây. Phiên dừng vì lỗi hay chạm giới hạn dùng thì luôn báo, trong 8 giây.
+  Thông báo không bao giờ che một yêu cầu đang chờ duyệt. Tắt ở Cài đặt › Claude › *Báo khi phiên dừng*.
+- **Số agent con.** Phiên đang chạy agent con hiện `+N agent` trên card Phiên Claude và `+N` trên pill.
+
+  Hai mục trên dùng hook duyệt quyền. **Đã cài hook từ 0.3.0 thì phải cài lại:** Cài đặt › Claude sẽ báo hook chưa
+  đủ, bấm *Cài lại…* (vẫn xem trước và sao lưu như cũ), rồi mở lại phiên Claude Code.
+
+### Thay đổi
+
+- **Phiên mới hiện lên notch nhanh hơn sau khi thả file**: trong 20 giây sau một lần thả, winbar nhìn danh sách phiên
+  0,4 giây một lần thay vì 5 giây.
+
 ## 0.3.0 — 01/10/2026
 
 ### Tính năng
