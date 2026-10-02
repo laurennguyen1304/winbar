@@ -1,6 +1,6 @@
 # Spec: claude-notices
 
-> Trạng thái: **đã làm, 02/10/2026 — chưa commit.** chủ dự án chọn hai việc này từ danh sách tính năng của coucou
+> Trạng thái: **phát hành trong 0.4.0, 02/10/2026.** chủ dự án chọn hai việc này từ danh sách tính năng của coucou
 > ("1, 3") và chốt hai điểm ở §7 cùng ngày. Đã thử ở bản dev: chủ dự án thấy cả thông báo xong lẫn thông báo lỗi trên
 > pill (gửi qua relay thật bằng sự kiện giả), và một lượt thật 74 giây đã sinh thông báo có dòng tóm tắt. Chưa thử:
 > huy hiệu agent con với phiên thật, và một lỗi thật.
