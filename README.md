@@ -18,7 +18,7 @@
 >   từ câu trả lời cuối; dừng vì lỗi hay chạm giới hạn dùng thì luôn báo.
 > - **Số agent con.** Phiên đang chạy agent con hiện `+N agent` trên card Phiên Claude và `+N` trên pill.
 > - **Đang dùng 0.3.0 và đã bật duyệt quyền?** Sau khi cập nhật, vào Cài đặt › Claude và bấm *Cài lại…*, rồi mở lại
->   phiên Claude Code: hai mục sau cần ba sự kiện hook mới.
+>   phiên Claude Code: thông báo phiên dừng và số agent con cần ba sự kiện hook mới.
 >
 > Đầy đủ và các bản trước: [`CHANGELOG.md`](CHANGELOG.md).
 
