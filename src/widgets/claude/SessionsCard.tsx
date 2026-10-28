@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { openTerminal } from "../../command-bar/native";
 import { Card, CardLabel } from "../../shell/ui";
-import { useAgents, useSteps } from "./approvals";
+import { useAgents, useApprovals, useOutcomes, useSteps, type ClaudeApproval, type ClaudeNotice } from "./approvals";
 import { ClaudeIcon } from "./ClaudeIcon";
 import { openDesktop, type ClaudeSession } from "./native";
-import { ago, groupSessions, phaseLook, rowTime } from "./phase";
+import { ago, groupSessions, rowStatus, rowTime } from "./phase";
 import { refreshIcons, useClaude } from "./store";
 import styles from "./Claude.module.css";
 
@@ -32,6 +32,8 @@ function Row({
   dim,
   steps,
   agents = 0,
+  approval,
+  outcome,
 }: {
   session: ClaudeSession;
   extra: Readonly<Record<string, string[]>>;
@@ -42,8 +44,11 @@ function Row({
   steps?: readonly string[];
   /** Subagents it has running right now (SPEC-claude-notices §4). */
   agents?: number;
+  /** The request of this session waiting on the notch, and how its last turn ended (SPEC-claude-notices §4b). */
+  approval?: ClaudeApproval;
+  outcome?: ClaudeNotice;
 }) {
-  const look = phaseLook(session);
+  const look = rowStatus(session, approval, outcome);
   const isHistory = session.source === "history";
   const status = isHistory ? `${session.turns ?? 0} lượt · ${ago(session.lastActiveAt, now)}` : look.label;
   // An idle session's steps are over; the line is for watching work happen.
@@ -83,8 +88,12 @@ function Row({
         <span className={styles.statusLine}>
           <span className={styles.status} style={{ color: isHistory ? undefined : look.color }}>
             {status}
+            {/* Read-only on purpose: a request is answered on the pill or its card, never from this line. */}
+            {!isHistory && look.text && <span className={styles.statusText}> {look.text}</span>}
           </span>
-          <span className={styles.time}>{isHistory ? "" : rowTime(session, now)}</span>
+          <span className={styles.time}>
+            {isHistory ? "" : look.at !== undefined ? ago(look.at, now) : rowTime(session, now)}
+          </span>
         </span>
         {recent.length > 0 && (
           <span className={styles.steps} data-testid={`steps-${session.id}`}>
@@ -112,7 +121,15 @@ export function SessionsCard() {
   const now = useNow();
   const steps = useSteps();
   const agents = useAgents();
+  const approvals = useApprovals();
+  const outcomes = useOutcomes();
   const { live, quiet } = groupSessions(sessions);
+  // "Báo khi phiên dừng" switched off is how someone keeps Claude's words off a shared screen (SPEC-claude-notices
+  // §6). The row then still says that the turn ended, and when — not what the reply said.
+  const ending = (id: string): ClaudeNotice | undefined => {
+    const outcome = outcomes[id];
+    return outcome && !options.stopNotice ? { ...outcome, summary: undefined } : outcome;
+  };
 
   // A file dropped into the icons folder shows up the next time the panel opens, without a restart.
   useEffect(() => {
@@ -127,7 +144,18 @@ export function SessionsCard() {
       ) : (
         <div className={styles.list}>
           {live.map((s) => (
-            <Row key={s.id} session={s} extra={icons} rotateMs={rotateMs} now={now} steps={steps[s.id]} agents={agents[s.id]} />
+            <Row
+              key={s.id}
+              session={s}
+              extra={icons}
+              rotateMs={rotateMs}
+              now={now}
+              steps={steps[s.id]}
+              agents={agents[s.id]}
+              // The oldest one: it is the one on the pill.
+              approval={approvals.find((a) => a.sessionId === s.id)}
+              outcome={ending(s.id)}
+            />
           ))}
         </div>
       )}

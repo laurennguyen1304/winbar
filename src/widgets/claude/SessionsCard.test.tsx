@@ -1,12 +1,14 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_SETTINGS } from "../../shell/settings";
 import { ClaudeIcon, ROTATE_MS } from "./ClaudeIcon";
 import type { ClaudeSession } from "./native";
 import { SessionsCard } from "./SessionsCard";
 import { resetForTests as resetApprovals, setForTests as setApprovals } from "./approvals";
 import { resetForTests } from "./store";
 
-const { native } = vi.hoisted(() => ({
+const { native, saved } = vi.hoisted(() => ({
+  saved: { settings: undefined as unknown },
   native: {
     sessions: [] as ClaudeSession[],
     icons: {} as Record<string, string[]>,
@@ -30,6 +32,10 @@ vi.mock("./native", () => ({
     return Promise.resolve();
   },
 }));
+vi.mock("../../shell/native", () => ({
+  loadSettings: () => Promise.resolve(saved.settings),
+  onSettingsChanged: () => () => {},
+}));
 vi.mock("../../command-bar/native", () => ({
   openTerminal: (path: string) => {
     native.opened.push(path);
@@ -45,6 +51,7 @@ describe("SessionsCard", () => {
   beforeEach(() => {
     resetForTests();
     resetApprovals();
+    saved.settings = undefined;
     native.sessions = [
       session({
         id: "a",
@@ -90,6 +97,62 @@ describe("SessionsCard", () => {
     render(<SessionsCard />);
     expect(await screen.findByText("+2 agent")).toBeInTheDocument();
     expect(screen.queryByText("+1 agent")).toBeNull();
+  });
+
+  it("says what each session is waiting for, finished or stopped on", async () => {
+    const at = Date.now() - 6 * 60_000;
+    native.sessions = [
+      session({ id: "a", title: "firefish", phase: "permission" }),
+      session({ id: "b", title: "brain", phase: "idle", startedAt: Date.now() - 3_600_000 }),
+      session({ id: "c", title: "blog", phase: "idle" }),
+      session({ id: "d", title: "shop", phase: "thinking" }),
+    ];
+    const ended = { id: "1", sessionId: "b", title: "brain", at };
+    setApprovals({
+      approvals: [
+        {
+          id: "r1",
+          sessionId: "a",
+          title: "firefish",
+          tool: "Bash",
+          summary: "Bash · git push",
+          complete: true,
+          detail: "command: git push",
+          truncated: false,
+          receivedAt: 1,
+        },
+      ],
+      outcomes: {
+        b: { ...ended, kind: "finished", summary: "Đã gộp 3 ghi chú trùng" },
+        c: { ...ended, sessionId: "c", kind: "failed", reason: "rate_limit" },
+        // Left over from the turn before: the session is working again.
+        d: { ...ended, sessionId: "d", kind: "finished", summary: "việc cũ" },
+      },
+    });
+    render(<SessionsCard />);
+    expect(await screen.findByText("Bash · git push")).toBeInTheDocument();
+    expect(screen.getByText(/Chờ duyệt:/)).toBeInTheDocument();
+    // Nothing to press on the row: a request is answered where all of it can be seen.
+    expect(screen.queryByText("Cho phép")).toBeNull();
+    expect(screen.getByText("Đã gộp 3 ghi chú trùng")).toBeInTheDocument();
+    expect(screen.getByText(/Xong —/)).toBeInTheDocument();
+    expect(screen.getByText("Dừng: chạm giới hạn dùng")).toBeInTheDocument();
+    // When it ended, not how long the session has been open.
+    expect(screen.getAllByText("6 phút")).toHaveLength(2);
+    expect(screen.queryByText(/đã chạy/)).toBeNull();
+    expect(screen.queryByText("việc cũ")).toBeNull();
+    expect(screen.getByText("Thinking")).toBeInTheDocument();
+  });
+
+  it("keeps the reply's line off the row when stop notices are switched off", async () => {
+    saved.settings = { ...DEFAULT_SETTINGS, claude: { ...DEFAULT_SETTINGS.claude, stopNotice: false } };
+    native.sessions = [session({ id: "b", title: "brain", phase: "idle" })];
+    setApprovals({
+      outcomes: { b: { id: "1", sessionId: "b", title: "brain", kind: "finished", summary: "bí mật", at: Date.now() } },
+    });
+    render(<SessionsCard />);
+    expect(await screen.findByText("Xong")).toBeInTheDocument();
+    expect(screen.queryByText("bí mật")).toBeNull();
   });
 
   it("opens a terminal in the folder of the row that was clicked", async () => {

@@ -101,13 +101,33 @@ Một cú bấm trùng đúng lúc hết hạn không bị mất: trước khi b
 
 | Dấu hiệu | Ý nghĩa |
 |---|---|
-| Client đóng pipe | Claude Code đã dừng hook (bạn bấm Esc, từ chối ở terminal, hết giờ) |
+| Client đóng pipe | Claude Code đã dừng hook: cả lượt bị huỷ (Esc), hoặc hook hết giờ |
+| Terminal của phiên thôi hỏi (file phiên của Claude Code, xem dưới) | Bạn đã trả lời ở terminal, cho phép hay từ chối |
 | `PostToolUse` cùng `tool_use_id` | Bạn đã cho phép ở terminal và tool chạy xong |
 | `Stop` hoặc `UserPromptSubmit` của phiên | Lượt đó đã qua |
 
-**Giới hạn đã biết:** cho phép ở terminal một lệnh chạy lâu (ví dụ build 5 phút) thì pill còn nằm đó tới khi lệnh
-xong hoặc hết 300 giây, vì Claude Code không phát sự kiện nào lúc tool *bắt đầu* chạy sau khi được duyệt. Bấm vào
-pill lúc đó vô hại: Claude Code bỏ qua câu trả lời đến sau.
+**Trả lời ở terminal (thêm 02/10/2026, chưa phát hành, chưa thử với Claude Code thật).** chủ dự án thấy: duyệt ở
+terminal rồi mà pill còn nằm khá lâu. Đọc mã Claude Code 2.1.287: hook `PermissionRequest` chỉ bị dừng cùng với cả
+lượt (`abortController` của lượt), **không** bị dừng khi hộp thoại ở terminal được trả lời. Nên với một lệnh được
+cho phép ở terminal, không có gì tới pipe cho tới `PostToolUse` — lệnh chạy bao lâu thì pill nằm bấy lâu; lệnh lỗi
+(`PostToolUseFailure`, winbar không nghe) hay bị từ chối thì tới hết lượt hoặc hết 300 giây.
+
+Thứ đổi đúng lúc bạn trả lời là file Claude Code tự ghi cho mỗi phiên đang chạy, `<thư mục Claude>/sessions/<pid>.json`:
+trường `status` là `waiting` khi terminal đang hỏi, và về `busy` khi hộp thoại đóng. Trong lúc một yêu cầu đang chờ,
+winbar đọc file của phiên đó mỗi giây:
+
+- đã thấy `waiting`, rồi thấy không còn `waiting` → gỡ pill, không trả lời gì (terminal đã có câu trả lời);
+- chưa từng thấy `waiting` → không làm gì. Yêu cầu có thể tới winbar trước khi Claude Code kịp ghi `waiting`, nên
+  riêng "không `waiting`" không nói lên điều gì;
+- không có file, file không đọc được, không có `status` (Claude Code cũ, hoặc định dạng đổi) → không làm gì, pill
+  cư xử như trước.
+
+File này **không phải định dạng được công bố**. winbar chỉ đọc `sessionId` và `status`, không giữ lại, không ghi
+log. Nếu Claude Code đổi nó, điều tệ nhất là pill lại nằm lâu như trước.
+
+**Giới hạn còn lại:** hai hộp thoại xếp hàng trong cùng một phiên (hai tool chạy song song cùng xin quyền): trả lời
+cái đầu ở terminal thì terminal vẫn đang hỏi cái sau, nên pill của cái đầu còn đó tới khi tool của nó xong, như
+trước. Bấm vào pill lúc đó vô hại: Claude Code bỏ qua câu trả lời đến sau.
 
 ### 4.5 Trên notch
 
@@ -344,7 +364,8 @@ Viết sau hai lượt đọc lại code: một lượt của người viết, m
 | WebView của winbar không có CSP (`"csp": null`, có từ trước module này) | Nếu sau này có một chỗ chèn được script vào cửa sổ notch, script đó gọi được lệnh trả lời. Hiện không tìm thấy chỗ chèn nào. Đặt CSP chặt là việc cho cả app và cần chạy thử app thật (ảnh `data:`, IPC của Tauri), nên chưa làm ở đây |
 | Tiến trình khác của chính bạn, cùng integrity | Nó gửi được yêu cầu giả lên pill (không tự duyệt được), và vốn đã sửa được `settings.json` của Claude Code. Không phải lớp winbar chặn được |
 | Chữ từ bảng chữ cái khác trông giống chữ Latin | `а` Cyrillic trong tên miền hay đường dẫn vẽ ra y như `a`. Chưa đánh dấu |
-| Pill còn treo sau khi cho phép ở terminal một lệnh chạy lâu | §4.4. Bấm vào không gây hại |
+| Pill còn treo sau khi trả lời ở terminal, khi hai yêu cầu của cùng phiên xếp hàng, hoặc Claude Code không ghi `status` | §4.4. Bấm vào không gây hại |
+| File phiên của Claude Code (`sessions/<pid>.json`) do chương trình khác cùng tài khoản sửa | Chỉ gỡ được pill, và terminal vẫn hỏi; không bao giờ thành một câu trả lời. Cùng mức với pipe |
 | Phiên không có người ngồi trước chờ tới 300 giây | §2. Đổi lại là duyệt được chúng từ notch |
 | File `winbar.exe` nằm ở chỗ tài khoản khác ghi được | Hook chạy file đó mỗi tool call, với quyền của bạn. Cũng là rủi ro sẵn có của khởi động cùng Windows; hook làm nó chạy thường xuyên hơn. Để exe trong thư mục của riêng bạn |
 | Bản sao lưu tích lại và chứa mọi thứ `settings.json` có (kể cả token trong `env`) | Không tự xoá. Đường dẫn hiện ra sau mỗi lần ghi để bạn tự dọn |

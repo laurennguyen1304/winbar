@@ -106,10 +106,14 @@ describe("StopNotices", () => {
   it("says a long turn is done, with the line Claude ended on, and takes itself off", async () => {
     await mount();
     arrive(notice({}));
-    expect(screen.getByText("shop-app")).toBeTruthy();
+    expect(screen.getByText("shop-app / checkout-fix")).toBeTruthy();
     expect(screen.getByText("· xong")).toBeTruthy();
     expect(screen.getByText("— Đã sửa 3 test ở cart.ts")).toBeTruthy();
-    pass(FINISHED_MS);
+    // Wider than a request's pill, so the name and the line are both there to read.
+    expect(screen.getByTestId("notch")).toHaveStyle({ width: "640px" });
+    pass(FINISHED_MS - 1);
+    expect(screen.getByText("· xong")).toBeTruthy();
+    pass(1);
     expect(screen.queryByText("· xong")).toBeNull();
   });
 
@@ -135,6 +139,10 @@ describe("StopNotices", () => {
     expect(screen.getByText("· dừng: chạm giới hạn dùng")).toBeTruthy();
     pass(FAILED_MS - FINISHED_MS);
     expect(screen.queryByText("· dừng: chạm giới hạn dùng")).toBeNull();
+  });
+
+  it("holds a finished notice seven seconds and a failed one ten", () => {
+    expect([FINISHED_MS, FAILED_MS]).toEqual([7_000, 10_000]);
   });
 
   it("never draws an error code it does not know", async () => {

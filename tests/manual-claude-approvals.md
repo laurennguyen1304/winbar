@@ -80,8 +80,11 @@ PowerShell đứng đúng tên pipe thật.
 - [ ] 👤 Lần khác, bấm **Từ chối**: Claude nhận lời từ chối ("Denied by the user from winbar.").
 - [ ] 👤 Một lệnh dài, hoặc một lần sửa file: pill có **Xem…** thay cho **Cho phép**. Bấm vào: thẻ mở, hiện đủ tham
       số. Rê chuột ra ngoài: thẻ vẫn mở. Nội dung dài thì phải cuộn hết mới bấm được **Cho phép**.
-- [ ] 👤 Lần khác, trả lời **trong terminal** trước: pill tự biến mất. Với lệnh chạy nhanh là gần như ngay; với lệnh
-      chạy lâu, pill có thể còn tới khi lệnh xong (giới hạn đã biết, spec §4.4).
+- [ ] 👤 Lần khác, trả lời **trong terminal** trước: pill tự biến mất trong khoảng một giây, kể cả với lệnh
+      chạy lâu (thử `ping -n 60 127.0.0.1`: cho phép ở terminal, pill phải mất khi lệnh còn đang chạy), và cả khi
+      từ chối ở terminal (spec §4.4, sửa 02/10 — có test tự động, chưa thử với Claude Code thật). Nếu pill vẫn nằm
+      tới khi lệnh xong: mở `~/.claude/sessions/<pid>.json` của phiên đó lúc terminal đang hỏi, xem `status` có
+      phải `waiting` không.
 - [ ] 👤 Trong thẻ, **Để terminal hỏi**: pill biến mất, terminal vẫn đang hỏi.
 - [ ] 👤 Thoát winbar rồi để Claude Code xin quyền: terminal hỏi ngay, không thấy trễ.
 - [ ] 👤 Ẩn notch từ khay hệ thống rồi để Claude Code xin quyền: không có gì hiện, terminal hỏi như thường.

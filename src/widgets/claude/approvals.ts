@@ -63,6 +63,11 @@ async function listAgents(): Promise<Record<string, number>> {
   return invoke<Record<string, number>>("claude_agents");
 }
 
+async function listOutcomes(): Promise<Record<string, ClaudeNotice>> {
+  if (!isTauri()) return {};
+  return invoke<Record<string, ClaudeNotice>>("claude_outcomes");
+}
+
 async function listNotices(): Promise<ClaudeNotice[]> {
   if (!isTauri()) return [];
   return invoke<ClaudeNotice[]>("claude_notices");
@@ -96,11 +101,13 @@ const NO_APPROVALS: ClaudeApproval[] = [];
 const NO_STEPS: Record<string, string[]> = {};
 const NO_AGENTS: Record<string, number> = {};
 const NO_NOTICES: ClaudeNotice[] = [];
+const NO_OUTCOMES: Record<string, ClaudeNotice> = {};
 
 let approvals: ClaudeApproval[] = NO_APPROVALS;
 let steps: Record<string, string[]> = NO_STEPS;
 let agents: Record<string, number> = NO_AGENTS;
 let notices: ClaudeNotice[] = NO_NOTICES;
+let outcomes: Record<string, ClaudeNotice> = NO_OUTCOMES;
 const listeners = new Set<() => void>();
 let started = false;
 
@@ -142,20 +149,35 @@ function refreshNotices(): void {
     .catch((err: unknown) => console.error("claude_notices failed", err));
 }
 
+function refreshOutcomes(): void {
+  listOutcomes()
+    .then((next) => {
+      outcomes = next;
+      emit();
+    })
+    .catch((err: unknown) => console.error("claude_outcomes failed", err));
+}
+
 function start() {
   if (started) return;
   started = true;
   on("claude-approvals-changed", refreshApprovals);
-  // One event for both: a subagent starting is a step of the session's work too.
+  // One event for all three: a subagent starting is a step of the session's work too, and a new turn starting is
+  // what makes Rust forget how the last one ended.
   on("claude-steps-changed", () => {
     refreshSteps();
     refreshAgents();
+    refreshOutcomes();
   });
-  on("claude-notices-changed", refreshNotices);
+  on("claude-notices-changed", () => {
+    refreshNotices();
+    refreshOutcomes();
+  });
   refreshApprovals();
   refreshSteps();
   refreshAgents();
   refreshNotices();
+  refreshOutcomes();
 }
 
 function subscribe(listener: () => void) {
@@ -184,6 +206,11 @@ export function useNotices(): ClaudeNotice[] {
   return useSyncExternalStore(subscribe, () => notices);
 }
 
+/** How the last turn of each session ended, by session id; sessions in a turn are absent. */
+export function useOutcomes(): Record<string, ClaudeNotice> {
+  return useSyncExternalStore(subscribe, () => outcomes);
+}
+
 /**
  * Answers a request. It leaves the list at once rather than when Rust confirms: a second click on a button that
  * is still on screen for a moment must not be able to answer anything.
@@ -201,11 +228,13 @@ export function setForTests(next: {
   steps?: Record<string, string[]>;
   agents?: Record<string, number>;
   notices?: ClaudeNotice[];
+  outcomes?: Record<string, ClaudeNotice>;
 }): void {
   approvals = next.approvals ?? NO_APPROVALS;
   steps = next.steps ?? NO_STEPS;
   agents = next.agents ?? NO_AGENTS;
   notices = next.notices ?? NO_NOTICES;
+  outcomes = next.outcomes ?? NO_OUTCOMES;
   started = true;
   emit();
 }
@@ -216,6 +245,7 @@ export function resetForTests(): void {
   steps = NO_STEPS;
   agents = NO_AGENTS;
   notices = NO_NOTICES;
+  outcomes = NO_OUTCOMES;
   started = false;
   listeners.clear();
 }

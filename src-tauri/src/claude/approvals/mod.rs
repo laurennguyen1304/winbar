@@ -14,6 +14,7 @@ mod pending;
 mod pipe;
 mod protocol;
 pub mod relay;
+mod terminal;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -50,6 +51,9 @@ struct Limits {
     answer: Duration,
     /// How often a waiting request checks whether it should still be waiting.
     tick: Duration,
+    /// How often it asks whether the question was answered in the terminal (§4.4). That means reading files, so
+    /// it is done less often than the tick.
+    terminal: Duration,
 }
 
 const LIMITS: Limits = Limits {
@@ -57,6 +61,7 @@ const LIMITS: Limits = Limits {
     shown: Duration::from_secs(2),
     answer: Duration::from_secs(300),
     tick: Duration::from_millis(200),
+    terminal: Duration::from_secs(1),
 };
 
 /// More connections than this at once is not Claude Code asking; the extra ones are dropped unread.
@@ -189,8 +194,9 @@ fn view(
 
 /// Serves one connection from the relay.
 ///
-/// `notify` is called with the name of the event the page should hear about. Kept free of Tauri so the whole
-/// exchange can be tested over a real pipe.
+/// `notify` is called with the name of the event the page should hear about, and `waiting` says whether a
+/// session's own terminal has a question up (see `terminal`). Kept free of Tauri so the whole exchange can be
+/// tested over a real pipe.
 #[cfg(windows)]
 fn serve(
     book: &Mutex<Book>,
@@ -198,6 +204,7 @@ fn serve(
     orca_root: &str,
     now: u64,
     limits: Limits,
+    waiting: &dyn Fn(&str) -> Option<bool>,
     notify: &dyn Fn(&'static str),
 ) {
     use protocol::Message;
@@ -232,8 +239,8 @@ fn serve(
             let session = id_of(&session);
             let cleared = with_book(book, |b| {
                 b.turn_started(&session, now);
-                // Both run: `|`, not `||`.
-                b.clear_steps(&session) | b.clear_agents(&session)
+                // All three run: `|`, not `||`.
+                b.clear_steps(&session) | b.clear_agents(&session) | b.clear_outcome(&session)
             });
             if cleared == Some(true) {
                 notify(STEPS_CHANGED);
@@ -267,6 +274,7 @@ fn serve(
             truncated,
         } => {
             let request = view(&session, &cwd, &tool, input, truncated, orca_root, now);
+            let session = id_of(&session);
             let tool_use_id = id_of(&tool_use_id);
             let Some(Some((id, answers))) = with_book(book, |b| b.open(request, tool_use_id))
             else {
@@ -284,6 +292,8 @@ fn serve(
             };
             notify(APPROVALS_CHANGED);
             let asked = Instant::now();
+            let mut terminal = terminal::Watch::default();
+            let mut looked = asked;
             loop {
                 match answers.recv_timeout(limits.tick) {
                     Ok(answer) => return reply(answer),
@@ -293,7 +303,12 @@ fn serve(
                         let waited = asked.elapsed();
                         let unseen = waited > limits.shown
                             && with_book(book, |b| b.is_shown(&id)) != Some(true);
-                        if connection.client_gone() || waited > limits.answer || unseen {
+                        // Answered in the terminal: Claude Code leaves the hook running, so the pipe says nothing.
+                        let elsewhere = looked.elapsed() >= limits.terminal && {
+                            looked = Instant::now();
+                            terminal.answered(waiting(&session))
+                        };
+                        if connection.client_gone() || waited > limits.answer || unseen || elsewhere {
                             if with_book(book, |b| b.close(&id)) == Some(true) {
                                 notify(APPROVALS_CHANGED);
                             } else if let Ok(answer) = answers.try_recv() {
@@ -392,6 +407,7 @@ fn handle<R: Runtime>(app: &AppHandle<R>, connection: &pipe::Connection) {
         &claude.orca_root,
         super::now_ms(),
         LIMITS,
+        &|session| terminal::waiting(&claude.claude_dir, session),
         &|event| {
             let _ = app.emit(event, ());
         },
@@ -484,6 +500,19 @@ pub fn claude_notices<R: Runtime>(
         return Vec::new();
     }
     with_book(&state.book, |b| b.notices()).unwrap_or_default()
+}
+
+/// How the last turn of each session ended, for the sessions card (SPEC-claude-notices §4b). The same notices,
+/// kept per session instead of in arrival order, so like them it goes to the notch and nowhere else.
+#[tauri::command]
+pub fn claude_outcomes<R: Runtime>(
+    window: WebviewWindow<R>,
+    state: tauri::State<'_, ApprovalsState>,
+) -> BTreeMap<String, Notice> {
+    if !from_notch(&window) {
+        return BTreeMap::new();
+    }
+    with_book(&state.book, |b| b.outcomes()).unwrap_or_default()
 }
 
 fn this_exe() -> Result<PathBuf, String> {
@@ -740,10 +769,13 @@ mod tests {
             shown: Duration::from_millis(300),
             answer: Duration::from_millis(1500),
             tick: Duration::from_millis(20),
+            terminal: Duration::from_millis(40),
         };
 
         struct Fixture {
             name: String,
+            /// What Claude Code's session file says: whether the terminal has a question up. `None`: nothing.
+            terminal: Arc<Mutex<Option<bool>>>,
             book: Arc<Mutex<Book>>,
             events: Arc<Mutex<Vec<&'static str>>>,
             server: std::thread::JoinHandle<()>,
@@ -758,18 +790,25 @@ mod tests {
             );
             let book = Arc::new(Mutex::new(Book::default()));
             let events = Arc::new(Mutex::new(Vec::new()));
+            let terminal = Arc::new(Mutex::new(None));
             let mut listener = pipe::Listener::bind(&name).expect("binds");
             let server = std::thread::spawn({
-                let (book, events) = (book.clone(), events.clone());
+                let (book, events, terminal) = (book.clone(), events.clone(), terminal.clone());
                 move || {
                     let workers: Vec<_> = (0..connections)
                         .map(|_| {
                             let connection = listener.accept().expect("accepts");
-                            let (book, events) = (book.clone(), events.clone());
+                            let (book, events, terminal) = (book.clone(), events.clone(), terminal.clone());
                             std::thread::spawn(move || {
-                                serve(&book, &connection, "", 1, QUICK, &|event| {
-                                    events.lock().unwrap().push(event)
-                                });
+                                serve(
+                                    &book,
+                                    &connection,
+                                    "",
+                                    1,
+                                    QUICK,
+                                    &|_| *terminal.lock().unwrap(),
+                                    &|event| events.lock().unwrap().push(event),
+                                );
                             })
                         })
                         .collect();
@@ -778,6 +817,7 @@ mod tests {
             });
             Fixture {
                 name,
+                terminal,
                 book,
                 events,
                 server,
@@ -932,6 +972,46 @@ mod tests {
             assert!(f.book.lock().unwrap().list().is_empty());
         }
 
+        #[test]
+        fn an_answer_given_in_the_terminal_takes_the_request_off_the_notch_at_once() {
+            let f = serving("terminal", 1);
+            let name = f.name.clone();
+            let started = Instant::now();
+            let client = std::thread::spawn(move || relay(&name, ask("s1", "toolu_9")));
+            let request = listed(&f.book, 1).remove(0);
+            f.book.lock().unwrap().mark_shown(&request.id);
+
+            // Claude Code has its dialog up, and the request stays on the notch for as long as it does.
+            *f.terminal.lock().unwrap() = Some(true);
+            std::thread::sleep(QUICK.terminal * 4);
+            assert_eq!(f.book.lock().unwrap().list().len(), 1);
+
+            // Allowed in the terminal. The command may now run for minutes: no PostToolUse, and the relay is
+            // still connected.
+            *f.terminal.lock().unwrap() = Some(false);
+            listed(&f.book, 0);
+            assert!(started.elapsed() < QUICK.answer, "it waited for the time limit instead");
+            assert_eq!(client.join().expect("relay"), None, "no answer: the terminal already has one");
+            f.server.join().expect("server");
+            assert_eq!(*f.events.lock().unwrap(), [APPROVALS_CHANGED, APPROVALS_CHANGED]);
+        }
+
+        #[test]
+        fn a_terminal_that_was_never_seen_asking_takes_nothing_off_the_notch() {
+            let f = serving("no-terminal", 1);
+            let name = f.name.clone();
+            // The request arrived before Claude Code wrote `waiting`, or this Claude Code never writes it.
+            *f.terminal.lock().unwrap() = Some(false);
+            let client = std::thread::spawn(move || relay(&name, ask("s1", "toolu_10")));
+            let request = listed(&f.book, 1).remove(0);
+            f.book.lock().unwrap().mark_shown(&request.id);
+            std::thread::sleep(QUICK.terminal * 5);
+            assert_eq!(f.book.lock().unwrap().list().len(), 1, "still there to be answered");
+            assert!(f.book.lock().unwrap().answer(&request.id, Answer::Allow));
+            assert_eq!(client.join().expect("relay").as_deref(), Some("allow"));
+            f.server.join().expect("server");
+        }
+
         /// Sends one event and waits until the server has dealt with it, so the next one cannot overtake it.
         fn relay_and_wait(f: &Fixture, hook: serde_json::Value, done: impl Fn(&Book) -> bool) {
             relay(&f.name, hook);
@@ -977,10 +1057,25 @@ mod tests {
             assert_eq!(notices[1].kind, NoticeKind::Failed);
             assert_eq!(notices[1].reason.as_deref(), Some("rate_limit"));
             assert_eq!(notices[1].summary, None);
+            // The session's row says how its last turn ended: the failure, which came after the finish.
+            assert_eq!(book.outcomes()["s1"].kind, NoticeKind::Failed);
             let events = f.events.lock().unwrap();
             assert_eq!(events.iter().filter(|e| **e == NOTICES_CHANGED).count(), 2);
             // Two subagents starting, and the stop that cleared them.
             assert_eq!(events.iter().filter(|e| **e == STEPS_CHANGED).count(), 3);
+        }
+
+        #[test]
+        fn a_new_prompt_forgets_how_the_last_turn_ended() {
+            let f = serving("outcome", 2);
+            let event = |name: &str| {
+                serde_json::json!({ "session_id": "s1", "cwd": "C:\\work\\shop", "hook_event_name": name })
+            };
+            relay_and_wait(&f, event("Stop"), |b| b.outcomes().contains_key("s1"));
+            relay_and_wait(&f, event("UserPromptSubmit"), |b| b.outcomes().is_empty());
+            f.server.join().expect("server");
+            // The page is told, or the row would go on saying "done" about a session that is working again.
+            assert_eq!(*f.events.lock().unwrap(), [NOTICES_CHANGED, STEPS_CHANGED]);
         }
 
         #[test]

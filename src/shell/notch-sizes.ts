@@ -63,6 +63,17 @@ export function alertSize(pill: Size): Size {
   return { width: pill.width + 150, height: pill.height + 4 };
 }
 
+/** Extra width of an alert that is a sentence to read rather than buttons to press. */
+const WIDE_ALERT_EXTRA = 300;
+
+/**
+ * Alert pill for a `wide` alert: a session's name and a line about it side by side (the owner, 02/10 — at the
+ * regular alert width the name was cut to make room for the line). Never wider than the screen allows.
+ */
+export function wideAlertSize(pill: Size, screenWidth: number): Size {
+  return { width: panelFitWidth(pill.width + WIDE_ALERT_EXTRA, screenWidth), height: alertSize(pill).height };
+}
+
 /** Fully rounded ends for a pill of this height. */
 export function pillRadius(size: Size): number {
   return size.height / 2;
