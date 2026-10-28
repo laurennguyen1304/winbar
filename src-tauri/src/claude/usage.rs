@@ -309,6 +309,7 @@ pub fn fetch(
             Ok(payload) => {
                 let usage = parse(&payload, now_ms);
                 save_cache(&path, account.as_deref(), &usage);
+                super::usage_history::record(config_dir, account.as_deref(), &usage);
                 usage
             }
             Err(_) => {

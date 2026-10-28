@@ -74,6 +74,12 @@ pub fn fetch(cli: &Path) -> Option<Vec<AccountUsage>> {
         .or_else(|| run(cli, &CACHED, CACHED_TIMEOUT).and_then(|out| parse(&out)))
 }
 
+/// The CLI's own cached answer only: no account is polled, so nothing goes out on the network (~1 s). For the
+/// forecast's background sampler (SPEC-claude §5.5b), which has nobody waiting on a live number.
+pub fn fetch_cached(cli: &Path) -> Option<Vec<AccountUsage>> {
+    run(cli, &CACHED, CACHED_TIMEOUT).and_then(|out| parse(&out))
+}
+
 /// Runs the CLI with fixed arguments and returns stdout, or `None` on failure, timeout or oversized output.
 ///
 /// stderr is discarded rather than read: it is free text and may name an account.

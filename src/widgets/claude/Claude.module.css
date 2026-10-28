@@ -386,6 +386,251 @@
   color: var(--danger);
 }
 
+/* --- dự báo hạn mức (SPEC-claude §5.5b) --- */
+
+.forecastButton {
+  all: unset;
+  cursor: pointer;
+  margin-left: 10px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--claude);
+  background: var(--track);
+}
+
+.forecastButton:hover {
+  color: var(--text);
+}
+
+.forecastButton:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.metersOpen {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.metersOpen:hover .track {
+  filter: brightness(1.25);
+}
+
+.forecast {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 4px 6px;
+}
+
+.forecastAccount {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.forecastAccount + .forecastAccount {
+  padding-top: 12px;
+  border-top: 1px solid var(--track);
+}
+
+.forecastAccounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.forecastChip {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--track);
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.forecastChip[aria-pressed="true"] {
+  border-color: var(--claude);
+  color: var(--text);
+}
+
+.forecastChip:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
+.forecastChipNumbers {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.forecastTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.forecastSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.forecastHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.forecastValue {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--claude);
+}
+
+.forecastValue small {
+  font-size: 18px;
+}
+
+.forecastValue[data-hit] {
+  color: var(--danger);
+}
+
+.forecastSummary {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.forecastSummary b {
+  color: var(--text);
+}
+
+.forecastWarn,
+.forecastWarn b {
+  color: var(--danger);
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chartText {
+  font-size: 10px;
+  fill: var(--text-faint);
+}
+
+.chartGrid {
+  stroke: var(--track);
+  stroke-width: 1;
+}
+
+.chartLimit {
+  stroke: var(--danger);
+  stroke-opacity: 0.45;
+  stroke-width: 1;
+}
+
+.chartEven {
+  stroke: var(--text-faint);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.chartNow {
+  stroke: var(--text-faint);
+  stroke-width: 1;
+}
+
+.chartArea {
+  fill: var(--claude);
+  fill-opacity: 0.16;
+}
+
+.chartUsed {
+  fill: none;
+  stroke: var(--claude);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.chartForecast {
+  stroke: var(--claude);
+  stroke-width: 2;
+  stroke-dasharray: 3 4;
+}
+
+.chartHit {
+  stroke: var(--danger);
+}
+
+.chartDot {
+  fill: var(--claude);
+}
+
+.chartHitDot {
+  fill: var(--danger);
+}
+
+.chartProjected {
+  font-size: 10px;
+  fill: var(--claude);
+}
+
+.forecastLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 11px;
+  color: var(--text-sub);
+}
+
+.forecastLegend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: 0;
+}
+
+.legendUsed {
+  background: var(--claude);
+}
+
+.legendEven {
+  background: var(--text-faint);
+}
+
+.legendForecast {
+  background: var(--claude);
+  opacity: 0.6;
+}
+
+.forecastNote {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-faint);
+}
+
 /* --- yêu cầu cấp quyền (SPEC-claude-approvals §4.5) --- */
 
 .approvalPill {

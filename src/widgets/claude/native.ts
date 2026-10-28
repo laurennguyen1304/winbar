@@ -61,6 +61,23 @@ export interface ClaudeAccountUsage {
 
 export const NO_USAGE: ClaudeUsage = { perModel: [], fetchedAt: 0 };
 
+/** One usage read, for the pace forecast (SPEC-claude §5.5b). Percentages are rounded, like everywhere else. */
+export interface UsageSample {
+  /** Epoch ms. */
+  t: number;
+  fiveHour?: number;
+  sevenDay?: number;
+}
+
+/**
+ * One account's samples, oldest first: `account` is a `ClaudeAccountUsage.id`, and without it the active account.
+ * Empty outside Tauri or with the layout off.
+ */
+export async function getUsageHistory(account?: string): Promise<UsageSample[]> {
+  if (!isTauri()) return [];
+  return invoke<UsageSample[]>("claude_usage_history", { account });
+}
+
 export async function listSessions(): Promise<ClaudeSession[]> {
   if (!isTauri()) return [];
   return invoke<ClaudeSession[]>("claude_sessions");

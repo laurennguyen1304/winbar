@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createShell } from "../../shell/shell";
 import { ShellProvider } from "../../shell/shell-context";
 import { ClaudeBackground, ClaudePill } from "./ClaudePill";
-import type { ClaudeAccountUsage, ClaudeSession, ClaudeUsage } from "./native";
+import type { ClaudeAccountUsage, ClaudeSession, ClaudeUsage, UsageSample } from "./native";
 import { resetForTests } from "./store";
 import { UsageCard } from "./UsageCard";
+import { UsageForecast } from "./UsageForecast";
 
 const { native } = vi.hoisted(() => ({
   native: {
@@ -17,6 +18,8 @@ const { native } = vi.hoisted(() => ({
     forced: [] as boolean[],
     /** Number of leading calls that should fail, as they do when Rust has not managed its state yet. */
     failFirst: 0,
+    history: [] as UsageSample[],
+    historyOf: {} as Record<string, UsageSample[]>,
   },
 }));
 
@@ -34,6 +37,8 @@ vi.mock("./native", () => ({
   },
   getAccounts: () => (native.accountsHang ? new Promise(() => {}) : Promise.resolve(native.accounts)),
   onSessionsChanged: () => () => {},
+  getUsageHistory: (account?: string) =>
+    Promise.resolve(account === undefined ? native.history : (native.historyOf[account] ?? [])),
 }));
 
 function session(over: Partial<ClaudeSession> & Pick<ClaudeSession, "id">): ClaudeSession {
@@ -221,5 +226,138 @@ describe("ClaudeBackground", () => {
       </ShellProvider>,
     );
     await waitFor(() => expect(calls.at(-1)).toEqual(["claude-sessions", false]));
+  });
+});
+
+describe("usage forecast", () => {
+  beforeEach(() => {
+    resetForTests();
+    native.failFirst = 0;
+    native.accounts = null;
+    native.accountsHang = false;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it("opens from the button and from the meters", async () => {
+    native.usage = { fiveHour: { percent: 10 }, perModel: [], fetchedAt: Date.now() };
+    const shell = createShell();
+    render(
+      <ShellProvider shell={shell}>
+        <UsageCard />
+      </ShellProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Dự báo" }));
+    expect(shell.getSnapshot().widgetDetail).toBe("claude-usage");
+    shell.api.closeWidgetDetail();
+    fireEvent.click(screen.getByRole("progressbar", { name: "5 giờ" }));
+    expect(shell.getSnapshot().widgetDetail).toBe("claude-usage");
+  });
+
+  it("says where each window lands at the current pace", async () => {
+    const now = Date.now();
+    native.history = [
+      { t: now - 2 * 3600_000, fiveHour: 0, sevenDay: 20 },
+      { t: now - 3600_000, fiveHour: 10, sevenDay: 30 },
+    ];
+    native.usage = {
+      // 10 points in the last hour, one hour left: ~30% at the reset.
+      fiveHour: { percent: 20, resetsAt: new Date(now + 3600_000).toISOString() },
+      // Two days in at 40%: 20 points a day reaches 100% three days from now, before the reset in five.
+      sevenDay: { percent: 40, resetsAt: new Date(now + 5 * 24 * 3600_000).toISOString() },
+      perModel: [],
+      fetchedAt: now,
+    };
+    render(<UsageForecast />);
+    const five = await screen.findByRole("region", { name: "5 giờ" });
+    await waitFor(() => expect(five).toHaveTextContent("~30% lúc reset"));
+    const seven = screen.getByRole("region", { name: "7 ngày, mọi model" });
+    expect(seven).toHaveTextContent("chạm 100% lúc");
+    expect(seven).toHaveTextContent("sớm hơn reset 48h");
+    expect(seven).toHaveTextContent("nhanh hơn nhịp đều 11 điểm");
+  });
+
+  it("shows one account at a time and switches to the one under the pointer", async () => {
+    const now = Date.now();
+    const reset = new Date(now + 3600_000).toISOString();
+    native.history = [];
+    native.historyOf = { other: [{ t: now - 3600_000, fiveHour: 0 }] };
+    native.usage = { fiveHour: { percent: 20, resetsAt: reset }, perModel: [], fetchedAt: now };
+    native.accounts = [
+      {
+        id: "me",
+        label: "Cá nhân",
+        active: true,
+        fiveHour: { percent: 20, resetsAt: reset },
+        fetchedAt: now,
+        needsLogin: false,
+      },
+      {
+        id: "other",
+        label: "Công ty",
+        active: false,
+        fiveHour: { percent: 60, resetsAt: reset },
+        fetchedAt: now,
+        needsLogin: false,
+      },
+      {
+        id: "gone",
+        label: "Cũ",
+        active: false,
+        fiveHour: { percent: 90, resetsAt: reset },
+        fetchedAt: now,
+        needsLogin: true,
+      },
+    ];
+    render(<UsageForecast />);
+    const chip = async (name: string) => screen.findByRole("button", { name: new RegExp(name) });
+
+    // The active account first, and only it.
+    await waitFor(() => expect(screen.getByRole("region", { name: "5 giờ" })).toHaveTextContent("20%"));
+    expect(await chip("Cá nhân")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("region", { name: "5 giờ" })).toHaveLength(1);
+
+    // 60 points over the last hour, one hour left: past 100% before the reset.
+    fireEvent.mouseEnter(await chip("Công ty"));
+    await waitFor(() => expect(screen.getByRole("region", { name: "5 giờ" })).toHaveTextContent("chạm 100% lúc"));
+    expect(await chip("Công ty")).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.mouseEnter(await chip("Cũ"));
+    expect(await screen.findByText(/cần đăng nhập lại/)).toBeInTheDocument();
+    expect(screen.getByText("Chưa có số hạn mức để dự báo.")).toBeInTheDocument();
+  });
+
+  it("opens on the account clicked in the card", async () => {
+    const now = Date.now();
+    const reset = new Date(now + 3600_000).toISOString();
+    native.usage = { fiveHour: { percent: 20, resetsAt: reset }, perModel: [], fetchedAt: now };
+    native.accounts = [
+      { id: "me", label: "Cá nhân", active: true, fiveHour: { percent: 20 }, fetchedAt: now, needsLogin: false },
+      {
+        id: "other",
+        label: "Công ty",
+        active: false,
+        fiveHour: { percent: 60, resetsAt: reset },
+        fetchedAt: now,
+        needsLogin: false,
+      },
+    ];
+    const shell = createShell();
+    const { unmount } = render(
+      <ShellProvider shell={shell}>
+        <UsageCard />
+      </ShellProvider>,
+    );
+    fireEvent.click(await screen.findByText("Công ty"));
+    expect(shell.getSnapshot().widgetDetail).toBe("claude-usage");
+    unmount();
+    render(<UsageForecast />);
+    expect(await screen.findByRole("button", { name: /Công ty/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("has nothing to forecast without numbers", async () => {
+    native.usage = { perModel: [], fetchedAt: 0 };
+    render(<UsageForecast />);
+    expect(await screen.findByText("Chưa có số hạn mức để dự báo.")).toBeInTheDocument();
   });
 });

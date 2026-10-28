@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
+import { useShell } from "../../shell/shell-context";
 import { Card, CardLabel } from "../../shell/ui";
-import { refreshUsage, useClaude } from "./store";
+import { refreshUsage, setForecastAccount, useClaude } from "./store";
 import { errorNote, fetchedAgo, level, resetIn, windowNow } from "./usage";
 import type { ClaudeAccountUsage, ClaudeWindow } from "./native";
 import styles from "./Claude.module.css";
+
+/** Must match the widget's id in index.tsx: the card opens its own forecast through the shell. */
+export const USAGE_WIDGET_ID = "claude-usage";
 
 /** How often the card asks again while it is open. Rust still serves its 120-second cache in between. */
 export const REFRESH_MS = 5 * 60_000;
@@ -46,9 +50,9 @@ function Meter({ label, window, now }: { label: string; window: ClaudeWindow | u
 }
 
 /** One of the other accounts: a small 5-hour / 7-day pair under its name (SPEC-claude §5.5). */
-function OtherAccount({ account, now }: { account: ClaudeAccountUsage; now: number }) {
+function OtherAccount({ account, now, onOpen }: { account: ClaudeAccountUsage; now: number; onOpen(): void }) {
   return (
-    <div className={styles.account}>
+    <div className={`${styles.account} ${styles.metersOpen}`} onClick={onOpen} title="Xem dự báo">
       <div className={styles.accountHead}>
         <span className={styles.accountName}>{account.label}</span>
         <span>{account.needsLogin ? "cần đăng nhập lại" : fetchedAgo(account.fetchedAt, now)}</span>
@@ -75,6 +79,12 @@ function ask(force = false): void {
 export function UsageCard() {
   const { usage } = useClaude();
   const now = useNow();
+  const shell = useShell();
+  // `account`: an id from the account list, or nothing for the active account.
+  const openForecast = (account?: string) => {
+    setForecastAccount(account);
+    shell.openWidgetDetail(USAGE_WIDGET_ID);
+  };
 
   // Ask once when the card appears, then occasionally while it stays open. Nothing runs behind a closed panel.
   useEffect(() => {
@@ -92,14 +102,14 @@ export function UsageCard() {
     <Card className={styles.card}>
       <CardLabel
         aside={
-          <button
-            type="button"
-            className={styles.refresh}
-            onClick={() => ask(true)}
-            aria-label="Cập nhật hạn mức"
-          >
-            {fetchedAgo(usage.fetchedAt, now) || "chưa có số"}
-          </button>
+          <>
+            <button type="button" className={styles.refresh} onClick={() => ask(true)} aria-label="Cập nhật hạn mức">
+              {fetchedAgo(usage.fetchedAt, now) || "chưa có số"}
+            </button>
+            <button type="button" className={styles.forecastButton} onClick={() => openForecast()}>
+              Dự báo
+            </button>
+          </>
         }
       >
         Hạn mức
@@ -113,7 +123,8 @@ export function UsageCard() {
         </div>
       )}
 
-      <div className={styles.meters}>
+      {/* The meters open the forecast too (SPEC-claude §5.5b); the button above is the keyboard way in. */}
+      <div className={`${styles.meters} ${styles.metersOpen}`} onClick={() => openForecast()} title="Xem dự báo">
         <Meter label="5 giờ" window={usage.fiveHour} now={now} />
         <Meter label="7 ngày" window={usage.sevenDay} now={now} />
       </div>
@@ -127,7 +138,7 @@ export function UsageCard() {
       {accounts
         .filter((a) => !a.active)
         .map((a) => (
-          <OtherAccount key={a.id} account={a} now={now} />
+          <OtherAccount key={a.id} account={a} now={now} onOpen={() => openForecast(a.id)} />
         ))}
     </Card>
   );

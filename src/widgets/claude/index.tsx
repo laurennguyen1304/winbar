@@ -3,7 +3,8 @@ import type { WidgetDefinition } from "../../shell/widget-contract";
 import { ClaudeBackground, ClaudePill } from "./ClaudePill";
 import { createClaudeProvider } from "./search";
 import { SessionsCard } from "./SessionsCard";
-import { UsageCard } from "./UsageCard";
+import { USAGE_WIDGET_ID, UsageCard } from "./UsageCard";
+import { UsageForecast } from "./UsageForecast";
 
 export const claudeSessionsWidget: WidgetDefinition = {
   id: "claude-sessions",
@@ -19,10 +20,11 @@ export const claudeSessionsWidget: WidgetDefinition = {
 };
 
 export const claudeUsageWidget: WidgetDefinition = {
-  id: "claude-usage",
+  id: USAGE_WIDGET_ID,
   tab: "claude",
   title: "Hạn mức",
   description: "Hạn mức 5 giờ và 7 ngày",
   layout: { size: "small" },
   Card: UsageCard,
+  Detail: UsageForecast,
 };

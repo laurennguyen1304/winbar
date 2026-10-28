@@ -13,6 +13,7 @@ mod icons;
 mod model;
 mod sessions;
 mod usage;
+mod usage_history;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -22,6 +23,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 pub use model::Session;
 pub use usage::Usage;
+pub use usage_history::Sample as UsageSample;
 
 /// The live list changed: a session started, ended, or moved to another phase.
 ///
@@ -151,6 +153,9 @@ impl ClaudeState {
         if force || !fresh {
             let answer = accounts::fetch(cli);
             cached.0 = now;
+            if let Some(list) = &answer {
+                usage_history::record_accounts(&self.appdata, list);
+            }
             if answer.is_some() {
                 cached.1 = answer;
             }
@@ -233,6 +238,21 @@ pub fn claude_usage<R: Runtime>(
     )
 }
 
+/// One account's usage samples, oldest first, for the pace forecast (SPEC-claude §5.5b): `account` is an id from
+/// `claude_accounts`, and without it the active account. Percentages and times only. Empty with the layout off.
+#[tauri::command(async)]
+pub fn claude_usage_history<R: Runtime>(
+    app: AppHandle<R>,
+    state: tauri::State<'_, ClaudeState>,
+    account: Option<String>,
+) -> Vec<UsageSample> {
+    if !options(&app).enabled {
+        return Vec::new();
+    }
+    let account = account.or_else(|| usage::active_account(&state.config_file));
+    usage_history::read(&state.appdata, account.as_deref())
+}
+
 /// Every account's usage from the account-switcher CLI (SPEC-claude §3.3b), or `None` when there is no CLI, it is
 /// turned off, or it gave nothing usable.
 ///
@@ -280,8 +300,49 @@ pub fn claude_sessions<R: Runtime>(
     Ok(list)
 }
 
+/// How often the forecast gets a sample while nothing else asks for usage (SPEC-claude §5.5b).
+///
+/// The card asks every 5 minutes while it is open; this keeps the line going when it is not. Each pass is one
+/// usage read, which answers from the 120-second cache when the card asked just before — so at most one request
+/// per 10 minutes goes out on its own, about 1 KB each. The other accounts come from the account-switcher CLI's
+/// cache (`list --json`, ~1 s, no network), so their line is only as dense as the CLI's own polling.
+pub const SAMPLE_EVERY: Duration = Duration::from_secs(10 * 60);
+
+/// Samples usage on its own timer, so the forecast has a line even while the panel stays closed.
+fn start_sampler<R: Runtime>(app: &AppHandle<R>) {
+    let app = app.clone();
+    let _ = std::thread::Builder::new()
+        .name("claude-usage-sampler".into())
+        .spawn(move || loop {
+            std::thread::sleep(SAMPLE_EVERY);
+            let Some(state) = app.try_state::<ClaudeState>() else {
+                continue;
+            };
+            // Layout off: no credentials file is opened and no request goes out, as for the card.
+            if !options(&app).enabled {
+                continue;
+            }
+            let _ = usage::fetch(
+                &state.claude_dir,
+                &state.config_file,
+                &state.appdata,
+                now_ms(),
+                false,
+            );
+            let settings = options(&app);
+            if settings.multi_account {
+                if let Some(list) = accounts::cli_path(&state.home, &settings.account_switcher_path)
+                    .and_then(|cli| accounts::fetch_cached(&cli))
+                {
+                    usage_history::record_accounts(&state.appdata, &list);
+                }
+            }
+        });
+}
+
 /// Watches the status directory and pushes a change to the page, so the frontend never polls.
 pub fn start<R: Runtime>(app: &AppHandle<R>) {
+    start_sampler(app);
     let app = app.clone();
     let _ = std::thread::Builder::new()
         .name("claude-sessions".into())

@@ -239,6 +239,46 @@ Dưới đó, khi payload có `weekly_scoped`, thêm dòng nhỏ mỗi model: `F
   Tên hiện `alias`, không có thì email đã che (`ab…@domain`). Tài khoản cần đăng nhập lại: giữ số cũ, ghi "cần
   đăng nhập lại". Đã qua `resets_at` thì cửa sổ đó hiện 0% thay vì số cũ.
 
+### 5.5b Dự báo hạn mức (thêm 28/10/2026)
+
+Mở từ card Hạn mức bằng nút **Dự báo** ở đầu card, hoặc bấm vào vùng hai thanh 5 giờ / 7 ngày. Dự báo
+chiếm cả panel (`WidgetDefinition.Detail` + `ShellApi.openWidgetDetail`), có nút quay lại; thu panel là đóng.
+
+Mỗi cửa sổ (5 giờ, 7 ngày) một khối:
+- Đầu khối: tên cửa sổ, "reset 17:30 · còn 29m" (giờ 24h; khác ngày thì thêm thứ: "T2 13:00").
+- Số % to. Đổi màu `--danger` khi dự báo chạm 100% trước reset.
+- Một câu: "giữ nhịp này thì **~24%** lúc reset", hoặc "giữ nhịp này sẽ **chạm 100% lúc 20:01**, sớm hơn reset
+  40h 58m" (đỏ), hoặc "đã chạm hạn mức"; rồi "· nhanh/chậm hơn nhịp đều N điểm".
+- Biểu đồ: đường đã dùng (tô nền), nhịp đều nét chấm (0% lúc bắt đầu cửa sổ → 100% lúc reset), vạch "bây giờ",
+  đường dự báo nét chấm tới reset — hoặc tới điểm chạm 100% (đỏ, có chấm đỏ). Trục: mỗi giờ (5 giờ), mỗi ngày (7 ngày).
+- Dưới cùng: chú thích ba màu và một dòng nói cách tính.
+
+**Cách tính.** Cửa sổ bắt đầu ở `resets_at − 5 giờ` (hoặc `− 7 ngày`); mẫu trước mốc đó thuộc chu kỳ trước, bỏ.
+Tốc độ = thay đổi trong **1 giờ** gần nhất (5 giờ) hoặc **1 ngày** gần nhất (7 ngày), nội suy giữa hai mẫu; khi lịch
+sử chưa dài bằng chừng đó thì dùng tốc độ trung bình từ đầu cửa sổ. Tốc độ âm coi là 0. Dự báo lúc reset =
+hiện tại + tốc độ × thời gian còn lại; ≥ 100% thì báo giờ chạm.
+
+**Nhiều tài khoản (thêm 29/10, sửa cùng ngày).** Có từ hai tài khoản (§3.3b) thì đầu view có một hàng tên tài khoản
+kèm `5h% · 7d%`; **mỗi lúc chỉ hiện dự báo của một tài khoản**, và rê chuột (hoặc focus, bấm) vào tên nào thì đổi sang
+tài khoản đó. Lý do: hiện tất cả cùng lúc thì view dài hơn panel và bị cắt (chủ dự án, 29/10). Mở từ nút Dự báo hay hai
+thanh lớn thì mở ở tài khoản active; bấm vào khối của một tài khoản khác trên card thì mở ở tài khoản đó. Tài khoản
+cần đăng nhập lại: không dự báo. Đã qua `resets_at` thì cửa sổ đó không dự báo (số cũ là của chu kỳ trước).
+
+View chi tiết có thanh cuộn riêng: panel dừng ở 80% chiều cao màn hình, phần dài hơn cuộn thay vì bị cắt.
+
+**Mẫu.** Mỗi lần đọc usage thành công (§3.3) ghi một mẫu `{t, fiveHour, sevenDay}` vào
+`%APPDATA%\winbar\claude-usage-history.json`, khoá theo `accountUuid` như cache — không có email, nhãn hay giờ
+reset. Hai mẫu cách nhau dưới 1 phút gộp làm một; giữ 8 ngày; cũ hơn 1 ngày thì thưa còn 1 mẫu / 10 phút.
+Các tài khoản không active lấy mẫu từ CLI (§3.3b), mỗi mẫu ghi ở **giờ CLI poll** (`polled_at`) — CLI trả lại cùng
+một lần poll thì vẫn chỉ là một mẫu. `uuid` của CLI chính là `accountUuid` của Claude Code (kiểm trên máy 29/10),
+nên tài khoản active chỉ ghi từ §3.3, không ghi trùng từ CLI. Mẫu có thể tới không theo thứ tự thời gian; được chèn
+đúng chỗ. Đường của các tài khoản này chỉ dày bằng tần suất CLI tự poll chúng.
+
+Một luồng nền đọc usage **mỗi 10 phút** để đường không đứt khi panel đóng (chủ dự án chốt 28/10: "cách nào tốt mà không
+nặng quá"). Lần đọc đó đi qua cache 120 giây như card, nên tự nó gửi tối đa một request ~1 KB mỗi 10 phút. Tắt
+layout Claude thì luồng không đọc gì. Cùng lượt đó, khi bật `claude.multiAccount`, luồng hỏi CLI bằng `list --json`
+(cache của CLI, ~1 giây, không gọi mạng) — không dùng `status --json`, vì không ai đang chờ số live.
+
 ### 5.6 Cảnh báo ngưỡng
 
 Khi 5 giờ vượt **90%**, đẩy một pill alert (ưu tiên 3): "Hạn mức 5 giờ còn 10%". Chỉ một lần cho mỗi chu kỳ reset.
@@ -318,6 +358,7 @@ export interface ClaudeAccountUsage {
 | sự kiện `claude-sessions-changed` | `state.d` vừa đổi (đẩy từ Rust, không phải poll ở TS) |
 | `claude_usage(force?)` → `ClaudeUsage` | Hạn mức; dùng cache khi còn hạn |
 | `claude_accounts(force?)` → `ClaudeAccountUsage[] \| null` | §3.3b, lệnh riêng để số của tài khoản active không phải chờ CLI (đo được 3–6 giây); store gắn vào `ClaudeUsage.accounts` |
+| `claude_usage_history(account?)` → `UsageSample[]` | §5.5b: mẫu `{t, fiveHour?, sevenDay?}` của một tài khoản (`id` từ `claude_accounts`; bỏ trống là tài khoản active), cũ trước |
 | `claude_icons()` → `Record<ClaudePhase, string[]>` | Danh sách ảnh mỗi trạng thái (data URL), gồm cả ảnh bạn thêm |
 
 ## 7. Cài đặt
@@ -376,7 +417,8 @@ trạng thái, và mã lỗi.
 5. Rút mạng: card giữ số cũ và nói rõ là số cũ; cắm lại thì tự cập nhật.
 6. Đổi tên/xóa `.credentials.json`: card báo "Chưa đăng nhập", **không** gọi mạng, không crash.
 7. Ảnh luân phiên khi có nhiều ảnh; thả thêm ảnh tĩnh vào `claude-icons\thinking\` thì lần mở panel sau đã thấy.
-8. Panel đóng và pill không hiện Claude: **không có timer nào chạy**, CPU về như trước module.
+8. Panel đóng và pill không hiện Claude: **không có timer nào chạy**, CPU về như trước module. Ngoại lệ duy nhất
+   (28/10, §5.5b): luồng lấy mẫu hạn mức thức dậy mỗi 10 phút để đọc usage một lần rồi ngủ tiếp.
 9. Không có phiên nào: widget tự ẩn khỏi pill.
 10. Riêng tư: log không có token, không có đường dẫn đầy đủ, không có tiêu đề phiên.
 11. Hiệu năng (bản release): RAM tăng ≤ 12 MB; CPU khi panel đóng ≤ mức trước module + 0,02%.

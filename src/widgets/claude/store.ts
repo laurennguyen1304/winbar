@@ -57,6 +57,20 @@ export function refreshUsage(force = false): Promise<void> {
   return getUsage(force).then((usage) => set({ ...view, usage: { ...usage, accounts: view.usage.accounts } }));
 }
 
+/**
+ * Which account the forecast opens on (SPEC-claude §5.5b): an id from `claude_accounts`, or `undefined` for the
+ * active one. Set by the card right before it opens the forecast; the forecast switches on its own after that.
+ */
+let forecastFor: string | undefined;
+
+export function setForecastAccount(account: string | undefined): void {
+  forecastFor = account;
+}
+
+export function forecastAccount(): string | undefined {
+  return forecastFor;
+}
+
 /** Re-reads the user's icon folder. Called when the panel opens, so a new file shows up without a restart. */
 export function refreshIcons(): Promise<void> {
   return extraIcons().then((icons) => set({ ...view, icons }));
@@ -107,6 +121,7 @@ export function useClaude(): ClaudeView {
 /** Tests only: forgets everything so each case starts clean. */
 export function resetForTests(): void {
   view = EMPTY;
+  forecastFor = undefined;
   started = false;
   listeners.clear();
 }
