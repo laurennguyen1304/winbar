@@ -61,6 +61,19 @@ describe("shell runtime", () => {
     expect(shell.getSnapshot()).toBe(before);
   });
 
+  it("opens and closes a widget's own view, notifying only on a change", () => {
+    const shell = createShell();
+    const listener = vi.fn();
+    shell.subscribe(listener);
+    shell.api.openWidgetDetail("claude-usage");
+    shell.api.openWidgetDetail("claude-usage");
+    expect(shell.getSnapshot().widgetDetail).toBe("claude-usage");
+    shell.api.closeWidgetDetail();
+    shell.api.closeWidgetDetail();
+    expect(shell.getSnapshot().widgetDetail).toBeUndefined();
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it("hides and shows widgets, notifying only on a change", () => {
     const shell = createShell();
     const listener = vi.fn();

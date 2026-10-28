@@ -52,6 +52,29 @@
   background: var(--hover-bg);
 }
 
+/* Back from a widget's full-panel view (ShellApi.openWidgetDetail). */
+.backButton {
+  all: unset;
+  height: 32px;
+  padding: 0 12px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.backButton:hover {
+  background: var(--hover-bg);
+}
+
+.backButton:focus-visible {
+  outline: 2px solid var(--media);
+  outline-offset: 2px;
+}
+
 .body {
   animation: tab-in var(--motion-tab-fade) both;
   display: flex;
@@ -61,6 +84,11 @@
 
 .body > * {
   min-height: 0;
+}
+
+.detail {
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @keyframes tab-in {

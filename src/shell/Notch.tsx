@@ -122,6 +122,12 @@ export function Notch({
   }, [detailGone, dispatch]);
   // Widgets that hid themselves (ShellApi.setHidden) leave the pill and the panel; their Background keeps running.
   const shown = snapshot.hidden.size === 0 ? widgets : widgets.filter((w) => !snapshot.hidden.has(w.id));
+  // A widget's own full-panel view (ShellApi.openWidgetDetail). It belongs to this opening of the panel only.
+  const widgetDetail = expanded ? shown.find((w) => w.id === snapshot.widgetDetail && w.Detail) : undefined;
+  const hasWidgetDetail = snapshot.widgetDetail !== undefined;
+  useEffect(() => {
+    if (!expanded && hasWidgetDetail) shell.api.closeWidgetDetail();
+  }, [expanded, hasWidgetDetail, shell]);
   // Up to two: a Claude session and music playing at the same time widen the pill rather than hiding one.
   const pills = pickPills(shown, priorityWidget);
   const midPills = pickMidPills(shown, priorityWidget);
@@ -349,6 +355,8 @@ export function Notch({
               ) : (
                 <Panel
                   widgets={shown}
+                  detail={widgetDetail}
+                  onCloseDetail={() => shell.api.closeWidgetDetail()}
                   onCollapse={() => dispatch({ type: "close", reason: "collapseButton" })}
                   onOpenSettings={() => void openSettings()}
                 />

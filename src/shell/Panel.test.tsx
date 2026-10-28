@@ -70,4 +70,21 @@ describe("Panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Thu gọn" }));
     expect(onCollapse).toHaveBeenCalledOnce();
   });
+
+  it("shows a widget's own view in place of the bento, with a way back", () => {
+    const onCloseDetail = vi.fn();
+    const detail: WidgetDefinition = {
+      id: "with-detail",
+      tab: "claude",
+      title: "Hạn mức",
+      description: "",
+      Card: () => <p>tile</p>,
+      Detail: () => <p>full view</p>,
+    };
+    render(<Panel widgets={[detail]} onCollapse={() => {}} detail={detail} onCloseDetail={onCloseDetail} />);
+    expect(screen.getByText("full view")).toBeInTheDocument();
+    expect(screen.queryByText("tile")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Hạn mức/ }));
+    expect(onCloseDetail).toHaveBeenCalledOnce();
+  });
 });

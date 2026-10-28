@@ -17,6 +17,8 @@ export interface ShellSnapshot {
   flash: { key: number; Content: ComponentType } | undefined;
   /** Widgets that asked to be hidden (`ShellApi.setHidden`). */
   hidden: ReadonlySet<WidgetId>;
+  /** The widget whose `Detail` fills the panel (`ShellApi.openWidgetDetail`). */
+  widgetDetail: WidgetId | undefined;
 }
 
 export interface NotchControls {
@@ -42,11 +44,12 @@ export function createShell(): Shell {
   let flashTimer: ReturnType<typeof setTimeout> | undefined;
   let notch: NotchControls | undefined;
   let hidden: ReadonlySet<WidgetId> = new Set();
-  let snapshot: ShellSnapshot = { alert: undefined, flash: undefined, hidden };
+  let widgetDetail: WidgetId | undefined;
+  let snapshot: ShellSnapshot = { alert: undefined, flash: undefined, hidden, widgetDetail };
   const listeners = new Set<() => void>();
 
   const emit = () => {
-    snapshot = { alert: currentAlert(queue), flash, hidden };
+    snapshot = { alert: currentAlert(queue), flash, hidden, widgetDetail };
     listeners.forEach((l) => l());
   };
   const setQueue = (next: AlertQueue) => {
@@ -67,6 +70,16 @@ export function createShell(): Shell {
       if (current?.id === alertId && current.Detail) notch?.openDetail(alertId);
     },
     collapse: () => notch?.collapse(),
+    openWidgetDetail: (widgetId) => {
+      if (widgetDetail === widgetId) return;
+      widgetDetail = widgetId;
+      emit();
+    },
+    closeWidgetDetail: () => {
+      if (widgetDetail === undefined) return;
+      widgetDetail = undefined;
+      emit();
+    },
     flashPill: (Content, ms = FLASH_MS) => {
       // An alert on the pill is never covered by a flash (SPEC M7).
       if (currentAlert(queue)) return;

@@ -31,6 +31,12 @@ export interface WidgetDefinition {
    * provider and `Background` keep running. The clipboard lives in the command bar this way (the owner, 21/09).
    */
   layout?: { size?: WidgetSize; inPanel?: boolean };
+  /**
+   * A full-panel view the widget opens from its own card (`ShellApi.openWidgetDetail`), for something the tile is
+   * too small for — the usage forecast (SPEC-claude §5.5b). The panel shows it in place of the bento, with a back
+   * button; collapsing the panel closes it.
+   */
+  Detail?: ComponentType;
   /** Collected by the shell for the command bar. */
   searchProvider?: SearchProvider;
   /**
@@ -78,6 +84,9 @@ export interface ShellApi {
    */
   openDetail(alertId: string): void;
   collapse(): void;
+  /** Shows this widget's `Detail` in place of the bento, until `closeWidgetDetail` or the panel collapses. */
+  openWidgetDetail(widgetId: WidgetId): void;
+  closeWidgetDetail(): void;
   /** Temporary pill content, e.g. "Copied" (M7). */
   flashPill(content: ComponentType, ms?: number): void;
   /**

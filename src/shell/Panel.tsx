@@ -10,6 +10,9 @@ interface PanelProps {
   widgets: WidgetDefinition[];
   onCollapse(): void;
   onOpenSettings?(): void;
+  /** A widget's own full-panel view, shown instead of the bento (`ShellApi.openWidgetDetail`). */
+  detail?: WidgetDefinition;
+  onCloseDetail?(): void;
 }
 
 /**
@@ -19,10 +22,16 @@ interface PanelProps {
  * list trimmed to what is running, everything worth seeing fits in one view, and a tab that hides half of it
  * is one click between you and the thing you opened the notch for.
  */
-export function Panel({ widgets, onCollapse, onOpenSettings }: PanelProps) {
+export function Panel({ widgets, onCollapse, onOpenSettings, detail, onCloseDetail }: PanelProps) {
+  const Detail = detail?.Detail;
   return (
     <>
       <div className={styles.header}>
+        {Detail && (
+          <button type="button" className={styles.backButton} onClick={onCloseDetail}>
+            <span aria-hidden="true">‹</span> {detail.title}
+          </button>
+        )}
         <span className={styles.grow} />
         {onOpenSettings && (
           <button type="button" className={styles.iconButton} aria-label="Cài đặt" onClick={onOpenSettings}>
@@ -34,7 +43,16 @@ export function Panel({ widgets, onCollapse, onOpenSettings }: PanelProps) {
         </button>
       </div>
       <div className={styles.body} role="group">
-        <Bento widgets={widgets} />
+        {Detail ? (
+          // Its own scroller: the panel stops at a share of the screen, and a view taller than that was cut off.
+          <div className={styles.detail}>
+            <WidgetBoundary title={detail.title}>
+              <Detail />
+            </WidgetBoundary>
+          </div>
+        ) : (
+          <Bento widgets={widgets} />
+        )}
       </div>
     </>
   );
