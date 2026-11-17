@@ -31,6 +31,17 @@ function UsageWarning({ percent }: { percent: number }) {
 }
 
 /**
+ * Names the reset window to the minute. The API stamps `resets_at` to the microsecond and the stamp moves between
+ * reads of the same window, so keyed on the raw string every two-minute refresh looked like a new window and put the
+ * warning back on the pill (the owner, 17/11).
+ */
+function windowKey(resetsAt: string | undefined): string | undefined {
+  if (resetsAt === undefined) return undefined;
+  const at = Date.parse(resetsAt);
+  return Number.isNaN(at) ? resetsAt : String(Math.round(at / 60_000));
+}
+
+/**
  * Keeps the widget off the pill while nothing is running (SPEC-claude §5.1).
  *
  * This runs whether or not the panel is open, which is exactly why it does nothing but flip a flag: the session
@@ -49,7 +60,7 @@ export function ClaudeBackground() {
   const warnedFor = useRef<string | undefined>(undefined);
   const limit = usage.fiveHour;
   const threshold = options.usageWarnPercent;
-  const window = limit?.resetsAt;
+  const window = windowKey(limit?.resetsAt);
   const over = threshold > 0 && limit !== undefined && limit.percent >= threshold;
 
   useEffect(() => {

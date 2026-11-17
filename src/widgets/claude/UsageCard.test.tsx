@@ -4,7 +4,7 @@ import { createShell } from "../../shell/shell";
 import { ShellProvider } from "../../shell/shell-context";
 import { ClaudeBackground, ClaudePill, USAGE_WARN_MS } from "./ClaudePill";
 import type { ClaudeAccountUsage, ClaudeSession, ClaudeUsage, UsageSample } from "./native";
-import { resetForTests } from "./store";
+import { refreshUsage, resetForTests } from "./store";
 import { UsageCard } from "./UsageCard";
 import { UsageForecast } from "./UsageForecast";
 
@@ -242,6 +242,40 @@ describe("ClaudeBackground", () => {
       // Out of usage stays true for hours; the warning must not hold the pill (and the music beside it) that long.
       await act(async () => {
         vi.advanceTimersByTime(USAGE_WARN_MS);
+      });
+      expect(shell.getSnapshot().alert).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not warn again when a refresh reads the same window with a different fraction of a second", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      native.usage = {
+        fiveHour: { percent: 100, resetsAt: "2026-10-30T12:00:00.335117+00:00" },
+        perModel: [],
+        fetchedAt: Date.now(),
+      };
+      const shell = createShell();
+      render(
+        <ShellProvider shell={shell}>
+          <ClaudeBackground />
+        </ShellProvider>,
+      );
+      await waitFor(() => expect(shell.getSnapshot().alert?.id).toBe("claude-usage-warning"));
+      await act(async () => {
+        vi.advanceTimersByTime(USAGE_WARN_MS);
+      });
+      expect(shell.getSnapshot().alert).toBeUndefined();
+      // The API stamps the reset time to the microsecond, and the stamp moves between reads of the same window.
+      native.usage = {
+        fiveHour: { percent: 100, resetsAt: "2026-10-30T12:00:00.871402+00:00" },
+        perModel: [],
+        fetchedAt: Date.now(),
+      };
+      await act(async () => {
+        await refreshUsage(true);
       });
       expect(shell.getSnapshot().alert).toBeUndefined();
     } finally {
