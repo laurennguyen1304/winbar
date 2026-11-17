@@ -14,6 +14,11 @@ const WIDGET_ID = "claude-sessions";
 /** Half of the 48px source art, so the pixel set lands on whole pixels instead of blurring. */
 const ICON_SIZE = 24;
 const WARN_ALERT_ID = "claude-usage-warning";
+/**
+ * How long the warning holds the pill. An alert takes the whole pill, and being over the threshold lasts until the
+ * window resets — hours — so a warning left up hid the music beside it all that time (the owner, 30/10).
+ */
+export const USAGE_WARN_MS = 10_000;
 
 /** The alert body. Kept small: the pill is narrow and this competes with whatever else wants it. */
 function UsageWarning({ percent }: { percent: number }) {
@@ -61,6 +66,16 @@ export function ClaudeBackground() {
       Content: () => <UsageWarning percent={percent} />,
     });
   }, [shell, over, window, limit]);
+
+  // Every push gets its own timer: a usage refresh that pushes again later is shown for its full time too.
+  useEffect(() => {
+    if (!over) return;
+    const timer = setTimeout(() => shell.alerts.dismiss(WARN_ALERT_ID), USAGE_WARN_MS);
+    return () => clearTimeout(timer);
+  }, [shell, over, window]);
+
+  // The widget going away takes its warning with it.
+  useEffect(() => () => shell.alerts.dismiss(WARN_ALERT_ID), [shell]);
 
   // Permission requests take the pill from here too (SPEC-claude-approvals §4.5), and so does a file held over
   // the notch (SPEC-claude-drop §3).

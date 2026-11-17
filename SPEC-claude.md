@@ -282,6 +282,8 @@ layout Claude thì luồng không đọc gì. Cùng lượt đó, khi bật `cla
 ### 5.6 Cảnh báo ngưỡng
 
 Khi 5 giờ vượt **90%**, đẩy một pill alert (ưu tiên 3): "Hạn mức 5 giờ còn 10%". Chỉ một lần cho mỗi chu kỳ reset.
+Alert tự gỡ sau **10 giây** (từ 30/10): vượt ngưỡng kéo dài tới lúc reset, mà alert chiếm cả pill, nên để lâu
+hơn thì che mất nhạc bên cạnh suốt mấy tiếng.
 Tắt được trong Cài đặt.
 
 ### 5.7 Trong command bar

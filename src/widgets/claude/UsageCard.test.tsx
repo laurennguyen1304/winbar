@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createShell } from "../../shell/shell";
 import { ShellProvider } from "../../shell/shell-context";
-import { ClaudeBackground, ClaudePill } from "./ClaudePill";
+import { ClaudeBackground, ClaudePill, USAGE_WARN_MS } from "./ClaudePill";
 import type { ClaudeAccountUsage, ClaudeSession, ClaudeUsage, UsageSample } from "./native";
 import { resetForTests } from "./store";
 import { UsageCard } from "./UsageCard";
@@ -226,6 +226,27 @@ describe("ClaudeBackground", () => {
       </ShellProvider>,
     );
     await waitFor(() => expect(calls.at(-1)).toEqual(["claude-sessions", false]));
+  });
+
+  it("gives the pill back after the usage warning has been read", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      native.usage = { fiveHour: { percent: 100, resetsAt: "2026-10-30T12:00:00Z" }, perModel: [], fetchedAt: Date.now() };
+      const shell = createShell();
+      render(
+        <ShellProvider shell={shell}>
+          <ClaudeBackground />
+        </ShellProvider>,
+      );
+      await waitFor(() => expect(shell.getSnapshot().alert?.id).toBe("claude-usage-warning"));
+      // Out of usage stays true for hours; the warning must not hold the pill (and the music beside it) that long.
+      await act(async () => {
+        vi.advanceTimersByTime(USAGE_WARN_MS);
+      });
+      expect(shell.getSnapshot().alert).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
