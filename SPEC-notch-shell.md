@@ -209,6 +209,10 @@ Quy tắc:
 - Widget dùng `ShellApi` qua hook `useShell()`. Nội dung pill/alert có nút riêng: bấm nút không mở panel; bấm vùng còn lại mới mở.
 - *(Bổ sung khi làm Task 6, 2026-09-16)* thêm `Background` vì alert phải phát được cả khi card không được mount.
 - Widget lỗi khi render: shell bắt lỗi (error boundary), hiện card "Widget lỗi" và vẫn chạy các widget khác.
+- *(chủ dự án, 23/11)* Panel đang mở, bấm vào một ô (không trúng nút/link/ô nhập của widget) thì ô đó phóng ra trọn
+  panel, các ô khác ẩn đi; vẫn là card cũ, không mount lại. Bấm vào vùng trống của panel (header, viền, khoảng
+  quanh ô) thì trở về bento. Bấm ra ngoài notch vẫn thu panel như trước, lần mở sau hiện đủ bento. Vùng bấm riêng
+  không phải nút (vd. đồng hồ hạn mức mở dự báo) phải gắn `data-own-click` để không vừa chạy vừa phóng to.
 - Bố cục tab: widget `tall` chiếm một cột; các widget còn lại xếp chồng ở cột kia theo thứ tự trong Cài đặt;
   không có widget `tall` thì lưới 2 cột theo thứ tự.
 

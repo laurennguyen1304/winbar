@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { demoWidgets } from "../widgets/demo";
 import { Panel } from "./Panel";
@@ -86,5 +87,107 @@ describe("Panel", () => {
     expect(screen.queryByText("tile")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Hạn mức/ }));
     expect(onCloseDetail).toHaveBeenCalledOnce();
+  });
+
+  describe("zooming one widget", () => {
+    const card = (id: string, extra?: () => ReactNode): WidgetDefinition => ({
+      id,
+      tab: "core",
+      title: id,
+      description: id,
+      Card: () => (
+        <div>
+          <p>{id} body</p>
+          <button type="button">{id} action</button>
+          {extra?.()}
+        </div>
+      ),
+    });
+    const widgets = [card("alpha"), card("beta"), card("gamma")];
+
+    it("blows a clicked tile up to the whole panel and hides the others", () => {
+      const { container } = render(<Harness widgets={widgets} />);
+      fireEvent.click(screen.getByText("beta body"));
+      expect(screen.getByText("beta body")).toBeInTheDocument();
+      expect(screen.queryByText("alpha body")).not.toBeInTheDocument();
+      expect(screen.queryByText("gamma body")).not.toBeInTheDocument();
+      expect(container.querySelector("[data-focused]")).toHaveAttribute("data-focused", "beta");
+    });
+
+    it("does not zoom when the click is on one of the widget's controls", () => {
+      render(<Harness widgets={widgets} />);
+      fireEvent.click(screen.getByRole("button", { name: "beta action" }));
+      expect(screen.getByText("alpha body")).toBeInTheDocument();
+    });
+
+    it("does not zoom for something the card marked as its own click", () => {
+      const own = card("own", () => <div data-own-click>meters</div>);
+      render(<Harness widgets={[own, card("other")]} />);
+      fireEvent.click(screen.getByText("meters"));
+      expect(screen.getByText("other body")).toBeInTheDocument();
+    });
+
+    it("keeps the zoomed tile's state: it is the same card, not a new one", () => {
+      const counter: WidgetDefinition = {
+        id: "counter",
+        tab: "core",
+        title: "counter",
+        description: "",
+        Card: function Counter() {
+          const [n, setN] = useState(0);
+          return (
+            <div>
+              <p>counter body</p>
+              <button type="button" onClick={() => setN(n + 1)}>{`n=${n}`}</button>
+            </div>
+          );
+        },
+      };
+      render(<Harness widgets={[counter, card("other")]} />);
+      fireEvent.click(screen.getByRole("button", { name: "n=0" }));
+      fireEvent.click(screen.getByText("counter body"));
+      expect(screen.queryByText("other body")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "n=1" })).toBeInTheDocument();
+    });
+
+    it("stays zoomed for clicks inside the zoomed tile", () => {
+      render(<Harness widgets={widgets} />);
+      fireEvent.click(screen.getByText("beta body"));
+      fireEvent.click(screen.getByText("beta body"));
+      fireEvent.click(screen.getByRole("button", { name: "beta action" }));
+      expect(screen.queryByText("alpha body")).not.toBeInTheDocument();
+    });
+
+    it("brings every widget back on a click on bare panel", () => {
+      const { container } = render(<Harness widgets={widgets} />);
+      fireEvent.click(screen.getByText("beta body"));
+      fireEvent.click(container.querySelector("[data-focused]") as Element);
+      expect(screen.getByText("alpha body")).toBeInTheDocument();
+      expect(screen.getByText("gamma body")).toBeInTheDocument();
+      expect(container.querySelector("[data-focused]")).toBeNull();
+    });
+
+    it("brings every widget back on a click on the empty header", () => {
+      const { container } = render(<Harness widgets={widgets} />);
+      fireEvent.click(screen.getByText("beta body"));
+      fireEvent.click(container.firstElementChild as Element);
+      expect(screen.getByText("alpha body")).toBeInTheDocument();
+    });
+
+    it("starts with every widget again once the panel has collapsed and reopened", () => {
+      const { unmount } = render(<Harness widgets={widgets} />);
+      fireEvent.click(screen.getByText("beta body"));
+      unmount();
+      render(<Harness widgets={widgets} />);
+      expect(screen.getByText("alpha body")).toBeInTheDocument();
+    });
+
+    it("falls back to the bento when the zoomed widget goes away", () => {
+      const { rerender } = render(<Harness widgets={widgets} />);
+      fireEvent.click(screen.getByText("beta body"));
+      rerender(<Harness widgets={[widgets[0], widgets[2]]} />);
+      expect(screen.getByText("alpha body")).toBeInTheDocument();
+      expect(screen.getByText("gamma body")).toBeInTheDocument();
+    });
   });
 });

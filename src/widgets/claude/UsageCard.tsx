@@ -52,7 +52,7 @@ function Meter({ label, window, now }: { label: string; window: ClaudeWindow | u
 /** One of the other accounts: a small 5-hour / 7-day pair under its name (SPEC-claude §5.5). */
 function OtherAccount({ account, now, onOpen }: { account: ClaudeAccountUsage; now: number; onOpen(): void }) {
   return (
-    <div className={`${styles.account} ${styles.metersOpen}`} onClick={onOpen} title="Xem dự báo">
+    <div className={`${styles.account} ${styles.metersOpen}`} onClick={onOpen} data-own-click title="Xem dự báo">
       <div className={styles.accountHead}>
         <span className={styles.accountName}>{account.label}</span>
         <span>{account.needsLogin ? "cần đăng nhập lại" : fetchedAgo(account.fetchedAt, now)}</span>
@@ -124,7 +124,12 @@ export function UsageCard() {
       )}
 
       {/* The meters open the forecast too (SPEC-claude §5.5b); the button above is the keyboard way in. */}
-      <div className={`${styles.meters} ${styles.metersOpen}`} onClick={() => openForecast()} title="Xem dự báo">
+      <div
+        className={`${styles.meters} ${styles.metersOpen}`}
+        onClick={() => openForecast()}
+        data-own-click
+        title="Xem dự báo"
+      >
         <Meter label="5 giờ" window={usage.fiveHour} now={now} />
         <Meter label="7 ngày" window={usage.sevenDay} now={now} />
       </div>

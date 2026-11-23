@@ -10,7 +10,13 @@ export interface WidgetDefinition {
   /** Shown in Settings › Widget and in the error card. */
   title: string;
   description: string;
-  /** Content of the widget's card in the expanded panel. */
+  /**
+   * Content of the widget's card in the expanded panel.
+   *
+   * A click on the card that is not on one of its controls zooms the card to the whole panel, and a click on bare
+   * panel puts the bento back (the owner, 23/11). Buttons, links and inputs count as controls; anything else the card
+   * makes clickable must carry `data-own-click`, or the click both does its job and zooms the card.
+   */
   Card: ComponentType;
   /** Content of the 340×36 pill when this widget has pill priority. */
   Pill?: ComponentType;

@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { Icon } from "./Icon";
 import { bentoLayout, placeSmalls } from "./layout";
-import type { WidgetDefinition } from "./widget-contract";
+import type { WidgetDefinition, WidgetId } from "./widget-contract";
 import { WidgetBoundary } from "./WidgetBoundary";
 import styles from "./Panel.module.css";
 
@@ -24,6 +24,25 @@ interface PanelProps {
  */
 export function Panel({ widgets, onCollapse, onOpenSettings, detail, onCloseDetail }: PanelProps) {
   const Detail = detail?.Detail;
+  // One widget blown up to the whole panel (the owner, 23/11). Local state: the Panel unmounts when the notch collapses,
+  // so a click outside the bar — which collapses it — brings the full bento back on the next opening.
+  const [focusedId, setFocusedId] = useState<WidgetId>();
+  const focused = focusedId !== undefined && widgets.some((w) => w.id === focusedId) ? focusedId : undefined;
+  const zoomed = focused !== undefined && !Detail;
+  // Forget a widget that went away (media hides when nothing plays), so it does not zoom again when it comes back.
+  if (focusedId !== undefined && focused === undefined) setFocusedId(undefined);
+
+  // A click on bare panel — padding, header, the gap round the tile — puts every widget back.
+  useEffect(() => {
+    if (!zoomed) return;
+    const onClick = (e: globalThis.MouseEvent) => {
+      const target = e.target as Element | null;
+      if (!target?.closest || target.closest("[data-tile]") || target.closest(CONTROLS)) return;
+      setFocusedId(undefined);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, [zoomed]);
   return (
     <>
       <div className={styles.header}>
@@ -51,17 +70,27 @@ export function Panel({ widgets, onCollapse, onOpenSettings, detail, onCloseDeta
             </WidgetBoundary>
           </div>
         ) : (
-          <Bento widgets={widgets} />
+          <Bento widgets={widgets} focused={focused} onFocus={setFocusedId} />
         )}
       </div>
     </>
   );
 }
 
+/** A widget's own controls: a click on one does its job and never zooms or un-zooms the panel. */
+const CONTROLS = "button, a, input, select, textarea, label, [role='button'], [data-own-click]";
+
 /** Matches `gap` on `.bento`. */
 const GAP = 10;
 
-function Bento({ widgets }: { widgets: WidgetDefinition[] }) {
+interface BentoProps {
+  widgets: WidgetDefinition[];
+  /** The tile shown alone across the whole panel. */
+  focused?: WidgetId;
+  onFocus(id: WidgetId): void;
+}
+
+function Bento({ widgets, focused, onFocus }: BentoProps) {
   const layout = bentoLayout(widgets);
   const byId = new Map(widgets.map((w) => [w.id, w]));
   const gridRef = useRef<HTMLDivElement>(null);
@@ -77,7 +106,8 @@ function Bento({ widgets }: { widgets: WidgetDefinition[] }) {
   const tiles = [...large, ...small].join(" ");
   useLayoutEffect(() => {
     const grid = gridRef.current;
-    if (!grid || !balanced) return;
+    // Zoomed, the other tiles are not there to measure; un-zooming runs this again.
+    if (!grid || !balanced || focused !== undefined) return;
     const measure = () => {
       // Unstretched for one synchronous layout, read, and put back before anything is painted.
       grid.setAttribute("data-measuring", "");
@@ -102,7 +132,7 @@ function Bento({ widgets }: { widgets: WidgetDefinition[] }) {
     return () => observer.disconnect();
     // `tiles` stands for large and small, `columns` and `balanced` follow from them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tiles]);
+  }, [tiles, focused]);
 
   if (widgets.length === 0) {
     return <div className={styles.empty}>Chưa bật widget nào.</div>;
@@ -127,11 +157,20 @@ function Bento({ widgets }: { widgets: WidgetDefinition[] }) {
   );
   medium.forEach((id, i) => position.set(id, { gridColumn: "1 / -1", gridRow: rows + 1 + i }));
 
+  // Clicking a tile anywhere but on one of its own controls zooms it to the whole panel.
+  const zoom = (id: string) => (e: MouseEvent<HTMLDivElement>) => {
+    if (focused !== undefined || (e.target as Element).closest(CONTROLS)) return;
+    onFocus(id);
+  };
+
   const tile = (id: string, kind: "large" | "small" | "medium") => {
     const def = byId.get(id);
     if (!def) return null;
+    if (focused !== undefined && id !== focused) return null;
+    const style = focused === id ? { gridColumn: "1 / -1", gridRow: 1 } : position.get(id);
     return (
-      <div key={id} className={styles.tile} data-tile={kind} data-id={id} style={position.get(id)}>
+      // Mouse only: the keyboard keeps every tile's controls, and Esc still closes the panel.
+      <div key={id} className={styles.tile} data-tile={kind} data-id={id} style={style} onClick={zoom(id)}>
         <WidgetBoundary title={def.title}>
           <def.Card />
         </WidgetBoundary>
@@ -144,8 +183,10 @@ function Bento({ widgets }: { widgets: WidgetDefinition[] }) {
     <div
       ref={gridRef}
       className={styles.bento}
-      data-large={large.length}
-      data-small={small.length}
+      // Zoomed, the split by tile count no longer applies: one column, the whole width.
+      data-large={focused === undefined ? large.length : undefined}
+      data-small={focused === undefined ? small.length : undefined}
+      data-focused={focused}
       style={{ "--columns": columns } as CSSProperties}
     >
       {large.map((id) => tile(id, "large"))}
