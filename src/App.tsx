@@ -1,13 +1,15 @@
 import { useEffect } from "react";
 import { Notch } from "./shell/Notch";
 import { registry } from "./shell/registry";
-import { notchPropsFrom } from "./shell/settings";
-import { useSettings } from "./shell/use-settings";
+import { notchPropsFrom, withPillPreview } from "./shell/settings";
+import { usePillPreview, useSettings } from "./shell/use-settings";
 import { UpdateNotice } from "./update/UpdateNotice";
 
 export default function App() {
   const widgets = registry.all();
   const { settings, loaded, update } = useSettings(widgets);
+  // A width slider being dragged in Settings: the notch follows it live, the stored settings stay as they are.
+  const preview = usePillPreview();
 
   // Dev helper until the Settings window exists (Task 9): __winbar.update({...}) in the devtools console.
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function App() {
   return (
     <>
       <Notch
-        {...notchPropsFrom(settings, widgets)}
+        {...notchPropsFrom(withPillPreview(settings, preview), widgets)}
         onOffsetChange={(offsetX) => void update({ ...settings, pill: { ...settings.pill, offsetX } })}
       />
       <UpdateNotice />

@@ -1,8 +1,8 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { Size } from "./notch-sizes";
-import type { Settings } from "./settings";
+import type { PillWidthPreview, Settings } from "./settings";
 import type { TabId } from "./widget-contract";
 
 /**
@@ -58,6 +58,29 @@ export function onSettingsChanged(handler: (settings: Settings) => void): () => 
   listen<Settings>("settings-changed", (e) => handler(e.payload))
     .then((fn) => (disposed ? fn() : (unlisten = fn)))
     .catch((err: unknown) => console.error("listen settings-changed failed", err));
+  return () => {
+    disposed = true;
+    unlisten?.();
+  };
+}
+
+/**
+ * Settings → notch: the pill widths while a slider is dragged, so the real notch follows before anything is saved.
+ * `null` drops the preview. Saving drops it too: the notch clears it on `settings-changed`.
+ */
+export async function emitPillPreview(preview: PillWidthPreview | null): Promise<void> {
+  if (!isTauri()) return;
+  await emit("settings-preview", preview);
+}
+
+/** The payload is unchecked: pass it through `withPillPreview`, which validates it. */
+export function onPillPreview(handler: (preview: unknown) => void): () => void {
+  if (!isTauri()) return () => {};
+  let unlisten: (() => void) | undefined;
+  let disposed = false;
+  listen<unknown>("settings-preview", (e) => handler(e.payload))
+    .then((fn) => (disposed ? fn() : (unlisten = fn)))
+    .catch((err: unknown) => console.error("listen settings-preview failed", err));
   return () => {
     disposed = true;
     unlisten?.();

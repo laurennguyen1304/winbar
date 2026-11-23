@@ -234,12 +234,22 @@ Lưu ở `%APPDATA%\winbar\settings.json` (Rust tự đọc/ghi JSON, ghi nguyê
 
 | Trường | Giá trị hợp lệ |
 |---|---|
-| `pill.size` | `s` 300×32 · `m` 340×36 · `l` 400×40 (đổi 2026-09-17, §15 V5) |
-| `pill.alwaysSize` | `m` 620×64 · `l` 700×76 |
+| `pill.size` | `s` 300×32 · `m` 340×36 · `l` 400×40 (đổi 2026-09-17, §15 V5) · `custom` (23/11, xem dưới) |
+| `pill.alwaysSize` | `m` 620×64 · `l` 700×76 · `custom` |
+| `pill.sizePercent` | 10–35, bước 1 (% bề ngang màn hình), mặc định 18; dùng khi `size` là `custom` |
+| `pill.alwaysSizePercent` | 25–60, bước 1, mặc định 33; dùng khi `alwaysSize` là `custom` |
 | `pill.panelWidth` | `s` 720 · `m` 780 · `l` 860; màn hẹp hơn độ rộng này + 40 thì panel co lại cho vừa (`panelFitWidth`) |
 | `pill.topGap` | 0–48 (px) — *mở rộng từ 0–24 ở Task 9 để đặt được pill dưới thanh yasb (R6)* |
 | `pill.openMode` | `hover` · `click` · `always` |
 | `fontScale` | 85–130, bước 5 (%), áp dụng cho chữ và biểu tượng trong notch |
+
+**Độ rộng tùy chỉnh (chủ dự án, 23/11).** Pill thường và pill always có thêm lựa chọn "Tùy chỉnh" cạnh các cỡ có sẵn;
+chọn nó thì hiện thanh kéo theo % bề ngang màn hình đang có notch (máy nhiều màn: mỗi notch theo màn của nó). Chiều
+cao giữ theo cỡ `m`. Độ rộng không nhỏ hơn 240px (pill) / 480px (always) cho vừa nội dung, và không rộng quá màn hình
+(`panelFitWidth`). Vừa chọn "Tùy chỉnh" thì thanh kéo bắt đầu ở đúng độ rộng đang thấy, pill không nhảy. Trong lúc
+kéo, Cài đặt phát event `settings-preview` để notch thật đổi theo ngay; thả tay mới lưu, notch bỏ bản xem trước khi
+nhận `settings-changed`, đóng Cài đặt giữa chừng cũng bỏ. Notch kiểm từng trường của event như Rust kiểm khi lưu, và
+chỉ nhận bốn trường độ rộng này.
 
 Cửa sổ Cài đặt mở 1000×680 nếu màn hình chính đủ chỗ, không thì co theo vùng làm việc (trừ taskbar và thanh tiêu
 đề); cỡ tối thiểu 640×480, nhỏ hơn nữa nếu màn hình nhỏ hơn (`fit_size` trong `settings_window.rs`). Trong trang, hàng

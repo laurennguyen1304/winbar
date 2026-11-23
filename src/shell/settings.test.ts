@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SETTINGS, mergeWidgets, moveWidget, notchPropsFrom, type Settings } from "./settings";
+import { DEFAULT_SETTINGS, mergeWidgets, moveWidget, notchPropsFrom, withPillPreview, type Settings } from "./settings";
 import type { WidgetDefinition } from "./widget-contract";
 
 const C = () => null;
@@ -29,12 +29,40 @@ describe("mergeWidgets", () => {
   });
 });
 
+describe("withPillPreview", () => {
+  it("lays a dragged width over the stored settings", () => {
+    const next = withPillPreview(DEFAULT_SETTINGS, { size: "custom", sizePercent: 25 });
+    expect(next.pill).toMatchObject({ size: "custom", sizePercent: 25, alwaysSize: "m" });
+    expect(DEFAULT_SETTINGS.pill.size).toBe("m");
+  });
+
+  it("is nothing without a preview", () => {
+    expect(withPillPreview(DEFAULT_SETTINGS, undefined)).toBe(DEFAULT_SETTINGS);
+    expect(withPillPreview(DEFAULT_SETTINGS, null)).toBe(DEFAULT_SETTINGS);
+    expect(withPillPreview(DEFAULT_SETTINGS, "custom")).toBe(DEFAULT_SETTINGS);
+  });
+
+  it("takes only the width fields, and only valid values of them", () => {
+    const next = withPillPreview(DEFAULT_SETTINGS, {
+      size: "xl",
+      alwaysSize: "custom",
+      sizePercent: 99,
+      alwaysSizePercent: 40.5,
+      opacity: 100,
+      offsetX: 4000,
+    });
+    expect(next.pill).toEqual({ ...DEFAULT_SETTINGS.pill, alwaysSize: "custom" });
+  });
+});
+
 describe("notchPropsFrom", () => {
   const settings: Settings = {
     ...DEFAULT_SETTINGS,
     pill: {
       size: "l",
       alwaysSize: "l",
+      sizePercent: 20,
+      alwaysSizePercent: 40,
       panelWidth: "s",
       topGap: 40,
       openMode: "click",
@@ -62,6 +90,34 @@ describe("notchPropsFrom", () => {
       sticky: true,
     });
     expect(notchPropsFrom(DEFAULT_SETTINGS, registered)).toMatchObject({ layout: "attached", material: "liquid" });
+  });
+
+  it("turns a custom width into a share of the screen, keeping the m height", () => {
+    const custom: Settings = { ...settings, pill: { ...settings.pill, size: "custom", alwaysSize: "custom" } };
+    const props = notchPropsFrom(custom, registered, 1920);
+    expect(props.pillSize).toEqual({ width: 384, height: 36 });
+    expect(props.alwaysSize).toEqual({ width: 768, height: 64 });
+  });
+
+  it("keeps a custom width wide enough for its content and narrow enough for the screen", () => {
+    const narrow: Settings = {
+      ...settings,
+      pill: { ...settings.pill, size: "custom", sizePercent: 10, alwaysSize: "custom", alwaysSizePercent: 60 },
+    };
+    const props = notchPropsFrom(narrow, registered, 853);
+    expect(props.pillSize.width).toBe(240);
+    // 60% of 853 is 512; the screen still has room for it.
+    expect(props.alwaysSize.width).toBe(512);
+    // A stored value outside the range is pulled back into it.
+    const wild: Settings = { ...settings, pill: { ...settings.pill, size: "custom", sizePercent: 300 } };
+    expect(notchPropsFrom(wild, registered, 1920).pillSize.width).toBe(672);
+  });
+
+  it("falls back to the m preset when the screen width is unknown", () => {
+    const custom: Settings = { ...settings, pill: { ...settings.pill, size: "custom", alwaysSize: "custom" } };
+    const props = notchPropsFrom(custom, registered, 0);
+    expect(props.pillSize).toEqual({ width: 340, height: 36 });
+    expect(props.alwaysSize).toEqual({ width: 620, height: 64 });
   });
 
   it("maps sizes, gap, mode, priority and font scale", () => {

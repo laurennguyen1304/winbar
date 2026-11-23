@@ -15,8 +15,14 @@ const VERSION: u64 = 1;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PillSettings {
+    /// `s` / `m` / `l`, or `custom`: `size_percent` of the screen width.
     pub size: String,
+    /// `m` / `l`, or `custom`: `always_size_percent` of the screen width.
     pub always_size: String,
+    /// Pill width in percent of the screen width when `size` is `custom`. Mirrors PILL_WIDTH_PERCENT in notch-sizes.ts.
+    pub size_percent: u32,
+    /// Always-pill width in percent when `always_size` is `custom`. Mirrors ALWAYS_WIDTH_PERCENT.
+    pub always_size_percent: u32,
     pub panel_width: String,
     pub top_gap: u32,
     pub open_mode: String,
@@ -140,6 +146,8 @@ impl Default for Settings {
             pill: PillSettings {
                 size: "m".into(),
                 always_size: "m".into(),
+                size_percent: 18,
+                always_size_percent: 33,
                 panel_width: "m".into(),
                 top_gap: 8,
                 open_mode: "hover".into(),
@@ -314,8 +322,22 @@ pub fn from_value(value: &Value) -> (Settings, Vec<String>) {
     let settings = Settings {
         version: VERSION,
         pill: PillSettings {
-            size: r.choice(pill, "size", &["s", "m", "l"], &d.pill.size),
-            always_size: r.choice(pill, "alwaysSize", &["m", "l"], &d.pill.always_size),
+            size: r.choice(pill, "size", &["s", "m", "l", "custom"], &d.pill.size),
+            always_size: r.choice(
+                pill,
+                "alwaysSize",
+                &["m", "l", "custom"],
+                &d.pill.always_size,
+            ),
+            size_percent: r.int(pill, "sizePercent", 10, 35, 1, d.pill.size_percent),
+            always_size_percent: r.int(
+                pill,
+                "alwaysSizePercent",
+                25,
+                60,
+                1,
+                d.pill.always_size_percent,
+            ),
             panel_width: r.choice(pill, "panelWidth", &["s", "m", "l"], &d.pill.panel_width),
             top_gap: r.int(pill, "topGap", 0, 48, 1, d.pill.top_gap),
             open_mode: r.choice(
@@ -676,6 +698,37 @@ mod tests {
         for bad in [json!(120), json!(7), json!(-10), json!("80"), json!(null)] {
             let (s, w) = from_value(&json!({ "pill": { "opacity": bad } }));
             assert_eq!(s.pill.opacity, Settings::default().pill.opacity, "{bad:?}");
+            assert!(!w.is_empty(), "{bad:?} should warn");
+        }
+    }
+
+    #[test]
+    fn a_custom_pill_width_is_a_whole_percent_inside_its_range() {
+        let (s, w) = from_value(&json!({
+            "pill": { "size": "custom", "sizePercent": 22, "alwaysSize": "custom", "alwaysSizePercent": 45 }
+        }));
+        assert_eq!(s.pill.size, "custom");
+        assert_eq!(s.pill.size_percent, 22);
+        assert_eq!(s.pill.always_size, "custom");
+        assert_eq!(s.pill.always_size_percent, 45);
+        assert!(w.is_empty(), "{w:?}");
+
+        for bad in [json!(9), json!(36), json!(20.5), json!("20"), json!(null)] {
+            let (s, w) = from_value(&json!({ "pill": { "sizePercent": bad } }));
+            assert_eq!(
+                s.pill.size_percent,
+                Settings::default().pill.size_percent,
+                "{bad:?}"
+            );
+            assert!(!w.is_empty(), "{bad:?} should warn");
+        }
+        for bad in [json!(24), json!(61), json!(40.5), json!("40"), json!(null)] {
+            let (s, w) = from_value(&json!({ "pill": { "alwaysSizePercent": bad } }));
+            assert_eq!(
+                s.pill.always_size_percent,
+                Settings::default().pill.always_size_percent,
+                "{bad:?}"
+            );
             assert!(!w.is_empty(), "{bad:?} should warn");
         }
     }

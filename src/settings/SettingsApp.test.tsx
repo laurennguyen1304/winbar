@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { demoWidgets } from "../widgets/demo";
 import { DEFAULT_SETTINGS, type Settings } from "../shell/settings";
 import { SettingsApp } from "./SettingsApp";
@@ -8,6 +8,7 @@ const { native } = vi.hoisted(() => ({
   native: {
     stored: undefined as Settings | undefined,
     saved: [] as Settings[],
+    previews: [] as unknown[],
     quit: 0,
   },
 }));
@@ -20,6 +21,10 @@ vi.mock("../shell/native", () => ({
     return Promise.resolve(s);
   },
   onSettingsChanged: () => () => {},
+  emitPillPreview: (preview: unknown) => {
+    native.previews.push(preview);
+    return Promise.resolve();
+  },
   getHotkeyStatus: () => Promise.resolve(undefined),
   retryHotkey: () => Promise.resolve(undefined),
   onHotkeyStatus: () => () => {},
@@ -40,6 +45,7 @@ describe("SettingsApp", () => {
   beforeEach(() => {
     native.stored = { ...DEFAULT_SETTINGS, widgets: demoWidgets.map((w) => ({ id: w.id, enabled: true })) };
     native.saved.length = 0;
+    native.previews.length = 0;
     native.quit = 0;
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
@@ -66,6 +72,42 @@ describe("SettingsApp", () => {
     fireEvent.click(within(group).getByRole("radio", { name: "Lớn" }));
     await waitFor(() => expect(lastSaved().pill.size).toBe("l"));
     await waitFor(() => expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "400px", height: "40px" }));
+  });
+
+  describe("custom pill width", () => {
+    const realWidth = window.screen.width;
+    beforeEach(() => Object.defineProperty(window.screen, "width", { value: 1920, configurable: true }));
+    afterEach(() => Object.defineProperty(window.screen, "width", { value: realWidth, configurable: true }));
+
+    it("starts from the width on screen, so picking it does not make the pill jump", async () => {
+      await renderLoaded();
+      expect(screen.queryByRole("slider", { name: "Độ rộng pill (% màn hình)" })).not.toBeInTheDocument();
+      const group = screen.getByRole("radiogroup", { name: "Kích thước pill" });
+      fireEvent.click(within(group).getByRole("radio", { name: "Tùy chỉnh" }));
+      // 340 px on a 1920 px screen is 18%.
+      await waitFor(() => expect(lastSaved().pill).toMatchObject({ size: "custom", sizePercent: 18 }));
+      expect(screen.getByRole("slider", { name: "Độ rộng pill (% màn hình)" })).toBeInTheDocument();
+      expect(screen.getByText("18% · 346px")).toBeInTheDocument();
+    });
+
+    it("sends the notch every step of a drag and saves where it ends", async () => {
+      native.stored = { ...(native.stored as Settings), pill: { ...DEFAULT_SETTINGS.pill, size: "custom" } };
+      await renderLoaded();
+      const slider = screen.getByRole("slider", { name: "Độ rộng pill (% màn hình)" });
+      fireEvent.keyDown(slider, { key: "ArrowRight" });
+      expect(native.previews).toContainEqual(expect.objectContaining({ size: "custom", sizePercent: 19 }));
+      await waitFor(() => expect(lastSaved().pill.sizePercent).toBe(19));
+      await waitFor(() => expect(screen.getByTestId("preview-pill")).toHaveStyle({ width: "365px", height: "36px" }));
+    });
+
+    it("gives the always pill its own slider", async () => {
+      await renderLoaded();
+      const group = screen.getByRole("radiogroup", { name: "Kích thước pill always" });
+      fireEvent.click(within(group).getByRole("radio", { name: "Tùy chỉnh" }));
+      // 620 px on 1920 px is 32%.
+      await waitFor(() => expect(lastSaved().pill).toMatchObject({ alwaysSize: "custom", alwaysSizePercent: 32 }));
+      expect(screen.getByRole("slider", { name: "Độ rộng pill always (% màn hình)" })).toBeInTheDocument();
+    });
   });
 
   it("saves the notch layout and material", async () => {

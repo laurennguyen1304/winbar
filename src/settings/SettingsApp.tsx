@@ -1,9 +1,20 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { quitApp } from "../shell/native";
-import { ALWAYS_SIZES, NOTCH_OPACITY_RANGE, PANEL_WIDTHS, PILL_SIZES, TOP_GAP_RANGE } from "../shell/notch-sizes";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { emitPillPreview, quitApp } from "../shell/native";
+import {
+  ALWAYS_SIZES,
+  ALWAYS_WIDTH_PERCENT,
+  NOTCH_OPACITY_RANGE,
+  PANEL_WIDTHS,
+  PILL_SIZES,
+  PILL_WIDTH_PERCENT,
+  TOP_GAP_RANGE,
+  alwaysSizeFor,
+  percentOf,
+  pillSizeFor,
+} from "../shell/notch-sizes";
 import { PillPreview } from "../shell/PillPreview";
 import { registry } from "../shell/registry";
-import { mergeWidgets, moveWidget, notchPropsFrom, type Settings } from "../shell/settings";
+import { mergeWidgets, moveWidget, notchPropsFrom, type PillWidthPreview, type Settings } from "../shell/settings";
 import { windowSizeFor } from "../shell/notch-shape";
 import { useSettings } from "../shell/use-settings";
 import { ClaudeSection } from "./ClaudeSection";
@@ -75,6 +86,50 @@ function Choice<T extends string>({
   );
 }
 
+/** Slider under a size choice set to "Tùy chỉnh": a share of the screen width, and what that is in px here. */
+function WidthSlider({
+  label,
+  range,
+  percent,
+  px,
+  onDrag,
+  onCommit,
+}: {
+  label: string;
+  range: { min: number; max: number; step: number };
+  percent: number;
+  px: number;
+  onDrag(percent: number): void;
+  onCommit(percent: number): void;
+}) {
+  return (
+    <div className="flex w-64 items-center gap-3">
+      <Slider
+        aria-label={label}
+        min={range.min}
+        max={range.max}
+        step={range.step}
+        value={[percent]}
+        onValueChange={([p]) => onDrag(p)}
+        onValueCommit={([p]) => onCommit(p)}
+      />
+      <output className="w-24 shrink-0 text-right font-mono text-xs text-muted-foreground">
+        {percent}% · {px}px
+      </output>
+    </div>
+  );
+}
+
+const pillWidths = (pill: Settings["pill"]): PillWidthPreview => ({
+  size: pill.size,
+  alwaysSize: pill.alwaysSize,
+  sizePercent: pill.sizePercent,
+  alwaysSizePercent: pill.alwaysSizePercent,
+});
+
+const sendPreview = (preview: PillWidthPreview | null) =>
+  void emitPillPreview(preview).catch((err: unknown) => console.error("settings-preview failed", err));
+
 /** Widest thing in the preview, flares included: the always pill, or the pill carrying two widgets. */
 function previewWidth(settings: Settings, registered: readonly WidgetDefinition[]): number {
   const { alwaysSize, pillSize, layout } = notchPropsFrom(settings, registered);
@@ -120,6 +175,18 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
   };
   const setPill = (patch: Partial<Settings["pill"]>) => save({ ...view, pill: { ...view.pill, ...patch } });
 
+  // Width sliders: the preview here and the real notch both follow the drag; the value is saved when it ends.
+  const screenWidth = window.screen.width;
+  const dragWidth = (patch: Partial<PillWidthPreview>) => {
+    const next = { ...view, pill: { ...view.pill, ...patch } };
+    setDraft(next);
+    sendPreview(pillWidths(next.pill));
+  };
+  // Closing Settings in the middle of a drag must not leave the notch at a width that was never saved.
+  useEffect(() => () => sendPreview(null), []);
+  const pillPx = pillSizeFor(view.pill.size, view.pill.sizePercent, screenWidth).width;
+  const alwaysPx = alwaysSizeFor(view.pill.alwaysSize, view.pill.alwaysSizePercent, screenWidth).width;
+
   const widgets = mergeWidgets(view.widgets, registered);
   const byId = new Map(registered.map((w) => [w.id, w]));
   const pillCapable = registered.filter((w) => w.Pill || w.MidPill);
@@ -163,28 +230,72 @@ export function SettingsApp({ registered = registry.all() }: { registered?: Widg
 
           <section id="set-pill">
             <h2 className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Pill</h2>
-            <Row title="Kích thước pill" description="Pill thu gọn ở chế độ hover / click">
-              <Choice
-                label="Kích thước pill"
-                value={view.pill.size}
-                onChange={(size) => setPill({ size })}
-                options={[
-                  { value: "s", label: "Nhỏ", hint: `${PILL_SIZES.s.width}×${PILL_SIZES.s.height}` },
-                  { value: "m", label: "Vừa", hint: `${PILL_SIZES.m.width}×${PILL_SIZES.m.height}` },
-                  { value: "l", label: "Lớn", hint: `${PILL_SIZES.l.width}×${PILL_SIZES.l.height}` },
-                ]}
-              />
+            <Row
+              title="Kích thước pill"
+              description="Pill thu gọn ở chế độ hover / click · Tùy chỉnh: độ rộng theo % màn hình"
+            >
+              <div className="flex flex-col items-end gap-2.5">
+                <Choice
+                  label="Kích thước pill"
+                  value={view.pill.size}
+                  onChange={(size) =>
+                    // "Tùy chỉnh" starts from the width on screen now, so picking it does not make the pill jump.
+                    size === "custom" && view.pill.size !== "custom"
+                      ? setPill({ size, sizePercent: percentOf(pillPx, screenWidth, PILL_WIDTH_PERCENT) })
+                      : setPill({ size })
+                  }
+                  options={[
+                    { value: "s", label: "Nhỏ", hint: `${PILL_SIZES.s.width}×${PILL_SIZES.s.height}` },
+                    { value: "m", label: "Vừa", hint: `${PILL_SIZES.m.width}×${PILL_SIZES.m.height}` },
+                    { value: "l", label: "Lớn", hint: `${PILL_SIZES.l.width}×${PILL_SIZES.l.height}` },
+                    { value: "custom", label: "Tùy chỉnh" },
+                  ]}
+                />
+                {view.pill.size === "custom" && (
+                  <WidthSlider
+                    label="Độ rộng pill (% màn hình)"
+                    range={PILL_WIDTH_PERCENT}
+                    percent={view.pill.sizePercent}
+                    px={pillPx}
+                    onDrag={(sizePercent) => dragWidth({ sizePercent })}
+                    onCommit={(sizePercent) => setPill({ sizePercent })}
+                  />
+                )}
+              </div>
             </Row>
-            <Row title="Kích thước pill always" description="Pill lớn hiện cùng lúc hai widget">
-              <Choice
-                label="Kích thước pill always"
-                value={view.pill.alwaysSize}
-                onChange={(alwaysSize) => setPill({ alwaysSize })}
-                options={[
-                  { value: "m", label: "Vừa", hint: `${ALWAYS_SIZES.m.width}×${ALWAYS_SIZES.m.height}` },
-                  { value: "l", label: "Lớn", hint: `${ALWAYS_SIZES.l.width}×${ALWAYS_SIZES.l.height}` },
-                ]}
-              />
+            <Row
+              title="Kích thước pill always"
+              description="Pill lớn hiện cùng lúc hai widget · Tùy chỉnh: độ rộng theo % màn hình"
+            >
+              <div className="flex flex-col items-end gap-2.5">
+                <Choice
+                  label="Kích thước pill always"
+                  value={view.pill.alwaysSize}
+                  onChange={(alwaysSize) =>
+                    alwaysSize === "custom" && view.pill.alwaysSize !== "custom"
+                      ? setPill({
+                          alwaysSize,
+                          alwaysSizePercent: percentOf(alwaysPx, screenWidth, ALWAYS_WIDTH_PERCENT),
+                        })
+                      : setPill({ alwaysSize })
+                  }
+                  options={[
+                    { value: "m", label: "Vừa", hint: `${ALWAYS_SIZES.m.width}×${ALWAYS_SIZES.m.height}` },
+                    { value: "l", label: "Lớn", hint: `${ALWAYS_SIZES.l.width}×${ALWAYS_SIZES.l.height}` },
+                    { value: "custom", label: "Tùy chỉnh" },
+                  ]}
+                />
+                {view.pill.alwaysSize === "custom" && (
+                  <WidthSlider
+                    label="Độ rộng pill always (% màn hình)"
+                    range={ALWAYS_WIDTH_PERCENT}
+                    percent={view.pill.alwaysSizePercent}
+                    px={alwaysPx}
+                    onDrag={(alwaysSizePercent) => dragWidth({ alwaysSizePercent })}
+                    onCommit={(alwaysSizePercent) => setPill({ alwaysSizePercent })}
+                  />
+                )}
+              </div>
             </Row>
             <Row title="Độ rộng khi mở rộng" description="Chiều cao tự theo nội dung">
               <Choice

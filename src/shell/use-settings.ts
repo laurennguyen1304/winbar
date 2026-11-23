@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { loadSettings, onSettingsChanged, saveSettings } from "./native";
+import { loadSettings, onPillPreview, onSettingsChanged, saveSettings } from "./native";
 import { DEFAULT_SETTINGS, mergeWidgets, type Settings } from "./settings";
 import type { WidgetDefinition } from "./widget-contract";
 
@@ -49,4 +49,21 @@ export function useSettings(registered: readonly WidgetDefinition[]) {
   );
 
   return { settings, loaded, update };
+}
+
+/**
+ * The unsaved pill widths Settings is sending while a slider is dragged (`emitPillPreview`), or undefined. Cleared
+ * when settings are saved, so the stored value takes over the moment the drag ends.
+ */
+export function usePillPreview(): unknown {
+  const [preview, setPreview] = useState<unknown>(undefined);
+  useEffect(() => {
+    const stopPreview = onPillPreview((next) => setPreview(next ?? undefined));
+    const stopChanged = onSettingsChanged(() => setPreview(undefined));
+    return () => {
+      stopPreview();
+      stopChanged();
+    };
+  }, []);
+  return preview;
 }

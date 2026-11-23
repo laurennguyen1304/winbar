@@ -2,9 +2,11 @@
 import type { OpenMode } from "./notch-machine";
 import type { NotchLayout, NotchMaterial } from "./notch-shape";
 import {
-  ALWAYS_SIZES,
+  ALWAYS_WIDTH_PERCENT,
   PANEL_WIDTHS,
-  PILL_SIZES,
+  PILL_WIDTH_PERCENT,
+  alwaysSizeFor,
+  pillSizeFor,
   type AlwaysSize,
   type PanelWidth,
   type PillSize,
@@ -22,6 +24,10 @@ export interface Settings {
   pill: {
     size: PillSize;
     alwaysSize: AlwaysSize;
+    /** Width of the pill when `size` is `custom`, in percent of the screen width. */
+    sizePercent: number;
+    /** Width of the always pill when `alwaysSize` is `custom`, in percent of the screen width. */
+    alwaysSizePercent: number;
     panelWidth: PanelWidth;
     topGap: number;
     openMode: OpenMode;
@@ -93,6 +99,8 @@ export const DEFAULT_SETTINGS: Settings = {
   pill: {
     size: "m",
     alwaysSize: "m",
+    sizePercent: PILL_WIDTH_PERCENT.default,
+    alwaysSizePercent: ALWAYS_WIDTH_PERCENT.default,
     panelWidth: "m",
     topGap: 8,
     openMode: "hover",
@@ -110,7 +118,14 @@ export const DEFAULT_SETTINGS: Settings = {
   launchAtStartup: true,
   commandBar: { position: null, fileSearch: "auto", webSearch: "google" },
   clipboard: { retentionDays: 1, ignoredApps: DEFAULT_IGNORED_APPS, paused: false },
-  claude: { enabled: true, iconRotateSeconds: 6, usageWarnPercent: 90, stopNotice: true, multiAccount: true, accountSwitcherPath: "" },
+  claude: {
+    enabled: true,
+    iconRotateSeconds: 6,
+    usageWarnPercent: 90,
+    stopNotice: true,
+    multiAccount: true,
+    accountSwitcherPath: "",
+  },
   update: { check: true },
 };
 
@@ -123,6 +138,32 @@ export function mergeWidgets(
   const kept = stored.filter((w) => known.has(w.id));
   const seen = new Set(kept.map((w) => w.id));
   return [...kept, ...registered.filter((w) => !seen.has(w.id)).map((w) => ({ id: w.id, enabled: true }))];
+}
+
+/** The pill widths a Settings slider is being dragged through, before they are saved. */
+export type PillWidthPreview = Pick<Settings["pill"], "size" | "alwaysSize" | "sizePercent" | "alwaysSizePercent">;
+
+const PILL_SIZE_VALUES: readonly string[] = ["s", "m", "l", "custom"];
+const ALWAYS_SIZE_VALUES: readonly string[] = ["m", "l", "custom"];
+const wholeIn = (v: unknown, range: { min: number; max: number }): v is number =>
+  typeof v === "number" && Number.isInteger(v) && v >= range.min && v <= range.max;
+
+/**
+ * Settings with a slider's unsaved widths on top, so the notch follows the drag (the owner, 23/11).
+ *
+ * The preview comes over an event any winbar window can send, so it is checked field by field like Rust checks a
+ * save, and only these four fields are ever taken from it: anything off is ignored, never applied.
+ */
+export function withPillPreview(settings: Settings, preview: unknown): Settings {
+  if (typeof preview !== "object" || preview === null) return settings;
+  const p = preview as Record<string, unknown>;
+  const pill = { ...settings.pill };
+  if (typeof p.size === "string" && PILL_SIZE_VALUES.includes(p.size)) pill.size = p.size as PillSize;
+  if (typeof p.alwaysSize === "string" && ALWAYS_SIZE_VALUES.includes(p.alwaysSize))
+    pill.alwaysSize = p.alwaysSize as AlwaysSize;
+  if (wholeIn(p.sizePercent, PILL_WIDTH_PERCENT)) pill.sizePercent = p.sizePercent;
+  if (wholeIn(p.alwaysSizePercent, ALWAYS_WIDTH_PERCENT)) pill.alwaysSizePercent = p.alwaysSizePercent;
+  return { ...settings, pill };
 }
 
 export interface NotchSettingsProps {
@@ -141,7 +182,15 @@ export interface NotchSettingsProps {
   fontScale: number;
 }
 
-export function notchPropsFrom(settings: Settings, registered: readonly WidgetDefinition[]): NotchSettingsProps {
+/**
+ * `screenWidth` turns a custom width into px: the notch's own screen in the notch window, roughly the same screen in
+ * Settings.
+ */
+export function notchPropsFrom(
+  settings: Settings,
+  registered: readonly WidgetDefinition[],
+  screenWidth: number = typeof window === "undefined" ? 0 : window.screen.width,
+): NotchSettingsProps {
   const byId = new Map(registered.map((w) => [w.id, w]));
   const widgets = mergeWidgets(settings.widgets, registered)
     .filter((w) => w.enabled)
@@ -150,8 +199,8 @@ export function notchPropsFrom(settings: Settings, registered: readonly WidgetDe
     widgets,
     priorityWidget: settings.pill.priorityWidget ?? undefined,
     mode: settings.pill.openMode,
-    pillSize: PILL_SIZES[settings.pill.size],
-    alwaysSize: ALWAYS_SIZES[settings.pill.alwaysSize],
+    pillSize: pillSizeFor(settings.pill.size, settings.pill.sizePercent, screenWidth),
+    alwaysSize: alwaysSizeFor(settings.pill.alwaysSize, settings.pill.alwaysSizePercent, screenWidth),
     panelWidth: PANEL_WIDTHS[settings.pill.panelWidth],
     topGap: settings.pill.topGap,
     layout: settings.pill.layout,

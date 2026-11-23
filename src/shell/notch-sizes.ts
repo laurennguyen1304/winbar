@@ -1,7 +1,10 @@
 // Single source of notch dimensions (logical px). Values come from SPEC-notch-shell.md §5.1 and §7.
 
-export type PillSize = "s" | "m" | "l";
-export type AlwaysSize = "m" | "l";
+export type PresetPillSize = "s" | "m" | "l";
+export type PresetAlwaysSize = "m" | "l";
+/** A preset, or `custom`: a width set as a share of the screen width (the owner, 23/11). */
+export type PillSize = PresetPillSize | "custom";
+export type AlwaysSize = PresetAlwaysSize | "custom";
 export type PanelWidth = "s" | "m" | "l";
 
 export interface Size {
@@ -10,16 +13,52 @@ export interface Size {
 }
 
 /** Heights 32/36/40 chosen on the machine with the attached notch (SPEC §15 V5, 2026-09-17). */
-export const PILL_SIZES: Record<PillSize, Size> = {
+export const PILL_SIZES: Record<PresetPillSize, Size> = {
   s: { width: 300, height: 32 },
   m: { width: 340, height: 36 },
   l: { width: 400, height: 40 },
 };
 
-export const ALWAYS_SIZES: Record<AlwaysSize, Size> = {
+export const ALWAYS_SIZES: Record<PresetAlwaysSize, Size> = {
   m: { width: 620, height: 64 },
   l: { width: 700, height: 76 },
 };
+
+/**
+ * Custom widths, in percent of the width of the screen the notch is on. Must match src-tauri/src/settings.rs.
+ *
+ * The defaults are the `m` presets on a 1920 px screen. Below `minPx` the content no longer fits, so a small screen
+ * gets at least that much; a custom pill keeps the height of the `m` preset.
+ */
+export const PILL_WIDTH_PERCENT = { min: 10, max: 35, step: 1, default: 18, minPx: 240 } as const;
+export const ALWAYS_WIDTH_PERCENT = { min: 25, max: 60, step: 1, default: 33, minPx: 480 } as const;
+
+type PercentRange = typeof PILL_WIDTH_PERCENT | typeof ALWAYS_WIDTH_PERCENT;
+
+function customSize(percent: number, range: PercentRange, height: number, fallback: Size, screenWidth: number): Size {
+  if (!(screenWidth > 0) || !Number.isFinite(percent)) return fallback;
+  const share = Math.min(range.max, Math.max(range.min, percent));
+  const width = Math.max(range.minPx, Math.round((screenWidth * share) / 100));
+  return { width: panelFitWidth(width, screenWidth), height };
+}
+
+/** The collapsed pill for a setting: a preset, or `percent` of `screenWidth`. */
+export function pillSizeFor(size: PillSize, percent: number, screenWidth: number): Size {
+  if (size !== "custom") return PILL_SIZES[size] ?? PILL_SIZES.m;
+  return customSize(percent, PILL_WIDTH_PERCENT, PILL_SIZES.m.height, PILL_SIZES.m, screenWidth);
+}
+
+/** The always-mode pill for a setting: a preset, or `percent` of `screenWidth`. */
+export function alwaysSizeFor(size: AlwaysSize, percent: number, screenWidth: number): Size {
+  if (size !== "custom") return ALWAYS_SIZES[size] ?? ALWAYS_SIZES.m;
+  return customSize(percent, ALWAYS_WIDTH_PERCENT, ALWAYS_SIZES.m.height, ALWAYS_SIZES.m, screenWidth);
+}
+
+/** The share of `screenWidth` a preset width is, inside `range`: where the slider starts when "custom" is picked. */
+export function percentOf(width: number, screenWidth: number, range: PercentRange): number {
+  if (!(screenWidth > 0)) return range.default;
+  return Math.min(range.max, Math.max(range.min, Math.round((width / screenWidth) * 100)));
+}
 
 export const PANEL_WIDTHS: Record<PanelWidth, number> = { s: 720, m: 780, l: 860 };
 export const PANEL_RADIUS = 28;
